@@ -1,0 +1,7 @@
+@extends('layouts.admin')
+@section('title','Investor Reports')
+@section('page_title','Investor Reports')
+@section('content')
+<div class="row g-4 mb-4">@foreach([['Total Sales',$periodTotals['sales'],'bi-cart-check','orange'],['Net Profit',$periodTotals['net'],'bi-graph-up','green'],['Investor Profit',$periodTotals['investors'],'bi-people','blue'],['Owner Profit',$periodTotals['owner'],'bi-wallet2','purple']] as [$label,$value,$icon,$color])<div class="col-sm-6 col-xl-3"><article class="admin-card stat-card"><div class="stat-icon {{ $color }}"><i class="bi {{ $icon }}"></i></div><div><strong>Rs. {{ number_format($value,2) }}</strong><span>{{ $label }}</span></div></article></div>@endforeach</div>
+<section class="admin-card"><div class="admin-card-head"><h2>Investor Statement Summary</h2></div><div class="table-responsive"><table class="table table-hover"><thead><tr><th>Investor</th><th>Current Investment</th><th>Share</th><th>Profit Earned</th><th>Paid</th><th>Pending</th></tr></thead><tbody>@forelse($investors as $row)<tr><td><strong>{{ $row->name }}</strong></td><td>Rs. {{ number_format($row->current_investment,2) }}</td><td>{{ number_format($row->profit_share_percentage,2) }}%</td><td>Rs. {{ number_format($row->total_profit,2) }}</td><td>Rs. {{ number_format($row->paid_profit,2) }}</td><td><strong>Rs. {{ number_format($row->pending_profit,2) }}</strong></td></tr>@empty<tr><td colspan="6" class="text-center py-5 text-muted-custom">No investor data.</td></tr>@endforelse</tbody></table></div></section>
+@endsection
