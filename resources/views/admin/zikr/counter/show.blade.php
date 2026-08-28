@@ -137,18 +137,21 @@
     }
 
     .progress-container-live {
-        height: 6px;
-        background: #122135;
+        height: 8px;
+        background: #0d1a2d;
+        border: 1px solid #162842;
         border-radius: 10px;
         overflow: hidden;
+        margin: 12px 0 6px;
     }
 
     .progress-bar-custom-live {
         height: 100%;
-        background: #00e5ff;
+        min-height: 8px;
+        background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%);
         border-radius: 10px;
-        box-shadow: 0 0 10px #00e5ff;
-        transition: width 0.4s ease;
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.7);
+        transition: width 0.25s ease-out;
     }
 </style>
 @endpush
@@ -248,7 +251,7 @@
                 <div class="progress-container-live mt-2">
                     <div class="progress-bar-custom-live"
                          id="liveProgressBar"
-                         style="width: {{ $stats['percentage'] }}%;">
+                         style="width: {{ $stats['percentage'] }}%; @if($stats['extra'] > 0) background: linear-gradient(90deg, #00bcd4 0%, #00e5ff 100%); box-shadow: 0 0 12px rgba(0, 229, 255, 0.7); @elseif($stats['remaining'] === 0) background: linear-gradient(90deg, #059669 0%, #10b981 100%); box-shadow: 0 0 12px rgba(16, 185, 129, 0.7); @endif">
                     </div>
                 </div>
             </div>
@@ -261,6 +264,7 @@
                     id="liveTapButton"
                     data-increment-url="{{ route('admin.zikr.counter.increment', $tasbeeh) }}"
                     data-user-id="{{ $user->id }}"
+                    data-total-required="{{ $stats['total_required'] }}"
                     aria-label="Add one zikr"
                 >
                     <i class="bi bi-plus-lg fs-2 text-white mb-0"></i>

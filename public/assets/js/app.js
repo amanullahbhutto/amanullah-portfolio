@@ -1048,13 +1048,25 @@
             if (displayPercentageEl) displayPercentageEl.textContent = `${stats.percentage}%`;
             if (progressBar) {
                 progressBar.style.width = `${stats.percentage}%`;
-                progressBar.className = `progress-bar ${stats.extra > 0 ? 'bg-info' : (stats.remaining === 0 ? 'bg-success' : 'bg-warning')}`;
+                if (stats.extra > 0) {
+                    progressBar.style.background = 'linear-gradient(90deg, #00bcd4 0%, #00e5ff 100%)';
+                    progressBar.style.boxShadow = '0 0 12px rgba(0, 229, 255, 0.7)';
+                } else if (stats.remaining === 0) {
+                    progressBar.style.background = 'linear-gradient(90deg, #059669 0%, #10b981 100%)';
+                    progressBar.style.boxShadow = '0 0 12px rgba(16, 185, 129, 0.7)';
+                } else {
+                    progressBar.style.background = 'linear-gradient(90deg, #d97706 0%, #f59e0b 100%)';
+                    progressBar.style.boxShadow = '0 0 12px rgba(245, 158, 11, 0.7)';
+                }
+            }
+            if (liveTapBtn && stats.total_required) {
+                liveTapBtn.dataset.totalRequired = stats.total_required;
             }
             if (statBacklogEl) {
                 statBacklogEl.textContent = stats.extra > 0 ? `+${Number(stats.extra).toLocaleString()}` : Number(stats.remaining).toLocaleString();
             }
             if (statBacklogPrefix) {
-                statBacklogPrefix.textContent = stats.extra > 0 ? 'Extra' : 'Remaining';
+                statBacklogPrefix.textContent = stats.extra > 0 ? 'Extra:' : 'Remaining:';
             }
             if (statBacklogBadge) {
                 statBacklogBadge.className = `zikr-pill ${stats.extra > 0 ? 'pill-extra' : (stats.remaining > 0 ? 'pill-remaining' : 'pill-done')}`;
@@ -1069,12 +1081,37 @@
             e.preventDefault();
             pendingBatchCount += 1;
 
+            const totalRequired = parseInt(liveTapBtn.dataset.totalRequired, 10) || 1;
+            let currentCount = 0;
+
             if (numberEl) {
                 const current = parseInt(numberEl.textContent.replace(/,/g, ''), 10) || 0;
-                numberEl.textContent = (current + 1).toLocaleString();
+                currentCount = current + 1;
+                numberEl.textContent = currentCount.toLocaleString();
                 numberEl.classList.remove('number-bump');
                 void numberEl.offsetWidth;
                 numberEl.classList.add('number-bump');
+            }
+
+            if (statCompletedEl && currentCount > 0) {
+                statCompletedEl.textContent = currentCount.toLocaleString();
+            }
+
+            if (progressBar && totalRequired > 0) {
+                const pct = Math.min(Math.round((currentCount / totalRequired) * 100), 100);
+                progressBar.style.width = `${pct}%`;
+            }
+
+            if (statBacklogEl && totalRequired > 0) {
+                const rem = totalRequired - currentCount;
+                if (rem > 0) {
+                    statBacklogEl.textContent = Number(rem).toLocaleString();
+                    if (statBacklogPrefix) statBacklogPrefix.textContent = 'Remaining:';
+                } else {
+                    const extra = Math.abs(rem);
+                    statBacklogEl.textContent = `+${Number(extra).toLocaleString()}`;
+                    if (statBacklogPrefix) statBacklogPrefix.textContent = 'Extra:';
+                }
             }
 
             liveTapBtn.classList.remove('tap-pulse');
@@ -1148,13 +1185,22 @@
                         if (displayPercentageEl) displayPercentageEl.textContent = `${payload.stats.percentage}%`;
                         if (progressBar) {
                             progressBar.style.width = `${payload.stats.percentage}%`;
-                            progressBar.className = `progress-bar ${payload.stats.extra > 0 ? 'bg-info' : (payload.stats.remaining === 0 ? 'bg-success' : 'bg-warning')}`;
+                            if (payload.stats.extra > 0) {
+                                progressBar.style.background = 'linear-gradient(90deg, #00bcd4 0%, #00e5ff 100%)';
+                                progressBar.style.boxShadow = '0 0 12px rgba(0, 229, 255, 0.7)';
+                            } else if (payload.stats.remaining === 0) {
+                                progressBar.style.background = 'linear-gradient(90deg, #059669 0%, #10b981 100%)';
+                                progressBar.style.boxShadow = '0 0 12px rgba(16, 185, 129, 0.7)';
+                            } else {
+                                progressBar.style.background = 'linear-gradient(90deg, #d97706 0%, #f59e0b 100%)';
+                                progressBar.style.boxShadow = '0 0 12px rgba(245, 158, 11, 0.7)';
+                            }
                         }
                         if (statBacklogEl) {
                             statBacklogEl.textContent = payload.stats.extra > 0 ? `+${Number(payload.stats.extra).toLocaleString()}` : Number(payload.stats.remaining).toLocaleString();
                         }
                         if (statBacklogPrefix) {
-                            statBacklogPrefix.textContent = payload.stats.extra > 0 ? 'Extra' : 'Remaining';
+                            statBacklogPrefix.textContent = payload.stats.extra > 0 ? 'Extra:' : 'Remaining:';
                         }
                         if (statBacklogBadge) {
                             statBacklogBadge.className = `zikr-pill ${payload.stats.extra > 0 ? 'pill-extra' : (payload.stats.remaining > 0 ? 'pill-remaining' : 'pill-done')}`;
