@@ -82,10 +82,30 @@
         letter-spacing: 0.02em !important;
     }
 
-    .action-btn-circle {
-        width: 36px;
-        height: 36px;
+    .btn-quick {
+        background: #0a1728;
+        border: 1px solid #162a47;
+        color: #00bcd4;
+        font-weight: 600;
         border-radius: 10px;
+        padding: 6px 12px;
+        font-size: 0.82rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-quick:hover {
+        background: #10223b;
+        color: #22d3ee;
+        border-color: #00bcd4;
+        box-shadow: 0 4px 16px rgba(0, 188, 212, 0.25);
+        transform: translateY(-1px);
+    }
+
+    .action-btn-circle {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -93,6 +113,7 @@
         background: #0a1728;
         color: #00bcd4;
         transition: all 0.2s ease;
+        text-decoration: none;
     }
 
     .action-btn-circle:hover {
@@ -144,30 +165,40 @@
             <table class="table tasbeeh-table align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 70px;" class="text-center">Order</th>
-                        <th style="width: 40%;">Arabic Text (الْمَتْنُ الْعَرَبِيُّ)</th>
-                        <th style="width: 40%;">Urdu Meaning (اردو ترجمہ)</th>
-                        <th class="text-center text-nowrap" style="width: 160px; min-width: 140px;">Daily Target</th>
-                        <th class="text-end text-nowrap" style="width: 110px;">Actions</th>
+                        <th style="width: 50%;">Arabic Text (الْمَتْنُ الْعَرَبِيُّ)</th>
+                        <th style="width: 50%;">Urdu Meaning (اردو ترجمہ)</th>
+                        <th class="text-end text-nowrap" style="width: 150px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($tasbeehs as $t)
                         <tr>
-                            <td class="text-center">
-                                <span class="badge font-monospace" style="background: #0c1626; border: 1px solid #1c2c44; color: #94a3b8; font-size: 0.85rem; padding: 5px 10px;">{{ $t->sort_order }}</span>
-                            </td>
                             <td dir="rtl">
                                 <div class="arabic-cell-text">
                                     {{ $t->arabic_text }}
                                 </div>
-                                <div class="d-flex align-items-center gap-2 mt-1">
-                                    <span class="text-white fw-semibold small" style="font-size: 0.85rem;">{{ $t->title }}</span>
-                                    @if($t->reference)
-                                        <span class="badge bg-surface-2 text-muted-custom border border-secondary border-opacity-25 small" style="font-size: 0.72rem;">{{ $t->reference }}</span>
-                                    @endif
+                                <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
                                     @if(! $t->is_active)
                                         <span class="badge bg-danger-subtle text-danger small" style="font-size: 0.72rem;">Inactive</span>
+                                    @endif
+
+                                    @if(isset($t->stats))
+                                        <span class="badge bg-surface-2 border border-secondary border-opacity-25 font-monospace text-muted-custom small" style="font-size: 0.74rem;">
+                                            Completed: <strong class="text-success">{{ number_format($t->stats['total_completed']) }}</strong> / {{ number_format($t->stats['total_required']) }}
+                                        </span>
+                                        @if($t->stats['extra'] > 0)
+                                            <span class="badge font-monospace small" style="background: rgba(0, 188, 212, 0.15); color: #00e5ff; border: 1px solid rgba(0, 188, 212, 0.4); font-size: 0.74rem;">
+                                                +{{ number_format($t->stats['extra']) }} Extra
+                                            </span>
+                                        @elseif($t->stats['remaining'] === 0)
+                                            <span class="badge font-monospace small" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.74rem;">
+                                                Completed
+                                            </span>
+                                        @else
+                                            <span class="badge font-monospace small" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 0.74rem;">
+                                                {{ number_format($t->stats['remaining']) }} Remaining
+                                            </span>
+                                        @endif
                                     @endif
                                 </div>
                             </td>
@@ -176,13 +207,29 @@
                                     {{ $t->urdu_meaning ?? '—' }}
                                 </div>
                             </td>
-                            <td class="text-center text-nowrap" style="width: 160px; min-width: 140px;">
-                                <span class="badge-target-pill font-monospace">
-                                    {{ number_format($t->daily_target) }} / day
-                                </span>
-                            </td>
-                            <td class="text-end">
+                            <td class="text-end text-nowrap">
                                 <div class="d-flex align-items-center justify-content-end gap-2">
+                                    {{-- Quick Add Count Modal Trigger --}}
+                                    <button
+                                        class="action-btn-circle"
+                                        type="button"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#quickAddModal"
+                                        data-tasbeeh-id="{{ $t->id }}"
+                                        data-tasbeeh-title="{{ $t->title }}"
+                                        data-user-id="{{ auth()->id() }}"
+                                        data-post-url="{{ route('admin.zikr.counter.manual', $t) }}"
+                                        title="Add Count"
+                                    >
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+
+                                    {{-- Open Counter Page --}}
+                                    <a href="{{ route('admin.zikr.counter.show', $t) }}" class="action-btn-circle" title="Open Live Counter">
+                                        <i class="bi bi-speedometer2"></i>
+                                    </a>
+
+                                    {{-- Edit Tasbeeh --}}
                                     <button
                                         class="action-btn-circle"
                                         type="button"
@@ -203,6 +250,7 @@
                                         <i class="bi bi-pencil"></i>
                                     </button>
 
+                                    {{-- Delete Tasbeeh --}}
                                     <form method="POST" action="{{ route('admin.tasbeehs.destroy', $t) }}" data-ajax-delete data-confirm="Are you sure you want to delete this Tasbeeh? All users' progress for this Tasbeeh will also be deleted.">
                                         @csrf
                                         @method('DELETE')
@@ -215,7 +263,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted-custom">
+                            <td colspan="3" class="text-center py-5 text-muted-custom">
                                 <i class="bi bi-gem fs-2 text-accent"></i>
                                 <p class="mt-2 mb-0">No Tasbeeh master definitions found.</p>
                             </td>
@@ -226,6 +274,46 @@
         </div>
     </div>
 </section>
+
+{{-- Quick Add Count Modal --}}
+<div class="modal fade finance-modal" id="quickAddModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content" style="background: #08111e; border: 1px solid #142845; border-radius: 20px;">
+            <form id="quickAddForm" method="POST" action="">
+                @csrf
+                <input type="hidden" name="user_id" id="quickAddUserId" value="{{ auth()->id() }}">
+                <div class="modal-header border-secondary border-opacity-25">
+                    <div>
+                        <h5 class="modal-title mb-0 text-white">Add Zikr Count</h5>
+                        <p class="text-muted-custom small mb-0 mt-1" id="quickAddTasbeehTitle">Tasbeeh</p>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    {{-- Quick Preset Buttons --}}
+                    <label class="form-label small text-muted-custom fw-bold">Quick Presets:</label>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <button type="button" class="btn btn-outline-theme btn-sm flex-fill font-monospace" onclick="document.getElementById('quickAddCountInput').value=33">+33</button>
+                        <button type="button" class="btn btn-outline-theme btn-sm flex-fill font-monospace" onclick="document.getElementById('quickAddCountInput').value=100">+100</button>
+                        <button type="button" class="btn btn-outline-theme btn-sm flex-fill font-monospace" onclick="document.getElementById('quickAddCountInput').value=300">+300</button>
+                        <button type="button" class="btn btn-outline-theme btn-sm flex-fill font-monospace" onclick="document.getElementById('quickAddCountInput').value=1000">+1,000</button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-white">Enter Count <span class="text-danger">*</span></label>
+                        <input class="form-control form-control-lg text-center font-monospace fw-bold" type="number" name="count" id="quickAddCountInput" min="-1000000" max="1000000" placeholder="e.g. 100 or -33" required style="background: #0c1626; border-color: #1c2c44; color: #fff;">
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-outline-theme" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-accent" type="submit" id="quickAddSubmitBtn">
+                        <i class="bi bi-check-lg me-1"></i>Add Zikr
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 {{-- Create Tasbeeh Modal --}}
 <div class="modal fade finance-modal" id="createTasbeehModal" tabindex="-1" aria-hidden="true">
@@ -251,7 +339,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label text-white fw-bold">Arabic Text (الْمَتْنُ الْعَرَبِيُّ) <span class="text-danger">*</span></label>
-                            <textarea class="form-control font-arabic" name="arabic_text" rows="3" dir="rtl" placeholder="سُبْحَانَ اللهِ..." required style="background: #0c1626; border-color: #1c2c44; color: #f97316; font-size: 1.45rem; line-height: 1.8;"></textarea>
+                            <textarea class="form-control font-arabic" name="arabic_text" rows="3" dir="rtl" placeholder="سُبْحَانَ اللهِ..." required style="background: #0c1626; border-color: #1c2c44; color: #f97316; font-size: 1.3rem; line-height: 1.8;"></textarea>
                             <div class="invalid-feedback" data-error-for="arabic_text"></div>
                         </div>
                         <div class="col-12">
@@ -311,7 +399,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label text-white fw-bold">Arabic Text (الْمَتْنُ الْعَرَبِيُّ) <span class="text-danger">*</span></label>
-                            <textarea class="form-control font-arabic" name="arabic_text" id="editTasbeehArabic" rows="3" dir="rtl" required style="background: #0c1626; border-color: #1c2c44; color: #f97316; font-size: 1.45rem; line-height: 1.8;"></textarea>
+                            <textarea class="form-control font-arabic" name="arabic_text" id="editTasbeehArabic" rows="3" dir="rtl" required style="background: #0c1626; border-color: #1c2c44; color: #f97316; font-size: 1.3rem; line-height: 1.8;"></textarea>
                             <div class="invalid-feedback" data-error-for="arabic_text"></div>
                         </div>
                         <div class="col-12">

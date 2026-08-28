@@ -4,14 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tasbeeh;
+use App\Services\ZikrService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class TasbeehAdminController extends Controller
 {
-    public function __construct()
-    {
+    public function __construct(
+        protected ZikrService $zikrService
+    ) {
         $this->middleware(function ($request, $next) {
             $user = $request->user();
             if (! ($user->hasAnyRole(['Super Admin', 'Admin', 'admin']) || $user->can('manage tasbeeh'))) {
@@ -21,10 +23,23 @@ class TasbeehAdminController extends Controller
         });
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $user = $request->user();
         $tasbeehs = Tasbeeh::query()->ordered()->get();
-        return view('admin.zikr.tasbeehs.index', compact('tasbeehs'));
+        $progressMap = $user->tasbeehProgress()->get()->keyBy('tasbeeh_id');
+
+        $tasbeehsWithStats = $tasbeehs->map(function ($tasbeeh) use ($user, $progressMap) {
+            $progress = $progressMap->get($tasbeeh->id);
+            $stats = $this->zikrService->calculateTasbeehStats($user, $tasbeeh, $progress);
+            $tasbeeh->stats = $stats;
+            return $tasbeeh;
+        });
+
+        return view('admin.zikr.tasbeehs.index', [
+            'tasbeehs' => $tasbeehsWithStats,
+            'user' => $user,
+        ]);
     }
 
     public function store(Request $request): JsonResponse
