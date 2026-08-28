@@ -38,7 +38,7 @@ class ZikrCounterController extends Controller
     {
         $targetUser = null;
         if ($request->filled('user_id')) {
-            $targetUser = User::query()->muslim()->find($request->input('user_id'));
+            $targetUser = User::find($request->input('user_id'));
         }
 
         $user = $this->authorizeAccess($request, $targetUser);
@@ -52,7 +52,7 @@ class ZikrCounterController extends Controller
     {
         $targetUser = null;
         if ($request->filled('user_id')) {
-            $targetUser = User::query()->muslim()->find($request->input('user_id'));
+            $targetUser = User::find($request->input('user_id'));
         }
 
         $user = $this->authorizeAccess($request, $targetUser);
@@ -71,7 +71,7 @@ class ZikrCounterController extends Controller
     {
         $targetUser = null;
         if ($request->filled('user_id')) {
-            $targetUser = User::query()->muslim()->find($request->input('user_id'));
+            $targetUser = User::find($request->input('user_id'));
         }
 
         $user = $this->authorizeAccess($request, $targetUser);
@@ -89,7 +89,7 @@ class ZikrCounterController extends Controller
     {
         $targetUser = null;
         if ($request->filled('user_id')) {
-            $targetUser = User::query()->muslim()->find($request->input('user_id'));
+            $targetUser = User::find($request->input('user_id'));
         }
 
         $user = $this->authorizeAccess($request, $targetUser);
@@ -102,7 +102,7 @@ class ZikrCounterController extends Controller
     {
         $targetUser = null;
         if ($request->filled('user_id')) {
-            $targetUser = User::query()->muslim()->find($request->input('user_id'));
+            $targetUser = User::find($request->input('user_id'));
         }
 
         $user = $this->authorizeAccess($request, $targetUser);

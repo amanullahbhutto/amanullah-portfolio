@@ -753,14 +753,22 @@ textarea.form-control { min-height: 140px; }
 }
 
 .btn-live-zikr-tap {
-    width: 100px !important;
-    height: 100px !important;
-    background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%) !important;
-    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.45) !important;
+    width: 105px !important;
+    height: 105px !important;
+    background: linear-gradient(135deg, #ea580c 0%, #f97316 100%) !important;
+    box-shadow: 0 10px 30px rgba(249, 115, 22, 0.50) !important;
+    border: 3px solid rgba(255, 255, 255, 0.25) !important;
     transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.12s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    cursor: pointer;
+}
+
 .btn-live-zikr-tap:active {
-    transform: scale(0.90) !important;
-    box-shadow: 0 3px 12px rgba(16, 185, 129, 0.70) !important;
+    transform: scale(0.92) !important;
+    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.75) !important;
+}
+
+.btn-live-zikr-tap.tap-pulse {
+    animation: tapPulseAnimation 0.25s ease-out;
 }
 
 @keyframes tapPulseAnimation {
@@ -770,162 +778,217 @@ textarea.form-control { min-height: 140px; }
 }
 
 .counter-huge-number {
-    font-size: clamp(2.2rem, 6vw, 2.9rem) !important;
+    font-size: clamp(2.4rem, 6vw, 3.2rem) !important;
     line-height: 1.0;
+    color: #f97316 !important;
+    text-shadow: 0 0 20px rgba(249, 115, 22, 0.25);
 }
-
 
 /* Zikr Summary Ribbon Pills */
 .zikr-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 6px 13px;
-    border-radius: 8px;
+    gap: 7px;
+    padding: 7px 14px;
+    border-radius: 10px;
     font-size: 0.88rem;
     font-family: inherit;
     letter-spacing: 0.01em;
-    background: var(--surface-2);
-    border: 1.5px solid var(--line);
-    color: #e2e8f0;
+    background: #0a1728 !important;
+    border: 1px solid #162a47 !important;
+    color: #f1f5f9 !important;
     white-space: nowrap;
     flex: 1 1 auto;
 }
 
 .zikr-pill .pill-label {
-    color: #94a3b8;
+    color: #94a3b8 !important;
     font-weight: 600;
 }
 
 .zikr-pill .pill-value {
-    color: #ffffff;
+    color: #ffffff !important;
     font-weight: 700;
     font-size: 0.96rem;
 }
 
 .zikr-pill.pill-target {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: #0a1728 !important;
+    border-color: #1c2c44 !important;
+}
+.zikr-pill.pill-target .pill-label {
+    color: #cbd5e1 !important;
 }
 .zikr-pill.pill-target .pill-value {
-    color: #ffffff;
+    color: #ffffff !important;
 }
 
 .zikr-pill.pill-started {
-    background: rgba(56, 189, 248, 0.08);
-    border-color: rgba(56, 189, 248, 0.25);
+    background: rgba(0, 188, 212, 0.10) !important;
+    border-color: rgba(0, 188, 212, 0.35) !important;
+}
+.zikr-pill.pill-started .pill-label {
+    color: #67e8f9 !important;
 }
 .zikr-pill.pill-started .pill-value {
-    color: #38bdf8;
+    color: #00e5ff !important;
 }
 
 .zikr-pill.pill-required {
-    background: rgba(56, 189, 248, 0.12);
-    border-color: rgba(56, 189, 248, 0.40);
+    background: rgba(0, 188, 212, 0.12) !important;
+    border-color: rgba(0, 188, 212, 0.45) !important;
 }
 .zikr-pill.pill-required .pill-label {
-    color: #bae6fd;
+    color: #a5f3fc !important;
 }
 .zikr-pill.pill-required .pill-value {
-    color: #38bdf8;
+    color: #00e5ff !important;
 }
 
 .zikr-pill.pill-completed {
-    background: rgba(16, 185, 129, 0.14);
-    border-color: rgba(16, 185, 129, 0.45);
+    background: rgba(16, 185, 129, 0.14) !important;
+    border-color: rgba(16, 185, 129, 0.50) !important;
 }
 .zikr-pill.pill-completed .pill-label {
-    color: #a7f3d0;
+    color: #a7f3d0 !important;
 }
 .zikr-pill.pill-completed .pill-value {
-    color: #34d399;
+    color: #10b981 !important;
 }
 
 .zikr-pill.pill-remaining {
-    background: rgba(245, 158, 11, 0.16);
-    border-color: rgba(245, 158, 11, 0.50);
+    background: rgba(245, 158, 11, 0.16) !important;
+    border-color: rgba(245, 158, 11, 0.55) !important;
 }
 .zikr-pill.pill-remaining .pill-label {
-    color: #fde68a;
+    color: #fde68a !important;
 }
 .zikr-pill.pill-remaining .pill-value {
-    color: #fbbf24;
+    color: #fbbf24 !important;
 }
 
 .zikr-pill.pill-extra {
-    background: rgba(14, 165, 233, 0.16);
-    border-color: rgba(14, 165, 233, 0.50);
+    background: rgba(0, 188, 212, 0.18) !important;
+    border-color: #00bcd4 !important;
 }
 .zikr-pill.pill-extra .pill-label {
-    color: #bae6fd;
+    color: #a5f3fc !important;
 }
 .zikr-pill.pill-extra .pill-value {
-    color: #38bdf8;
+    color: #00e5ff !important;
 }
 
 .zikr-pill.pill-done {
-    background: rgba(16, 185, 129, 0.16);
-    border-color: rgba(16, 185, 129, 0.50);
+    background: rgba(16, 185, 129, 0.18) !important;
+    border-color: #10b981 !important;
 }
 .zikr-pill.pill-done .pill-value {
-    color: #34d399;
-}
-
-.zikr-pill.pill-percentage {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.22);
-}
-.zikr-pill.pill-percentage .pill-value {
-    color: #ffffff;
+    color: #10b981 !important;
 }
 
 /* Stylish Action Navigation Buttons */
-.btn-nav-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1.5px solid rgba(255, 255, 255, 0.16);
-    color: #f1f5f9 !important;
-    font-weight: 600;
-    padding: 7px 15px;
-    border-radius: 9px;
-    font-size: 0.86rem;
-    transition: all 0.2s ease;
-    text-decoration: none;
+.btn-nav-action,
+a.btn-nav-action,
+button.btn-nav-action {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background: #0a1728 !important;
+    border: 1px solid #162a47 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    padding: 8px 16px !important;
+    border-radius: 12px !important;
+    font-size: 0.88rem !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important;
+    cursor: pointer;
 }
 
-.btn-nav-action:hover {
-    background: rgba(56, 189, 248, 0.20);
-    border-color: #38bdf8;
+.btn-nav-action span,
+a.btn-nav-action span,
+button.btn-nav-action span {
+    color: #f1f5f9 !important;
+    font-weight: 600 !important;
+}
+
+.btn-nav-action i,
+a.btn-nav-action i,
+button.btn-nav-action i {
+    font-size: 1rem !important;
+}
+
+.btn-nav-action:hover,
+a.btn-nav-action:hover,
+button.btn-nav-action:hover {
+    background: #10223b !important;
+    border-color: #00bcd4 !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 15px rgba(56, 189, 248, 0.30);
+    box-shadow: 0 4px 16px rgba(0, 188, 212, 0.25) !important;
     transform: translateY(-1px);
 }
 
-.btn-nav-action.cyan {
-    background: rgba(56, 189, 248, 0.12);
-    border-color: rgba(56, 189, 248, 0.38);
+.btn-nav-action:hover span,
+a.btn-nav-action:hover span,
+button.btn-nav-action:hover span {
     color: #ffffff !important;
 }
 
-.btn-nav-action.cyan:hover {
-    background: rgba(56, 189, 248, 0.25);
-    border-color: #38bdf8;
-    box-shadow: 0 4px 16px rgba(56, 189, 248, 0.40);
-}
-
-.btn-nav-action.amber {
-    background: rgba(245, 158, 11, 0.12);
-    border-color: rgba(245, 158, 11, 0.38);
+.btn-nav-action.cyan,
+a.btn-nav-action.cyan,
+button.btn-nav-action.cyan {
+    background: rgba(0, 188, 212, 0.12) !important;
+    border-color: rgba(0, 188, 212, 0.45) !important;
     color: #ffffff !important;
 }
 
-.btn-nav-action.amber:hover {
-    background: rgba(245, 158, 11, 0.25);
-    border-color: #fbbf24;
-    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.40);
+.btn-nav-action.cyan span,
+a.btn-nav-action.cyan span,
+button.btn-nav-action.cyan span {
+    color: #ffffff !important;
+}
+
+.btn-nav-action.cyan i,
+a.btn-nav-action.cyan i,
+button.btn-nav-action.cyan i {
+    color: #00e5ff !important;
+}
+
+.btn-nav-action.cyan:hover,
+a.btn-nav-action.cyan:hover,
+button.btn-nav-action.cyan:hover {
+    background: rgba(0, 188, 212, 0.24) !important;
+    border-color: #00e5ff !important;
+    box-shadow: 0 4px 16px rgba(0, 229, 255, 0.35) !important;
+}
+
+.btn-nav-action.amber,
+a.btn-nav-action.amber,
+button.btn-nav-action.amber {
+    background: rgba(245, 158, 11, 0.12) !important;
+    border-color: rgba(245, 158, 11, 0.45) !important;
+    color: #ffffff !important;
+}
+
+.btn-nav-action.amber span,
+a.btn-nav-action.amber span,
+button.btn-nav-action.amber span {
+    color: #ffffff !important;
+}
+
+.btn-nav-action.amber i,
+a.btn-nav-action.amber i,
+button.btn-nav-action.amber i {
+    color: #fbbf24 !important;
+}
+
+.btn-nav-action.amber:hover,
+a.btn-nav-action.amber:hover,
+button.btn-nav-action.amber:hover {
+    background: rgba(245, 158, 11, 0.24) !important;
+    border-color: #fbbf24 !important;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35) !important;
 }
 
 /* Zikr Dashboard Top Stat Cards (Clean Vertical Stacking) */

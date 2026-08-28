@@ -1004,6 +1004,7 @@
             if (liveTapBtn.dataset.userId) {
                 formData.append('user_id', liveTapBtn.dataset.userId);
             }
+            formData.append('_token', financeCsrf);
 
             fetch(liveTapBtn.dataset.incrementUrl, {
                 method: 'POST',
