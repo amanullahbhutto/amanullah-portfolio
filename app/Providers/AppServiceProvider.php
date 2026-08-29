@@ -38,9 +38,14 @@ class AppServiceProvider extends ServiceProvider
                     $unreadMessageCount = ContactMessage::query()->unread()->count();
                 }
 
-                $pwaSettings = \App\Models\PwaSetting::getSettings();
+                if (Schema::hasTable('pwa_settings')) {
+                    $pwaSettings = \App\Models\PwaSetting::getSettings();
+                } else {
+                    $pwaSettings = \App\Models\PwaSetting::getFallbackSettings();
+                }
             } catch (\Throwable) {
                 // Installation pages must still render before migrations complete.
+                $pwaSettings = \App\Models\PwaSetting::getFallbackSettings();
             }
 
             $view->with(compact('profile', 'unreadMessageCount', 'pwaSettings'));
