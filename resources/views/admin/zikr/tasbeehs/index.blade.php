@@ -3,7 +3,7 @@
 @section('page_title', 'Tasbeeh')
 
 @section('content')
-<div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-4">
+<div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-end gap-2 mb-4">
     {{-- Reset All Tasbeehs Trigger (Icon 1) --}}
     <button class="action-btn-top danger" type="button" data-bs-toggle="modal" data-bs-target="#resetAllTasbeehsModal" title="Reset All Tasbeehs to 0 (Start Date Today)">
         <i class="bi bi-arrow-counterclockwise"></i>

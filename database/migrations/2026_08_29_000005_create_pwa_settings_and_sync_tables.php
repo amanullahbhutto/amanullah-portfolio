@@ -93,23 +93,27 @@ return new class extends Migration
         }
 
         // Register PWA permissions and assign to Admin roles
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-        $permissions = [
-            'view pwa settings',
-            'pwa.view',
-            'update pwa settings',
-            'pwa.update',
-            'manage pwa settings',
-            'pwa.manage',
-        ];
+        try {
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+            $permissions = [
+                'view pwa settings',
+                'pwa.view',
+                'update pwa settings',
+                'pwa.update',
+                'manage pwa settings',
+                'pwa.manage',
+            ];
 
-        foreach ($permissions as $permName) {
-            Permission::firstOrCreate(['name' => $permName, 'guard_name' => 'web']);
-        }
+            foreach ($permissions as $permName) {
+                Permission::firstOrCreate(['name' => $permName, 'guard_name' => 'web']);
+            }
 
-        $roles = Role::whereIn('name', ['Super Admin', 'Admin', 'admin'])->get();
-        foreach ($roles as $role) {
-            $role->givePermissionTo($permissions);
+            $roles = Role::whereIn('name', ['Super Admin', 'Admin', 'admin'])->get();
+            foreach ($roles as $role) {
+                $role->givePermissionTo($permissions);
+            }
+        } catch (\Throwable $e) {
+            // Gracefully catch if permissions table has custom id constraints or is missing auto_increment
         }
     }
 

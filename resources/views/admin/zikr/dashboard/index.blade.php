@@ -3,7 +3,7 @@
 @section('page_title', 'Daily Zikr Tracking')
 
 @section('content')
-<div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
+<div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-end gap-2 mb-3">
     {{-- Reset All Tasbeehs Trigger (Icon 1) --}}
     <button class="action-btn-top danger" type="button" data-bs-toggle="modal" data-bs-target="#resetAllTasbeehsModal" title="Reset All Tasbeehs to 0 (Start Date Today)">
         <i class="bi bi-arrow-counterclockwise"></i>
@@ -35,60 +35,64 @@
     </div>
 @else
 
-    {{-- Top Overall Statistics Cards (5 Cards Including Lifetime Permanent Zikr) --}}
-    <div class="row g-3 mb-4">
+    {{-- Top Overall Statistics Cards (2 cards per row on mobile, compact height) --}}
+    <div class="row g-2 g-md-3 mb-4">
         {{-- Lifetime All-Time Total Card --}}
-        <div class="col-12 col-sm-6 col-xl">
-            <div class="zikr-stat-card p-3 rounded-4 border h-100 position-relative" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, #08111e 100%); border-color: rgba(249, 115, 22, 0.35);">
-                <div class="d-flex align-items-center justify-content-between mb-1">
-                    <span class="small fw-bold text-uppercase" style="color: #f97316;">
+        <div class="col-6 col-md-4 col-xl">
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 position-relative d-flex flex-column justify-content-between" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.14) 0%, #08111e 100%); border-color: rgba(249, 115, 22, 0.4); min-height: 104px;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="small fw-bold text-uppercase text-truncate" style="color: #f97316; font-size: 0.7rem;">
                         <i class="bi bi-infinity me-1"></i>Lifetime Total
                     </span>
-                    <button class="btn btn-link p-0 text-secondary" data-bs-toggle="modal" data-bs-target="#resetLifetimeModal" title="Reset Lifetime Total Counter" style="line-height: 1; font-size: 0.85rem; color: #94a3b8 !important;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
+                    <button class="btn btn-link p-0 text-secondary" data-bs-toggle="modal" data-bs-target="#resetLifetimeModal" title="Reset Lifetime Total Counter" style="line-height: 1; font-size: 0.8rem; color: #94a3b8 !important;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
                         <i class="bi bi-trash3"></i>
                     </button>
                 </div>
-                <strong class="fs-2 text-white d-block my-1 font-monospace" style="color: #f97316 !important;">{{ number_format($summary['lifetime_total']) }}</strong>
-                <small class="text-muted-custom d-block">All-Time Permanent Count</small>
+                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0" style="color: #f97316 !important; line-height: 1.2;">{{ number_format($summary['lifetime_total']) }}</strong>
+                <small class="text-muted-custom d-block text-truncate" style="font-size: 0.72rem;">All-Time Permanent</small>
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl">
-            <div class="zikr-stat-card p-3 rounded-4 border h-100" style="background: #08111e; border-color: #142845;">
-                <span class="text-muted-custom small fw-bold text-uppercase d-block mb-1">Daily Target</span>
-                <strong class="fs-2 text-white d-block my-1 font-monospace">{{ number_format($summary['overall_today_required']) }}</strong>
-                <small class="text-muted-custom d-block">Across {{ $summary['total_active_tasbeehs'] }} Tasbeehs</small>
+        {{-- Daily Target --}}
+        <div class="col-6 col-md-4 col-xl">
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
+                <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Daily Target</span>
+                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0" style="line-height: 1.2;">{{ number_format($summary['overall_today_required']) }}</strong>
+                <small class="text-muted-custom d-block text-truncate" style="font-size: 0.72rem;">{{ $summary['total_active_tasbeehs'] }} Tasbeehs</small>
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl">
-            <div class="zikr-stat-card p-3 rounded-4 border h-100" style="background: #08111e; border-color: #142845;">
-                <span class="text-muted-custom small fw-bold text-uppercase d-block mb-1">Total Required</span>
-                <strong class="fs-2 text-info d-block my-1 font-monospace">{{ number_format($summary['overall_total_required']) }}</strong>
-                <small class="text-muted-custom d-block">Active cycle till today</small>
+        {{-- Total Required --}}
+        <div class="col-6 col-md-4 col-xl">
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
+                <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Total Required</span>
+                <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0" style="line-height: 1.2;">{{ number_format($summary['overall_total_required']) }}</strong>
+                <small class="text-muted-custom d-block text-truncate" style="font-size: 0.72rem;">Active cycle till today</small>
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl">
-            <div class="zikr-stat-card p-3 rounded-4 border h-100" style="background: #08111e; border-color: #142845;">
-                <span class="text-muted-custom small fw-bold text-uppercase d-block mb-1">Total Completed</span>
-                <strong class="fs-2 text-success d-block my-1 font-monospace">{{ number_format($summary['overall_total_completed']) }}</strong>
-                <small class="text-success d-block fw-semibold">{{ $summary['overall_percentage'] }}% Completed</small>
+        {{-- Total Completed --}}
+        <div class="col-6 col-md-4 col-xl">
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
+                <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Total Completed</span>
+                <strong class="fs-3 fs-md-2 text-success d-block font-monospace my-0" style="line-height: 1.2;">{{ number_format($summary['overall_total_completed']) }}</strong>
+                <small class="text-success d-block fw-semibold text-truncate" style="font-size: 0.72rem;">{{ $summary['overall_percentage'] }}% Completed</small>
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl">
-            <div class="zikr-stat-card p-3 rounded-4 border h-100" style="background: #08111e; border-color: #142845;">
+        {{-- Extra Zikr / Backlog --}}
+        <div class="col-12 col-md-4 col-xl">
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
                 @if($summary['overall_extra'] > 0)
-                    <span class="text-muted-custom small fw-bold text-uppercase d-block mb-1">Extra Zikr</span>
-                    <strong class="fs-2 text-info d-block my-1 font-monospace">+{{ number_format($summary['overall_extra']) }}</strong>
-                    <small class="text-info d-block fw-semibold">Ahead of schedule</small>
+                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Extra Zikr</span>
+                    <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0" style="line-height: 1.2;">+{{ number_format($summary['overall_extra']) }}</strong>
+                    <small class="text-info d-block fw-semibold text-truncate" style="font-size: 0.72rem;">Ahead of schedule</small>
                 @else
-                    <span class="text-muted-custom small fw-bold text-uppercase d-block mb-1">Remaining Backlog</span>
-                    <strong class="fs-2 {{ $summary['overall_backlog'] > 0 ? 'text-warning' : 'text-success' }} d-block my-1 font-monospace">
+                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Remaining Backlog</span>
+                    <strong class="fs-3 fs-md-2 {{ $summary['overall_backlog'] > 0 ? 'text-warning' : 'text-success' }} d-block font-monospace my-0" style="line-height: 1.2;">
                         {{ number_format($summary['overall_backlog']) }}
                     </strong>
-                    <small class="{{ $summary['overall_backlog'] > 0 ? 'text-warning' : 'text-success' }} d-block fw-semibold">
+                    <small class="{{ $summary['overall_backlog'] > 0 ? 'text-warning' : 'text-success' }} d-block fw-semibold text-truncate" style="font-size: 0.72rem;">
                         {{ $summary['overall_backlog'] > 0 ? 'Pending to complete' : 'All completed!' }}
                     </small>
                 @endif
@@ -103,14 +107,15 @@
                 <div class="zikr-item-card w-100 d-flex flex-column justify-content-between position-relative">
                     <div>
                         {{-- Top Header with Title and Target Info --}}
-                        <div class="mb-3">
-                            <h5 class="mb-1 fw-bold text-white fs-6 text-truncate">{{ $item['title'] }}</h5>
-                            <div class="text-secondary" style="font-size: 0.78rem; line-height: 1.4;">
-                                <span>Target: <strong class="text-info font-monospace">{{ number_format($item['daily_target']) }}</strong>/day</span>
-                                <span class="mx-1 opacity-50">•</span>
-                                <span>Started: <strong class="text-info">{{ $item['formatted_start_date'] }}</strong></span>
-                                <span class="opacity-75">({{ $item['active_days'] }} {{ Str::plural('day', $item['active_days']) }})</span>
-                            </div>
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h3 class="fs-5 fw-bold text-white mb-0 text-truncate me-2">{{ $item['title'] }}</h3>
+                        </div>
+
+                        {{-- Target & Started Meta --}}
+                        <div class="d-flex align-items-center flex-wrap gap-1 mb-2 text-muted-custom small" style="font-size: 0.8rem;">
+                            <span>Target: <strong class="text-info font-monospace">{{ number_format($item['daily_target']) }}</strong>/day</span>
+                            <span class="mx-1 opacity-50">•</span>
+                            <span>Started: <strong class="text-info">{{ $item['formatted_start_date'] }}</strong></span>
                         </div>
 
                         {{-- Right-Aligned Text Area with Custom Center Divider --}}

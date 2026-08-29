@@ -262,10 +262,6 @@
 
     {{-- Mobile Bottom Navigation Bar (PWA Mobile View) --}}
     <nav class="pwa-bottom-nav d-lg-none" aria-label="Mobile Navigation">
-        <a href="{{ route('admin.dashboard') }}" class="pwa-nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-            <i class="bi bi-grid-1x2"></i>
-            <span>Dashboard</span>
-        </a>
         <a href="{{ route('admin.zikr.index') }}" class="pwa-nav-item {{ request()->routeIs('admin.zikr.*') ? 'active' : '' }}">
             <i class="bi bi-gem"></i>
             <span>Zikr</span>
@@ -282,10 +278,6 @@
                 <span>Programs</span>
             </a>
         @endif
-        <button type="button" class="pwa-nav-item pwa-nav-sync" data-pwa-sync-now title="Sync Data">
-            <span class="pwa-sync-badge badge-online" data-pwa-sync-badge><i class="bi bi-wifi"></i></span>
-            <span>Sync</span>
-        </button>
     </nav>
 
     {{-- iOS Safari PWA Installation Instructions Modal --}}
