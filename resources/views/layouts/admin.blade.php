@@ -151,11 +151,10 @@
 
         <div class="admin-main">
             <header class="admin-topbar">
-                <div class="d-flex align-items-center gap-3">
-                    <button class="topbar-icon d-lg-none" type="button" data-sidebar-open aria-label="Open sidebar"><i class="bi bi-list"></i></button>
-                    <div>
-                        <p class="eyebrow mb-1">Portfolio CMS</p>
-                        <h1 class="topbar-title">@yield('page_title', 'Dashboard')</h1>
+                <div class="d-flex align-items-center gap-2 gap-sm-3 min-w-0">
+                    <button class="topbar-icon d-lg-none flex-shrink-0" type="button" data-sidebar-open aria-label="Open sidebar"><i class="bi bi-list"></i></button>
+                    <div class="min-w-0">
+                        <h1 class="topbar-title text-nowrap text-truncate mb-0">@yield('page_title', 'Dashboard')</h1>
                     </div>
                 </div>
                 <div class="topbar-actions">

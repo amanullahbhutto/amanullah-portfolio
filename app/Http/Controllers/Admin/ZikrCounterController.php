@@ -58,7 +58,7 @@ class ZikrCounterController extends Controller
         $user = $this->authorizeAccess($request, $targetUser);
 
         $validated = $request->validate([
-            'count' => ['nullable', 'integer', 'min:1', 'max:10000'],
+            'count' => ['nullable', 'integer', 'min:1', 'max:2000000000'],
         ]);
 
         $count = (int) ($validated['count'] ?? 1);
@@ -77,7 +77,7 @@ class ZikrCounterController extends Controller
         $user = $this->authorizeAccess($request, $targetUser);
 
         $validated = $request->validate([
-            'count' => ['required', 'integer', 'not_in:0', 'min:-1000000', 'max:1000000'],
+            'count' => ['required', 'integer', 'not_in:0', 'min:-2000000000', 'max:2000000000'],
         ]);
 
         $result = $this->zikrService->addCount($user, $tasbeeh, (int) $validated['count'], 'manual');

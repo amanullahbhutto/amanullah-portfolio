@@ -131,6 +131,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): v
     Route::post('/zikr/tasbeeh/{tasbeeh}/manual', [ZikrCounterController::class, 'manual'])->name('zikr.counter.manual');
     Route::post('/zikr/tasbeeh/{tasbeeh}/reset', [ZikrCounterController::class, 'reset'])->name('zikr.counter.reset');
     Route::post('/zikr/tasbeeh/{tasbeeh}/start-date', [ZikrCounterController::class, 'updateStartDate'])->name('zikr.counter.start-date');
+    Route::post('/zikr/settings', [ZikrDashboardController::class, 'updateSettings'])->name('zikr.settings.update');
 
     // Admin Tasbeeh Definitions CRUD
     Route::get('/tasbeehs', [TasbeehAdminController::class, 'index'])->name('tasbeehs.index');

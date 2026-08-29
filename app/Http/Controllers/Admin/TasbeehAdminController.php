@@ -17,7 +17,7 @@ class TasbeehAdminController extends Controller
         $this->middleware(function ($request, $next) {
             $user = $request->user();
             if (! ($user->hasAnyRole(['Super Admin', 'Admin', 'admin']) || $user->can('manage tasbeeh'))) {
-                abort(403, 'Unauthorized. Admin access required to manage Tasbeeh master definitions.');
+                abort(403, 'Unauthorized. Admin access required to manage Tasbeeh.');
             }
             return $next($request);
         });

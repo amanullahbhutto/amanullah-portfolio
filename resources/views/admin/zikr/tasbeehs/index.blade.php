@@ -1,276 +1,337 @@
 @extends('layouts.admin')
 @section('title', 'Manage Tasbeehs')
-@section('page_title', 'Tasbeeh Master Definitions')
+@section('page_title', 'Tasbeeh')
 
 @push('styles')
 <style>
-    .tasbeeh-admin-card {
-        background: #08111e;
-        border: 1px solid #142845;
+    .zikr-item-card {
+        background: linear-gradient(180deg, #0b1526 0%, #070d18 100%);
+        border: 1px solid #162a45;
         border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-        overflow: hidden;
-    }
-
-    .tasbeeh-admin-header {
-        padding: 20px 24px;
-        border-bottom: 1px solid #142845;
-        background: #0a1424;
-    }
-
-    .tasbeeh-table {
-        margin-bottom: 0;
-        color: #f1f5f9;
-    }
-
-    .tasbeeh-table thead th {
-        background: #091322;
-        color: #94a3b8;
-        font-weight: 700;
-        font-size: 0.82rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding: 14px 16px;
-        border-bottom: 1px solid #142845;
-    }
-
-    .tasbeeh-table tbody tr {
-        border-bottom: 1px solid #102138;
-        transition: background 0.15s ease;
-    }
-
-    .tasbeeh-table tbody tr:hover {
-        background: #0c182c;
-    }
-
-    .tasbeeh-table tbody td {
+        width: 100%;
         padding: 16px;
-        vertical-align: middle;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.65);
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .arabic-cell-text {
+    .zikr-item-card:hover {
+        border-color: rgba(0, 229, 255, 0.3);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75), 0 0 20px rgba(0, 229, 255, 0.05);
+    }
+
+    /* Dua Content Container */
+    .text-container {
+        background: #08111e;
+        border: 1px solid #142842;
+        border-radius: 16px;
+        padding: 18px 20px 14px 20px;
+        text-align: right;
+        margin-bottom: 12px;
+        width: 100%;
+    }
+
+    .arabic-text {
         font-family: 'Scheherazade New', 'Amiri Quran', 'Amiri', 'PDMS_Saleem_QuranFont', '_PDMS_Saleem_Quran', 'Traditional Arabic', serif !important;
         font-feature-settings: "liga" 1, "cv01" 1;
         color: #f97316;
-        font-size: 1.3rem;
-        line-height: 2.0;
+        font-size: var(--zikr-arabic-size, 24px) !important;
+        line-height: 1.8;
         direction: rtl;
+        text-align: right;
+        margin-bottom: 4px;
         font-weight: 700;
     }
 
-    .urdu-cell-text {
+    /* Premium Center Divider */
+    .islamic-divider {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 8px 0;
+        position: relative;
+        direction: ltr;
+    }
+
+    .islamic-divider::before,
+    .islamic-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.5), transparent);
+    }
+
+    .divider-icon {
+        color: #f97316;
+        padding: 0 10px;
+        font-size: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        text-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
+        letter-spacing: 2px;
+    }
+
+    .urdu-text {
         font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif !important;
         color: #94a3b8;
-        font-size: 1rem;
-        line-height: 2.1;
+        font-size: var(--zikr-urdu-size, 16px) !important;
+        line-height: 2.3;
         direction: rtl;
+        text-align: right;
+        margin: 0;
+        width: 100%;
     }
 
-    .badge-target-pill {
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        white-space: nowrap !important;
-        background: rgba(16, 185, 129, 0.14) !important;
-        border: 1px solid rgba(16, 185, 129, 0.4) !important;
-        color: #10b981 !important;
-        font-weight: 700 !important;
-        border-radius: 20px !important;
-        padding: 6px 14px !important;
-        font-size: 0.85rem !important;
-        line-height: 1.2 !important;
-        letter-spacing: 0.02em !important;
+    /* Bottom Footer Strip */
+    .card-footer-strip {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 6px 2px 0 2px;
+        direction: ltr;
+        flex-wrap: wrap;
     }
 
-    .btn-quick {
-        background: #0a1728;
-        border: 1px solid #162a47;
-        color: #00bcd4;
+    @media (min-width: 1400px) {
+        .card-footer-strip {
+            justify-content: space-between;
+        }
+    }
+
+    /* Badges Group (Centered) */
+    .badge-info-group {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .badge-remaining {
+        background: rgba(245, 158, 11, 0.12);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.35);
         font-weight: 600;
-        border-radius: 10px;
+        border-radius: 8px;
         padding: 6px 12px;
-        font-size: 0.82rem;
-        transition: all 0.2s ease;
-        text-decoration: none;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    .btn-quick:hover {
-        background: #10223b;
-        color: #22d3ee;
-        border-color: #00bcd4;
-        box-shadow: 0 4px 16px rgba(0, 188, 212, 0.25);
-        transform: translateY(-1px);
+    .badge-remaining.extra {
+        background: rgba(0, 188, 212, 0.12);
+        color: #00e5ff;
+        border-color: rgba(0, 188, 212, 0.35);
     }
 
-    .action-btn-circle {
-        width: 34px;
-        height: 34px;
-        border-radius: 9px;
+    .badge-remaining.completed-badge {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+        border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .badge-completed {
+        background: #091424;
+        color: #cbd5e1;
+        border: 1px solid #182c48;
+        font-weight: 500;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Actions Group (Centered) */
+    .badge-actions-group {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .action-icon-btn {
+        background: #08111e;
+        border: 1px solid #182c48;
+        border-radius: 8px;
+        width: 36px;
+        height: 36px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid #162a47;
-        background: #0a1728;
-        color: #00bcd4;
+        font-size: 0.95rem;
         transition: all 0.2s ease;
+        cursor: pointer;
         text-decoration: none;
     }
 
-    .action-btn-circle:hover {
-        background: #10223b;
-        color: #22d3ee;
-        border-color: #00bcd4;
-        box-shadow: 0 3px 12px rgba(0, 188, 212, 0.25);
+    .btn-plus-icon {
+        color: #38bdf8;
+        border-color: rgba(56, 189, 248, 0.35);
+    }
+    .btn-plus-icon:hover {
+        background: rgba(56, 189, 248, 0.15);
+        border-color: #38bdf8;
+        color: #38bdf8;
     }
 
-    .action-btn-circle.delete {
+    .btn-speed-icon {
+        color: #38bdf8;
+    }
+    .btn-speed-icon:hover {
+        background: rgba(56, 189, 248, 0.12);
+        border-color: #38bdf8;
+        color: #38bdf8;
+    }
+
+    .btn-edit-icon {
+        color: #2dd4bf;
+    }
+    .btn-edit-icon:hover {
+        background: rgba(45, 212, 191, 0.12);
+        border-color: #2dd4bf;
+        color: #2dd4bf;
+    }
+
+    .btn-del-icon {
         color: #f87171;
+        border: 1px solid #182c48;
     }
-
-    .action-btn-circle.delete:hover {
-        background: rgba(239, 68, 68, 0.15);
+    .btn-del-icon:hover {
+        background: rgba(248, 113, 113, 0.15);
+        border-color: #f87171;
         color: #ef4444;
-        border-color: #ef4444;
-        box-shadow: 0 3px 12px rgba(239, 68, 68, 0.25);
     }
 </style>
 @endpush
 
 @section('content')
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-    <div>
-        <span class="eyebrow mb-0">Zikr Administration</span>
-        <h2 class="h4 mb-0 text-white">Tasbeeh Master Definitions</h2>
-    </div>
-    <div class="d-flex flex-wrap align-items-center gap-2">
-        <a class="btn btn-nav-action cyan btn-sm" href="{{ route('admin.zikr.index') }}">
-            <i class="bi bi-speedometer2"></i><span>Zikr Dashboard</span>
-        </a>
-        <button class="btn btn-accent btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#createTasbeehModal">
-            <i class="bi bi-plus-lg"></i><span>Add New Tasbeeh</span>
-        </button>
-    </div>
+<div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-4">
+    {{-- Display Settings Modal Trigger --}}
+    <button class="action-btn-top" type="button" data-bs-toggle="modal" data-bs-target="#zikrSettingsModal" title="Display Settings (Font Size & Visibility)">
+        <i class="bi bi-gear-fill"></i>
+    </button>
+
+    {{-- Zikr Dashboard Shortcut --}}
+    <a class="action-btn-top cyan" href="{{ route('admin.zikr.index') }}" title="Zikr Dashboard">
+        <i class="bi bi-speedometer2"></i>
+    </a>
+
+    {{-- Add New Tasbeeh Trigger --}}
+    <button class="action-btn-top accent" type="button" data-bs-toggle="modal" data-bs-target="#createTasbeehModal" title="Add New Tasbeeh">
+        <i class="bi bi-plus-lg"></i>
+    </button>
 </div>
 
-<section class="tasbeeh-admin-card" data-ajax-crud data-refresh-target="#tasbeehs-table-container">
-    <div class="tasbeeh-admin-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div>
-            <h5 class="mb-1 text-white fw-bold">Master Tasbeeh List</h5>
-            <p class="text-muted-custom small mb-0">Manage Arabic text, Urdu meanings, and daily targets for all Muslim users.</p>
-        </div>
-    </div>
+<section data-ajax-crud data-refresh-target="#tasbeehs-grid-container">
+    <div id="tasbeehs-grid-container" class="admin-list-results">
+        <div class="row g-3 g-md-4">
+            @forelse($tasbeehs as $t)
+                <div class="col-12 col-lg-6 d-flex">
+                    <div class="zikr-item-card w-100 d-flex flex-column justify-content-between">
+                        <!-- Right-Aligned Text Area with Custom Center Divider -->
+                        <div class="text-container">
+                            <!-- Arabic Text -->
+                            <div class="arabic-text">
+                                {{ $t->arabic_text }}
+                            </div>
 
-    <div id="tasbeehs-table-container" class="admin-list-results">
-        <div class="table-responsive">
-            <table class="table tasbeeh-table align-middle">
-                <thead>
-                    <tr>
-                        <th style="width: 50%;">Arabic Text (الْمَتْنُ الْعَرَبِيُّ)</th>
-                        <th style="width: 50%;">Urdu Meaning (اردو ترجمہ)</th>
-                        <th class="text-end text-nowrap" style="width: 150px;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($tasbeehs as $t)
-                        <tr>
-                            <td dir="rtl">
-                                <div class="arabic-cell-text">
-                                    {{ $t->arabic_text }}
-                                </div>
-                                <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
-                                    @if(! $t->is_active)
-                                        <span class="badge bg-danger-subtle text-danger small" style="font-size: 0.72rem;">Inactive</span>
+                            <!-- Sleek Glowing Islamic Center Divider -->
+                            <div class="islamic-divider">
+                                <div class="divider-icon">✦ ✧ ✦</div>
+                            </div>
+
+                            <!-- Urdu Translation -->
+                            <div class="urdu-text">
+                                {{ $t->urdu_meaning ?? '—' }}
+                            </div>
+                        </div>
+
+                        <!-- Footer Area -->
+                        <div class="card-footer-strip">
+                            <!-- Badges -->
+                            <div class="badge-info-group">
+                                @if(isset($t->stats))
+                                    @if($t->stats['extra'] > 0)
+                                        <span class="badge-remaining extra">+{{ number_format($t->stats['extra']) }} Extra</span>
+                                    @elseif($t->stats['remaining'] === 0)
+                                        <span class="badge-remaining completed-badge">Completed</span>
+                                    @else
+                                        <span class="badge-remaining">Remaining {{ number_format($t->stats['remaining']) }}</span>
                                     @endif
+                                    <span class="badge-completed">Completed: <strong class="text-white">{{ number_format($t->stats['total_completed']) }}</strong> / {{ number_format($t->stats['total_required']) }}</span>
+                                @else
+                                    <span class="badge-remaining">Target: {{ number_format($t->daily_target) }}/day</span>
+                                @endif
+                                @if(! $t->is_active)
+                                    <span class="badge bg-danger-subtle text-danger font-monospace" style="font-size: 0.72rem; padding: 5px 8px; border-radius: 6px;">Inactive</span>
+                                @endif
+                            </div>
 
-                                    @if(isset($t->stats))
-                                        <span class="badge bg-surface-2 border border-secondary border-opacity-25 font-monospace text-muted-custom small" style="font-size: 0.74rem;">
-                                            Completed: <strong class="text-success">{{ number_format($t->stats['total_completed']) }}</strong> / {{ number_format($t->stats['total_required']) }}
-                                        </span>
-                                        @if($t->stats['extra'] > 0)
-                                            <span class="badge font-monospace small" style="background: rgba(0, 188, 212, 0.15); color: #00e5ff; border: 1px solid rgba(0, 188, 212, 0.4); font-size: 0.74rem;">
-                                                +{{ number_format($t->stats['extra']) }} Extra
-                                            </span>
-                                        @elseif($t->stats['remaining'] === 0)
-                                            <span class="badge font-monospace small" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.74rem;">
-                                                Completed
-                                            </span>
-                                        @else
-                                            <span class="badge font-monospace small" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 0.74rem;">
-                                                {{ number_format($t->stats['remaining']) }} Remaining
-                                            </span>
-                                        @endif
-                                    @endif
-                                </div>
-                            </td>
-                            <td dir="rtl">
-                                <div class="urdu-cell-text">
-                                    {{ $t->urdu_meaning ?? '—' }}
-                                </div>
-                            </td>
-                            <td class="text-end text-nowrap">
-                                <div class="d-flex align-items-center justify-content-end gap-2">
-                                    {{-- Quick Add Count Modal Trigger --}}
-                                    <button
-                                        class="action-btn-circle"
-                                        type="button"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#quickAddModal"
-                                        data-tasbeeh-id="{{ $t->id }}"
-                                        data-tasbeeh-title="{{ $t->title }}"
-                                        data-user-id="{{ auth()->id() }}"
-                                        data-post-url="{{ route('admin.zikr.counter.manual', $t) }}"
-                                        title="Add Count"
-                                    >
-                                        <i class="bi bi-plus-lg"></i>
+                            <!-- Action Buttons -->
+                            <div class="badge-actions-group">
+                                {{-- Quick Add Count Modal Trigger --}}
+                                <button
+                                    class="action-icon-btn btn-plus-icon"
+                                    type="button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#quickAddModal"
+                                    data-tasbeeh-id="{{ $t->id }}"
+                                    data-tasbeeh-title="{{ $t->title }}"
+                                    data-user-id="{{ auth()->id() }}"
+                                    data-post-url="{{ route('admin.zikr.counter.manual', $t) }}"
+                                    title="Add Count"
+                                >
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+
+                                {{-- Open Counter Page --}}
+                                <a href="{{ route('admin.zikr.counter.show', $t) }}" class="action-icon-btn btn-speed-icon" title="Speed / Counter">
+                                    <i class="bi bi-speedometer2"></i>
+                                </a>
+
+                                {{-- Edit Tasbeeh --}}
+                                <button
+                                    class="action-icon-btn btn-edit-icon"
+                                    type="button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editTasbeehModal"
+                                    data-id="{{ $t->id }}"
+                                    data-title="{{ $t->title }}"
+                                    data-arabic="{{ $t->arabic_text }}"
+                                    data-urdu="{{ $t->urdu_meaning }}"
+                                    data-target="{{ $t->daily_target }}"
+                                    data-order="{{ $t->sort_order }}"
+                                    data-active="{{ $t->is_active ? '1' : '0' }}"
+                                    data-desc="{{ $t->description }}"
+                                    data-ref="{{ $t->reference }}"
+                                    data-update-url="{{ route('admin.tasbeehs.update', $t) }}"
+                                    title="Edit Zikr"
+                                >
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+
+                                {{-- Delete Tasbeeh --}}
+                                <form method="POST" action="{{ route('admin.tasbeehs.destroy', $t) }}" data-ajax-delete data-confirm="Are you sure you want to delete this Tasbeeh? All users' progress for this Tasbeeh will also be deleted." class="d-inline m-0 p-0">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="action-icon-btn btn-del-icon" type="submit" title="Delete">
+                                        <i class="bi bi-trash3"></i>
                                     </button>
-
-                                    {{-- Open Counter Page --}}
-                                    <a href="{{ route('admin.zikr.counter.show', $t) }}" class="action-btn-circle" title="Open Live Counter">
-                                        <i class="bi bi-speedometer2"></i>
-                                    </a>
-
-                                    {{-- Edit Tasbeeh --}}
-                                    <button
-                                        class="action-btn-circle"
-                                        type="button"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#editTasbeehModal"
-                                        data-id="{{ $t->id }}"
-                                        data-title="{{ $t->title }}"
-                                        data-arabic="{{ $t->arabic_text }}"
-                                        data-urdu="{{ $t->urdu_meaning }}"
-                                        data-target="{{ $t->daily_target }}"
-                                        data-order="{{ $t->sort_order }}"
-                                        data-active="{{ $t->is_active ? '1' : '0' }}"
-                                        data-desc="{{ $t->description }}"
-                                        data-ref="{{ $t->reference }}"
-                                        data-update-url="{{ route('admin.tasbeehs.update', $t) }}"
-                                        title="Edit Tasbeeh"
-                                    >
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-
-                                    {{-- Delete Tasbeeh --}}
-                                    <form method="POST" action="{{ route('admin.tasbeehs.destroy', $t) }}" data-ajax-delete data-confirm="Are you sure you want to delete this Tasbeeh? All users' progress for this Tasbeeh will also be deleted.">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="action-btn-circle delete border-0" type="submit" title="Delete Tasbeeh">
-                                            <i class="bi bi-trash3"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="3" class="text-center py-5 text-muted-custom">
-                                <i class="bi bi-gem fs-2 text-accent"></i>
-                                <p class="mt-2 mb-0">No Tasbeeh master definitions found.</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="col-12 text-center py-5 text-muted-custom">
+                    <i class="bi bi-gem fs-2 text-accent"></i>
+                    <p class="mt-2 mb-0">No Tasbeeh found.</p>
+                </div>
+            @endforelse
         </div>
     </div>
 </section>
@@ -301,7 +362,7 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold text-white">Enter Count <span class="text-danger">*</span></label>
-                        <input class="form-control form-control-lg text-center font-monospace fw-bold" type="number" name="count" id="quickAddCountInput" min="-1000000" max="1000000" placeholder="e.g. 100 or -33" required style="background: #0c1626; border-color: #1c2c44; color: #fff;">
+                        <input class="form-control form-control-lg text-center font-monospace fw-bold" type="number" name="count" id="quickAddCountInput" min="-2000000000" max="2000000000" placeholder="e.g. 100 or -33" required style="background: #0c1626; border-color: #1c2c44; color: #fff;">
                     </div>
                 </div>
                 <div class="modal-footer border-secondary border-opacity-25">
@@ -433,4 +494,6 @@
         </div>
     </div>
 </div>
+
+@include('admin.zikr.partials.settings-modal')
 @endsection

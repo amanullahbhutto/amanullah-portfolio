@@ -980,160 +980,7 @@
     // -------------------------------------------------------------
     // Zikr / Tasbeeh Live Counter & AJAX Handlers
     // -------------------------------------------------------------
-    const liveTapBtn = document.getElementById('liveTapButton');
-    if (liveTapBtn) {
-        let pendingBatchCount = 0;
-        let batchTimer = null;
-        let isSyncing = false;
-        const numberEl = document.getElementById('liveCounterNumber');
-        const statCompletedEl = document.getElementById('statTotalCompleted');
-        const statBacklogEl = document.getElementById('statBacklog');
-        const statBacklogLabel = document.getElementById('statBacklogLabel');
-        const statPercentageEl = document.getElementById('statPercentage');
-        const displayPercentageEl = document.getElementById('displayPercentage');
-        const progressBar = document.getElementById('liveProgressBar');
 
-        const flushBatch = () => {
-            if (pendingBatchCount <= 0 || isSyncing) return;
-            const countToSend = pendingBatchCount;
-            pendingBatchCount = 0;
-            isSyncing = true;
-
-            const formData = new FormData();
-            formData.append('count', countToSend);
-            if (liveTapBtn.dataset.userId) {
-                formData.append('user_id', liveTapBtn.dataset.userId);
-            }
-            formData.append('_token', financeCsrf);
-
-            fetch(liveTapBtn.dataset.incrementUrl, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': financeCsrf,
-                },
-                body: formData,
-            })
-                .then(async (res) => {
-                    const payload = await res.json().catch(() => ({}));
-                    if (!res.ok) throw Object.assign(new Error('Increment failed'), { payload });
-                    return payload;
-                })
-                .then((payload) => {
-                    if (payload.stats) {
-                        updateLiveStats(payload.stats);
-                    }
-                })
-                .catch((err) => {
-                    console.error('Zikr count sync error:', err);
-                    pendingBatchCount += countToSend;
-                })
-                .finally(() => {
-                    isSyncing = false;
-                    if (pendingBatchCount > 0) {
-                        clearTimeout(batchTimer);
-                        batchTimer = setTimeout(flushBatch, 400);
-                    }
-                });
-        };
-
-        const statBacklogBadge = document.getElementById('statBacklogBadge');
-        const statBacklogPrefix = document.getElementById('statBacklogPrefix');
-
-        const updateLiveStats = (stats) => {
-            if (numberEl) numberEl.textContent = Number(stats.total_completed).toLocaleString();
-            if (statCompletedEl) statCompletedEl.textContent = Number(stats.total_completed).toLocaleString();
-            if (statPercentageEl) statPercentageEl.textContent = `${stats.percentage}%`;
-            if (displayPercentageEl) displayPercentageEl.textContent = `${stats.percentage}%`;
-            if (progressBar) {
-                progressBar.style.width = `${stats.percentage}%`;
-                if (stats.extra > 0) {
-                    progressBar.style.background = 'linear-gradient(90deg, #00bcd4 0%, #00e5ff 100%)';
-                    progressBar.style.boxShadow = '0 0 12px rgba(0, 229, 255, 0.7)';
-                } else if (stats.remaining === 0) {
-                    progressBar.style.background = 'linear-gradient(90deg, #059669 0%, #10b981 100%)';
-                    progressBar.style.boxShadow = '0 0 12px rgba(16, 185, 129, 0.7)';
-                } else {
-                    progressBar.style.background = 'linear-gradient(90deg, #d97706 0%, #f59e0b 100%)';
-                    progressBar.style.boxShadow = '0 0 12px rgba(245, 158, 11, 0.7)';
-                }
-            }
-            if (liveTapBtn && stats.total_required) {
-                liveTapBtn.dataset.totalRequired = stats.total_required;
-            }
-            if (statBacklogEl) {
-                statBacklogEl.textContent = stats.extra > 0 ? `+${Number(stats.extra).toLocaleString()}` : Number(stats.remaining).toLocaleString();
-            }
-            if (statBacklogPrefix) {
-                statBacklogPrefix.textContent = stats.extra > 0 ? 'Extra:' : 'Remaining:';
-            }
-            if (statBacklogBadge) {
-                statBacklogBadge.className = `zikr-pill ${stats.extra > 0 ? 'pill-extra' : (stats.remaining > 0 ? 'pill-remaining' : 'pill-done')}`;
-            }
-            if (statBacklogLabel) {
-                statBacklogLabel.textContent = stats.extra > 0 ? 'Ahead of target' : (stats.remaining > 0 ? 'Pending' : 'Completed');
-                statBacklogLabel.className = stats.extra > 0 ? 'text-info' : (stats.remaining > 0 ? 'text-warning' : 'text-success');
-            }
-        };
-
-        liveTapBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            pendingBatchCount += 1;
-
-            const totalRequired = parseInt(liveTapBtn.dataset.totalRequired, 10) || 1;
-            let currentCount = 0;
-
-            if (numberEl) {
-                const current = parseInt(numberEl.textContent.replace(/,/g, ''), 10) || 0;
-                currentCount = current + 1;
-                numberEl.textContent = currentCount.toLocaleString();
-                numberEl.classList.remove('number-bump');
-                void numberEl.offsetWidth;
-                numberEl.classList.add('number-bump');
-            }
-
-            if (statCompletedEl && currentCount > 0) {
-                statCompletedEl.textContent = currentCount.toLocaleString();
-            }
-
-            if (progressBar && totalRequired > 0) {
-                const pct = Math.min(Math.round((currentCount / totalRequired) * 100), 100);
-                progressBar.style.width = `${pct}%`;
-            }
-
-            if (statBacklogEl && totalRequired > 0) {
-                const rem = totalRequired - currentCount;
-                if (rem > 0) {
-                    statBacklogEl.textContent = Number(rem).toLocaleString();
-                    if (statBacklogPrefix) statBacklogPrefix.textContent = 'Remaining:';
-                } else {
-                    const extra = Math.abs(rem);
-                    statBacklogEl.textContent = `+${Number(extra).toLocaleString()}`;
-                    if (statBacklogPrefix) statBacklogPrefix.textContent = 'Extra:';
-                }
-            }
-
-            liveTapBtn.classList.remove('tap-pulse');
-            void liveTapBtn.offsetWidth;
-            liveTapBtn.classList.add('tap-pulse');
-
-            clearTimeout(batchTimer);
-            batchTimer = setTimeout(flushBatch, 350);
-        });
-
-        window.addEventListener('beforeunload', () => {
-            if (pendingBatchCount > 0) {
-                const formData = new FormData();
-                formData.append('count', pendingBatchCount);
-                if (liveTapBtn.dataset.userId) formData.append('user_id', liveTapBtn.dataset.userId);
-                formData.append('_token', financeCsrf);
-                if (navigator.sendBeacon) {
-                    navigator.sendBeacon(liveTapBtn.dataset.incrementUrl, formData);
-                }
-            }
-        });
-    }
 
     window.submitManualCount = function (amount) {
         const form = document.getElementById('manualCountForm');
@@ -1189,10 +1036,10 @@
                                 progressBar.style.background = 'linear-gradient(90deg, #00bcd4 0%, #00e5ff 100%)';
                                 progressBar.style.boxShadow = '0 0 12px rgba(0, 229, 255, 0.7)';
                             } else if (payload.stats.remaining === 0) {
-                                progressBar.style.background = 'linear-gradient(90deg, #059669 0%, #10b981 100%)';
+                                progressBar.style.background = 'linear-gradient(90deg, #10b981 0%, #059669 100%)';
                                 progressBar.style.boxShadow = '0 0 12px rgba(16, 185, 129, 0.7)';
                             } else {
-                                progressBar.style.background = 'linear-gradient(90deg, #d97706 0%, #f59e0b 100%)';
+                                progressBar.style.background = 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)';
                                 progressBar.style.boxShadow = '0 0 12px rgba(245, 158, 11, 0.7)';
                             }
                         }
@@ -1369,6 +1216,162 @@
                     showFlashToast(firstErrorMessage(err.payload, 'Could not update start date.'), 'danger');
                 });
         });
+    }
+
+    // -------------------------------------------------------------
+    // Zikr & Tasbeeh Display Settings (Integer Numbers & DB Sync)
+    // -------------------------------------------------------------
+    const ARABIC_SIZE_KEY = 'zikr_pref_arabic_size_px';
+    const URDU_SIZE_KEY = 'zikr_pref_urdu_size_px';
+    const ARABIC_SHOW_KEY = 'zikr_pref_show_arabic';
+    const URDU_SHOW_KEY = 'zikr_pref_show_urdu';
+
+    const DEFAULT_ARABIC_SIZE = 24; // clean number 24
+    const DEFAULT_URDU_SIZE = 16;   // clean number 16
+
+    let zikrSyncTimeout = null;
+
+    function getZikrCurrentSettings() {
+        const modalEl = document.getElementById('zikrSettingsModal');
+        const dbArabic = modalEl ? parseInt(modalEl.dataset.dbArabicSize, 10) : null;
+        const dbUrdu = modalEl ? parseInt(modalEl.dataset.dbUrduSize, 10) : null;
+        const dbShowArabic = modalEl ? modalEl.dataset.dbShowArabic === '1' : null;
+        const dbShowUrdu = modalEl ? modalEl.dataset.dbShowUrdu === '1' : null;
+
+        const rawArabic = localStorage.getItem(ARABIC_SIZE_KEY);
+        const rawUrdu = localStorage.getItem(URDU_SIZE_KEY);
+
+        const arabicSize = rawArabic !== null ? parseInt(rawArabic, 10) : (dbArabic || DEFAULT_ARABIC_SIZE);
+        const urduSize = rawUrdu !== null ? parseInt(rawUrdu, 10) : (dbUrdu || DEFAULT_URDU_SIZE);
+
+        const rawShowArabic = localStorage.getItem(ARABIC_SHOW_KEY);
+        const rawShowUrdu = localStorage.getItem(URDU_SHOW_KEY);
+
+        const showArabic = rawShowArabic !== null ? rawShowArabic !== 'false' : (dbShowArabic !== null ? dbShowArabic : true);
+        const showUrdu = rawShowUrdu !== null ? rawShowUrdu !== 'false' : (dbShowUrdu !== null ? dbShowUrdu : true);
+
+        return { arabicSize, urduSize, showArabic, showUrdu };
+    }
+
+    function applyZikrDisplaySettings() {
+        const { arabicSize, urduSize, showArabic, showUrdu } = getZikrCurrentSettings();
+
+        document.documentElement.style.setProperty('--zikr-arabic-size', `${arabicSize}px`);
+        document.documentElement.style.setProperty('--zikr-urdu-size', `${urduSize}px`);
+
+        if (showArabic) {
+            document.body.classList.remove('hide-arabic-text');
+        } else {
+            document.body.classList.add('hide-arabic-text');
+        }
+
+        if (showUrdu) {
+            document.body.classList.remove('hide-urdu-text');
+        } else {
+            document.body.classList.add('hide-urdu-text');
+        }
+
+        // Direct DOM updates for immediate guaranteed live rendering
+        document.querySelectorAll('.arabic-text, .arabic-live-text').forEach((el) => {
+            el.style.setProperty('font-size', `${arabicSize}px`, 'important');
+            el.style.display = showArabic ? '' : 'none';
+        });
+
+        document.querySelectorAll('.urdu-text, .urdu-live-text').forEach((el) => {
+            el.style.setProperty('font-size', `${urduSize}px`, 'important');
+            el.style.display = showUrdu ? '' : 'none';
+        });
+
+        document.querySelectorAll('.islamic-divider, .divider-box').forEach((el) => {
+            el.style.display = (showArabic && showUrdu) ? '' : 'none';
+        });
+
+        document.querySelectorAll('.text-container, .arabic-box').forEach((el) => {
+            el.style.display = (!showArabic && !showUrdu) ? 'none' : '';
+        });
+
+        // Sync inputs in modal if present
+        const arabicValEl = document.getElementById('settingArabicSizeVal');
+        if (arabicValEl) arabicValEl.textContent = `${arabicSize}`;
+
+        const urduValEl = document.getElementById('settingUrduSizeVal');
+        if (urduValEl) urduValEl.textContent = `${urduSize}`;
+
+        const arabicSwitch = document.getElementById('settingShowArabicSwitch');
+        if (arabicSwitch) arabicSwitch.checked = showArabic;
+
+        const urduSwitch = document.getElementById('settingShowUrduSwitch');
+        if (urduSwitch) urduSwitch.checked = showUrdu;
+    }
+
+    function syncZikrSettingsToDatabase() {
+        const modalEl = document.getElementById('zikrSettingsModal');
+        if (!modalEl || !modalEl.dataset.settingsUrl) return;
+
+        const { arabicSize, urduSize, showArabic, showUrdu } = getZikrCurrentSettings();
+
+        clearTimeout(zikrSyncTimeout);
+        zikrSyncTimeout = setTimeout(() => {
+            fetch(modalEl.dataset.settingsUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': financeCsrf,
+                },
+                body: JSON.stringify({
+                    zikr_arabic_size: arabicSize,
+                    zikr_urdu_size: urduSize,
+                    zikr_show_arabic: showArabic ? 1 : 0,
+                    zikr_show_urdu: showUrdu ? 1 : 0,
+                }),
+            }).catch(() => {});
+        }, 300);
+    }
+
+    window.adjustZikrFontSize = function (type, delta) {
+        const currentSettings = getZikrCurrentSettings();
+        if (type === 'arabic') {
+            let current = currentSettings.arabicSize + delta;
+            current = Math.min(Math.max(current, 14), 48);
+            localStorage.setItem(ARABIC_SIZE_KEY, current);
+        } else if (type === 'urdu') {
+            let current = currentSettings.urduSize + delta;
+            current = Math.min(Math.max(current, 10), 32);
+            localStorage.setItem(URDU_SIZE_KEY, current);
+        }
+        applyZikrDisplaySettings();
+        syncZikrSettingsToDatabase();
+    };
+
+    window.resetZikrFontSize = function (type) {
+        if (type === 'arabic') {
+            localStorage.setItem(ARABIC_SIZE_KEY, DEFAULT_ARABIC_SIZE);
+        } else if (type === 'urdu') {
+            localStorage.setItem(URDU_SIZE_KEY, DEFAULT_URDU_SIZE);
+        }
+        applyZikrDisplaySettings();
+        syncZikrSettingsToDatabase();
+    };
+
+    window.toggleZikrVisibility = function (type, isVisible) {
+        if (type === 'arabic') {
+            localStorage.setItem(ARABIC_SHOW_KEY, isVisible ? 'true' : 'false');
+        } else if (type === 'urdu') {
+            localStorage.setItem(URDU_SHOW_KEY, isVisible ? 'true' : 'false');
+        }
+        applyZikrDisplaySettings();
+        syncZikrSettingsToDatabase();
+    };
+
+    // Apply immediately and on DOM ready
+    applyZikrDisplaySettings();
+    document.addEventListener('DOMContentLoaded', applyZikrDisplaySettings);
+
+    const zikrSettingsModalEl = document.getElementById('zikrSettingsModal');
+    if (zikrSettingsModalEl) {
+        zikrSettingsModalEl.addEventListener('show.bs.modal', applyZikrDisplaySettings);
     }
 
 })();

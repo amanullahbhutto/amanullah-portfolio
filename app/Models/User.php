@@ -18,6 +18,10 @@ class User extends Authenticatable
         'email',
         'password',
         'namaz_start_date',
+        'zikr_arabic_size',
+        'zikr_urdu_size',
+        'zikr_show_arabic',
+        'zikr_show_urdu',
     ];
 
     protected $hidden = [
@@ -31,6 +35,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'namaz_start_date' => 'date',
+            'zikr_arabic_size' => 'integer',
+            'zikr_urdu_size' => 'integer',
+            'zikr_show_arabic' => 'boolean',
+            'zikr_show_urdu' => 'boolean',
         ];
     }
 

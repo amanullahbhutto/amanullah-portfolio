@@ -41,5 +41,35 @@ class ZikrDashboardController extends Controller
 
         return view('admin.zikr.dashboard.index', compact('summary', 'selectedUser', 'muslimUsers'));
     }
+
+    public function updateSettings(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'zikr_arabic_size' => ['nullable', 'integer', 'min:12', 'max:60'],
+            'zikr_urdu_size' => ['nullable', 'integer', 'min:10', 'max:40'],
+            'zikr_show_arabic' => ['nullable', 'boolean'],
+            'zikr_show_urdu' => ['nullable', 'boolean'],
+        ]);
+
+        $user->update([
+            'zikr_arabic_size' => $request->has('zikr_arabic_size') ? (int) $request->input('zikr_arabic_size') : ($user->zikr_arabic_size ?? 24),
+            'zikr_urdu_size' => $request->has('zikr_urdu_size') ? (int) $request->input('zikr_urdu_size') : ($user->zikr_urdu_size ?? 16),
+            'zikr_show_arabic' => $request->boolean('zikr_show_arabic', true),
+            'zikr_show_urdu' => $request->boolean('zikr_show_urdu', true),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Zikr display settings saved.',
+            'settings' => [
+                'arabic_size' => (int) $user->zikr_arabic_size,
+                'urdu_size' => (int) $user->zikr_urdu_size,
+                'show_arabic' => (bool) $user->zikr_show_arabic,
+                'show_urdu' => (bool) $user->zikr_show_urdu,
+            ],
+        ]);
+    }
 }
 

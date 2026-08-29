@@ -305,7 +305,7 @@ textarea.form-control { min-height: 140px; }
 .sidebar-overlay { display: none; }
 .admin-main { min-height: 100vh; margin-left: 270px; }
 .admin-topbar { min-height: 82px; padding: 14px 30px; display: flex; align-items: center; justify-content: space-between; gap: 20px; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(16px); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 1030; }
-.topbar-title { font-size: 1.35rem; margin: 0; }
+.topbar-title { font-size: clamp(0.95rem, 3.2vw, 1.35rem); margin: 0; white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
 .topbar-actions { display: flex; align-items: center; gap: 9px; }
 .notification-link { position: relative; }
 .notification-link > span { position: absolute; right: -5px; top: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 8px; display: grid; place-items: center; background: var(--accent); color: #fff; border: 2px solid var(--bg); font-size: .58rem; font-weight: 800; }
@@ -546,8 +546,9 @@ textarea.form-control { min-height: 140px; }
     .section-space { padding: 72px 0; }
     .section-heading { margin-bottom: 35px; }
     .page-hero { padding-top: calc(var(--header-height) + 60px); }
-    .admin-topbar { padding: 12px 16px; }
-    .admin-content { padding: 20px 14px; }
+    .admin-topbar { padding: 10px 14px; min-height: 62px; gap: 10px; }
+    .topbar-title { font-size: 1.05rem !important; }
+    .admin-content { padding: 16px 12px; }
     .topbar-profile strong, .topbar-actions > a:first-child { display: none !important; }
     .admin-card-head { align-items: flex-start; flex-direction: column; }
     .admin-list-toolbar { align-items: stretch; flex-direction: column; padding: 14px; }
@@ -989,6 +990,111 @@ button.btn-nav-action.amber:hover {
     background: rgba(245, 158, 11, 0.24) !important;
     border-color: #fbbf24 !important;
     box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35) !important;
+}
+
+/* Zikr Top Actions Icon Buttons */
+.action-btn-top {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 11px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid #162a47 !important;
+    background: #08111e !important;
+    color: #94a3b8 !important;
+    font-size: 1.05rem !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.action-btn-top:hover {
+    background: #0f2038 !important;
+    color: #ffffff !important;
+    border-color: #00bcd4 !important;
+    box-shadow: 0 4px 16px rgba(0, 188, 212, 0.25) !important;
+    transform: translateY(-1px);
+}
+
+.action-btn-top.cyan {
+    color: #00e5ff !important;
+    border-color: rgba(0, 229, 255, 0.35) !important;
+}
+
+.action-btn-top.cyan:hover {
+    background: rgba(0, 229, 255, 0.15) !important;
+    color: #00e5ff !important;
+    border-color: #00e5ff !important;
+    box-shadow: 0 4px 16px rgba(0, 229, 255, 0.35) !important;
+}
+
+.action-btn-top.accent {
+    background: linear-gradient(135deg, #ea580c 0%, #f97316 100%) !important;
+    color: #ffffff !important;
+    border-color: rgba(249, 115, 22, 0.6) !important;
+}
+
+.action-btn-top.accent:hover {
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.55) !important;
+    color: #ffffff !important;
+    border-color: #f97316 !important;
+    transform: translateY(-1px);
+}
+
+.action-btn-top.amber {
+    color: #fbbf24 !important;
+    border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+.action-btn-top.amber:hover {
+    background: rgba(245, 158, 11, 0.15) !important;
+    color: #fbbf24 !important;
+    border-color: #fbbf24 !important;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35) !important;
+}
+
+/* Global Dynamic Sizing & Visibility for Zikr Arabic & Urdu */
+:root {
+    --zikr-arabic-size: 24px;
+    --zikr-urdu-size: 16px;
+}
+
+.arabic-text,
+.arabic-cell-text,
+.arabic-live-text,
+.font-arabic,
+.zikr-arabic-target {
+    font-size: var(--zikr-arabic-size) !important;
+}
+
+.urdu-text,
+.urdu-cell-text,
+.urdu-live-text,
+.font-urdu,
+.zikr-urdu-target {
+    font-size: var(--zikr-urdu-size) !important;
+}
+
+body.hide-arabic-text .arabic-text,
+body.hide-arabic-text .arabic-cell-text,
+body.hide-arabic-text .arabic-live-text,
+body.hide-arabic-text .font-arabic,
+body.hide-arabic-text .zikr-arabic-target {
+    display: none !important;
+}
+
+body.hide-urdu-text .urdu-text,
+body.hide-urdu-text .urdu-cell-text,
+body.hide-urdu-text .urdu-live-text,
+body.hide-urdu-text .font-urdu,
+body.hide-urdu-text .zikr-urdu-target {
+    display: none !important;
+}
+
+body.hide-arabic-text.hide-urdu-text .islamic-divider {
+    display: none !important;
 }
 
 /* Zikr Dashboard Top Stat Cards (Clean Vertical Stacking) */
