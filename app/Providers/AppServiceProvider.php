@@ -27,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
         View::composer('*', function ($view): void {
             $profile = null;
             $unreadMessageCount = 0;
+            $pwaSettings = null;
 
             try {
                 if (Schema::hasTable('profiles')) {
@@ -36,11 +37,13 @@ class AppServiceProvider extends ServiceProvider
                 if (request()->is('admin*') && Schema::hasTable('contact_messages')) {
                     $unreadMessageCount = ContactMessage::query()->unread()->count();
                 }
+
+                $pwaSettings = \App\Models\PwaSetting::getSettings();
             } catch (\Throwable) {
                 // Installation pages must still render before migrations complete.
             }
 
-            $view->with(compact('profile', 'unreadMessageCount'));
+            $view->with(compact('profile', 'unreadMessageCount', 'pwaSettings'));
         });
     }
 }

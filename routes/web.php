@@ -76,6 +76,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
+    Route::get('/dashboard', fn() => redirect()->route('admin.dashboard'));
 
     Route::resource('date-of-births', DateOfBirthController::class);
 

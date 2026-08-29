@@ -8,16 +8,13 @@
     <link rel="icon" type="image/png" href="{{ asset('assets/images/amanullah.png') }}">
 
     {{-- Progressive Web App (PWA) Meta & Icons --}}
-    @php
-        $pwaSettings = \App\Models\PwaSetting::getSettings();
-    @endphp
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="{{ $pwaSettings->theme_color ?? '#070d18' }}">
+    <meta name="theme-color" content="{{ $pwaSettings?->theme_color ?? '#070d18' }}">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="{{ $pwaSettings->short_name ?? 'Amanullah' }}">
-    <link rel="apple-touch-icon" href="{{ $pwaSettings->icon_192_url }}">
+    <meta name="apple-mobile-web-app-title" content="{{ $pwaSettings?->short_name ?? 'Amanullah' }}">
+    <link rel="apple-touch-icon" href="{{ $pwaSettings?->icon_192_url ?? asset('assets/pwa-icons/icon-192x192.png') }}">
 
     <meta name="description" content="@yield('meta_description', 'Amanullah is a PHP and Laravel developer in Karachi building responsive, secure, and maintainable web applications.')">
     <script>document.documentElement.dataset.theme=localStorage.getItem('portfolio-theme')||'dark';</script>

@@ -8,16 +8,13 @@
     <title>@yield('title', 'Dashboard') - Amanullah</title>
     
     {{-- Progressive Web App (PWA) Meta & Icons --}}
-    @php
-        $pwaSettings = \App\Models\PwaSetting::getSettings();
-    @endphp
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="{{ $pwaSettings->theme_color ?? '#070d18' }}">
+    <meta name="theme-color" content="{{ $pwaSettings?->theme_color ?? '#070d18' }}">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="{{ $pwaSettings->short_name ?? 'Amanullah' }}">
-    <link rel="apple-touch-icon" href="{{ $pwaSettings->icon_192_url }}">
+    <meta name="apple-mobile-web-app-title" content="{{ $pwaSettings?->short_name ?? 'Amanullah' }}">
+    <link rel="apple-touch-icon" href="{{ $pwaSettings?->icon_192_url ?? asset('assets/pwa-icons/icon-192x192.png') }}">
     
     <script>document.documentElement.dataset.theme=localStorage.getItem('portfolio-theme')||'dark';</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">

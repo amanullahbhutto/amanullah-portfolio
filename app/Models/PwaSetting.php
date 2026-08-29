@@ -47,9 +47,32 @@ class PwaSetting extends Model
 
     public static function getSettings(): self
     {
-        return Cache::remember('pwa_app_settings', 3600, function () {
-            return self::first() ?? self::createDefault();
-        });
+        try {
+            return Cache::remember('pwa_app_settings', 3600, function () {
+                return self::first() ?? self::createDefault();
+            });
+        } catch (\Throwable) {
+            return new self([
+                'is_active' => true,
+                'app_name' => 'Amanullah Portfolio & Management',
+                'short_name' => 'Amanullah',
+                'description' => 'Official Portfolio and Islamic Management System for Amanullah Bhutto.',
+                'theme_color' => '#070d18',
+                'background_color' => '#070d18',
+                'display_mode' => 'standalone',
+                'orientation' => 'portrait-primary',
+                'start_url' => '/admin',
+                'scope' => '/',
+                'install_button_text' => 'Install Mobile App',
+                'offline_message' => 'Aap internet se disconnected hain. Aapka data locally save ho raha hai aur online aate hi sync ho jayega.',
+                'disabled_message' => 'Mobile Application ko Administrator ki taraf se waqti taur par deactivate kar diya gaya hai.',
+                'maintenance_message' => 'Application par maintenance jari hai. Barah-e-karam thori der baad check karein.',
+                'offline_mode_enabled' => true,
+                'auto_sync_enabled' => true,
+                'max_offline_days' => 7,
+                'app_version' => '1.0.0',
+            ]);
+        }
     }
 
     public static function clearCache(): void
