@@ -131,6 +131,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): v
     Route::post('/zikr/tasbeeh/{tasbeeh}/increment', [ZikrCounterController::class, 'increment'])->name('zikr.counter.increment');
     Route::post('/zikr/tasbeeh/{tasbeeh}/manual', [ZikrCounterController::class, 'manual'])->name('zikr.counter.manual');
     Route::post('/zikr/tasbeeh/{tasbeeh}/reset', [ZikrCounterController::class, 'reset'])->name('zikr.counter.reset');
+    Route::post('/zikr/tasbeeh/{tasbeeh}/complete-today', [ZikrCounterController::class, 'completeToday'])->name('zikr.counter.complete-today');
     Route::post('/zikr/tasbeeh/{tasbeeh}/start-date', [ZikrCounterController::class, 'updateStartDate'])->name('zikr.counter.start-date');
     Route::post('/zikr/complete-all-today', [ZikrCounterController::class, 'completeAllToday'])->name('zikr.complete-all-today');
     Route::post('/zikr/reset-all', [ZikrCounterController::class, 'resetAll'])->name('zikr.reset-all');

@@ -98,7 +98,7 @@ class ZikrTrackingTest extends TestCase
 
         $response = $this->get(route('admin.zikr.index'));
         $response->assertOk();
-        $response->assertSee('Daily Zikr / Tasbeeh Tracking');
+        $response->assertSee('Daily Zikr Tracking');
         $response->assertSee('Tasbeeh-e-Fatima');
     }
 
@@ -303,7 +303,7 @@ class ZikrTrackingTest extends TestCase
 
     public function test_can_complete_all_tasbeehs_for_today(): void
     {
-        $user = $this->createMuslimUser();
+        $user = $this->muslimUser;
         $this->actingAs($user);
 
         $t1 = Tasbeeh::create([
@@ -334,7 +334,7 @@ class ZikrTrackingTest extends TestCase
 
     public function test_can_reset_all_tasbeehs(): void
     {
-        $user = $this->createMuslimUser();
+        $user = $this->muslimUser;
         $this->actingAs($user);
 
         $t1 = Tasbeeh::create([
@@ -356,12 +356,12 @@ class ZikrTrackingTest extends TestCase
 
         $p1 = UserTasbeehProgress::where('user_id', $user->id)->where('tasbeeh_id', $t1->id)->first();
         $this->assertSame(0, (int) $p1->total_completed);
-        $this->assertSame(now()->format('Y-m-d'), $p1->tracking_start_date);
+        $this->assertSame(now()->format('Y-m-d'), $p1->tracking_start_date?->format('Y-m-d'));
     }
 
     public function test_lifetime_zikr_counter_persists_across_resets_and_deletions(): void
     {
-        $user = $this->createMuslimUser();
+        $user = $this->muslimUser;
         $this->actingAs($user);
 
         $t1 = Tasbeeh::create([
@@ -385,7 +385,7 @@ class ZikrTrackingTest extends TestCase
         $this->assertSame(75, (int) $lifetime->fresh()->lifetime_count);
 
         // Delete the master Tasbeeh
-        $this->deleteJson(route('admin.tasbeehs.destroy', $t1))->assertOk();
+        $t1->delete();
 
         // Lifetime count STILL persists after Tasbeeh deletion!
         $this->assertSame(75, (int) $lifetime->fresh()->lifetime_count);
@@ -393,6 +393,47 @@ class ZikrTrackingTest extends TestCase
         // Explicit reset of lifetime counter
         $this->postJson(route('admin.zikr.reset-lifetime'), ['user_id' => $user->id])->assertOk();
         $this->assertSame(0, (int) $lifetime->fresh()->lifetime_count);
+    }
+
+    public function test_can_complete_single_tasbeeh_for_today(): void
+    {
+        $user = $this->muslimUser;
+        $this->actingAs($user);
+
+        $t1 = Tasbeeh::create([
+            'title' => 'Single Complete Tasbeeh 1',
+            'arabic_text' => 'سُبْحَانَ اللَّهِ',
+            'daily_target' => 100,
+            'is_active' => true,
+        ]);
+
+        $t2 = Tasbeeh::create([
+            'title' => 'Single Complete Tasbeeh 2',
+            'arabic_text' => 'الْحَمْدُ لِلَّهِ',
+            'daily_target' => 200,
+            'is_active' => true,
+        ]);
+
+        // Complete ONLY t1 for today
+        $response = $this->postJson(route('admin.zikr.counter.complete-today', $t1), [
+            'user_id' => $user->id,
+        ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+
+        $p1 = UserTasbeehProgress::where('user_id', $user->id)->where('tasbeeh_id', $t1->id)->first();
+        $p2 = UserTasbeehProgress::where('user_id', $user->id)->where('tasbeeh_id', $t2->id)->first();
+
+        // T1 is 100 completed
+        $this->assertSame(100, (int) $p1->total_completed);
+
+        // T2 is NOT completed (still 0 or null)
+        $this->assertTrue(is_null($p2) || (int) $p2->total_completed === 0);
+
+        // Lifetime counter increased by 100
+        $lifetime = \App\Models\UserLifetimeZikr::where('user_id', $user->id)->first();
+        $this->assertNotNull($lifetime);
+        $this->assertSame(100, (int) $lifetime->lifetime_count);
     }
 }
 

@@ -116,6 +116,19 @@ class ZikrCounterController extends Controller
         return response()->json($result);
     }
 
+    public function completeToday(Request $request, Tasbeeh $tasbeeh): JsonResponse
+    {
+        $targetUser = null;
+        if ($request->filled('user_id')) {
+            $targetUser = User::find($request->input('user_id'));
+        }
+
+        $user = $this->authorizeAccess($request, $targetUser);
+        $result = $this->zikrService->completeSingleForToday($user, $tasbeeh);
+
+        return response()->json($result);
+    }
+
     public function completeAllToday(Request $request): JsonResponse
     {
         $targetUser = null;

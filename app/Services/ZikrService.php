@@ -302,6 +302,38 @@ class ZikrService
     }
 
     /**
+     * Marks a single Tasbeeh as completed for today for the user.
+     * Increments the persistent lifetime counter by the difference.
+     */
+    public function completeSingleForToday(User $user, Tasbeeh $tasbeeh): array
+    {
+        $progress = $this->getOrCreateProgress($user, $tasbeeh);
+        $stats = $this->calculateTasbeehStats($user, $tasbeeh, $progress);
+
+        if ($stats['remaining'] > 0) {
+            $difference = $stats['remaining'];
+            DB::transaction(function () use ($user, $progress, $stats, $difference) {
+                $progress->update([
+                    'total_completed' => $stats['total_required'],
+                    'last_zikr_at' => $this->now(),
+                ]);
+
+                $lifetime = $this->getOrCreateLifetimeRecord($user);
+                $lifetime->increment('lifetime_count', $difference);
+                $lifetime->update(['last_zikr_at' => $this->now()]);
+            });
+        }
+
+        $updatedStats = $this->calculateTasbeehStats($user, $tasbeeh, $progress->fresh());
+
+        return [
+            'success' => true,
+            'message' => "'{$tasbeeh->title}' marked as completed for today!",
+            'stats' => $updatedStats,
+        ];
+    }
+
+    /**
      * Marks all active Tasbeehs as completed for today for the user.
      * Also increments the persistent lifetime counter by the completed difference.
      */

@@ -2,256 +2,6 @@
 @section('title', 'Zikr & Tasbeeh')
 @section('page_title', 'Daily Zikr Tracking')
 
-@push('styles')
-<style>
-    /* Zikr Card UI Styles */
-    .zikr-item-card {
-        background: linear-gradient(180deg, #0b1526 0%, #070d18 100%);
-        border: 1px solid #162a45;
-        border-radius: 20px;
-        width: 100%;
-        padding: 18px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.65);
-        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .zikr-item-card:hover {
-        border-color: rgba(0, 229, 255, 0.3);
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75), 0 0 20px rgba(0, 229, 255, 0.05);
-    }
-
-    /* Dua Content Container */
-    .text-container {
-        background: #08111e;
-        border: 1px solid #142842;
-        border-radius: 16px;
-        padding: 16px 18px 14px 18px;
-        text-align: right;
-        margin-bottom: 12px;
-        width: 100%;
-    }
-
-    .arabic-text {
-        font-family: 'Scheherazade New', 'Amiri Quran', 'Amiri', 'PDMS_Saleem_QuranFont', '_PDMS_Saleem_Quran', 'Traditional Arabic', serif !important;
-        font-feature-settings: "liga" 1, "cv01" 1;
-        color: #f97316;
-        font-size: var(--zikr-arabic-size, 24px) !important;
-        line-height: 1.8;
-        direction: rtl;
-        text-align: right;
-        margin-bottom: 4px;
-        font-weight: 700;
-    }
-
-    /* Premium Center Divider */
-    .islamic-divider {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 8px 0;
-        position: relative;
-        direction: ltr;
-    }
-
-    .islamic-divider::before,
-    .islamic-divider::after {
-        content: "";
-        flex: 1;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.5), transparent);
-    }
-
-    .divider-icon {
-        color: #f97316;
-        padding: 0 10px;
-        font-size: 0.75rem;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        text-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
-        letter-spacing: 2px;
-    }
-
-    .urdu-text {
-        font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif !important;
-        color: #94a3b8;
-        font-size: var(--zikr-urdu-size, 16px) !important;
-        line-height: 2.3;
-        direction: rtl;
-        text-align: right;
-        margin: 0;
-        width: 100%;
-    }
-
-    /* Progress Container */
-    .progress-container {
-        height: 6px;
-        background: #070e1a;
-        border: 1px solid #14263f;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .progress-bar-custom {
-        height: 100%;
-        border-radius: 10px;
-        transition: width 0.4s ease;
-    }
-
-    .progress-bar-custom.amber {
-        background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%);
-        box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
-    }
-
-    .progress-bar-custom.emerald {
-        background: linear-gradient(90deg, #059669 0%, #10b981 100%);
-        box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
-    }
-
-    .progress-bar-custom.cyan {
-        background: linear-gradient(90deg, #00bcd4 0%, #00e5ff 100%);
-        box-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
-    }
-
-    /* Bottom Footer Strip */
-    .card-footer-strip {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        padding: 10px 2px 0 2px;
-        direction: ltr;
-        flex-wrap: wrap;
-    }
-
-    @media (min-width: 1400px) {
-        .card-footer-strip {
-            justify-content: space-between;
-        }
-    }
-
-    /* Badges Group (Centered) */
-    .badge-info-group {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .badge-remaining {
-        background: rgba(245, 158, 11, 0.12);
-        color: #fbbf24;
-        border: 1px solid rgba(245, 158, 11, 0.35);
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 6px 12px;
-        font-size: 0.8rem;
-        white-space: nowrap;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-
-    .badge-remaining.extra {
-        background: rgba(0, 188, 212, 0.12);
-        color: #00e5ff;
-        border-color: rgba(0, 188, 212, 0.35);
-    }
-
-    .badge-remaining.completed-badge {
-        background: rgba(16, 185, 129, 0.12);
-        color: #10b981;
-        border-color: rgba(16, 185, 129, 0.35);
-    }
-
-    .badge-completed {
-        background: #091424;
-        color: #cbd5e1;
-        border: 1px solid #182c48;
-        font-weight: 500;
-        border-radius: 8px;
-        padding: 6px 12px;
-        font-size: 0.8rem;
-        white-space: nowrap;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-
-    /* Actions Group (Centered) */
-    .badge-actions-group {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .action-icon-btn {
-        background: #08111e;
-        border: 1px solid #182c48;
-        border-radius: 8px;
-        width: 36px;
-        height: 36px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.95rem;
-        transition: all 0.2s ease;
-        cursor: pointer;
-        text-decoration: none;
-    }
-
-    .btn-plus-icon {
-        color: #38bdf8;
-        border-color: rgba(56, 189, 248, 0.35);
-    }
-    .btn-plus-icon:hover {
-        background: rgba(56, 189, 248, 0.15);
-        border-color: #38bdf8;
-        color: #38bdf8;
-    }
-
-    .btn-speed-icon {
-        color: #38bdf8;
-    }
-    .btn-speed-icon:hover {
-        background: rgba(56, 189, 248, 0.12);
-        border-color: #38bdf8;
-        color: #38bdf8;
-    }
-
-    .btn-reset-icon {
-        color: #fbbf24;
-        border-color: #182c48;
-    }
-    .btn-reset-icon:hover {
-        background: rgba(245, 158, 11, 0.15);
-        border-color: #fbbf24;
-        color: #fbbf24;
-    }
-
-    .action-btn-top.green {
-        color: #10b981;
-        border-color: rgba(16, 185, 129, 0.35);
-    }
-    .action-btn-top.green:hover {
-        background: rgba(16, 185, 129, 0.15);
-        color: #34d399;
-        border-color: #10b981;
-        box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
-    }
-
-    .action-btn-top.danger {
-        color: #ef4444;
-        border-color: rgba(239, 68, 68, 0.35);
-    }
-    .action-btn-top.danger:hover {
-        background: rgba(239, 68, 68, 0.15);
-        color: #f87171;
-        border-color: #ef4444;
-        box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
-    }
-</style>
-@endpush
-
 @section('content')
 <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
     {{-- Reset All Tasbeehs Trigger (Icon 1) --}}
@@ -417,6 +167,21 @@
 
                         {{-- Action Icons Group --}}
                         <div class="badge-actions-group">
+                            {{-- Mark This Tasbeeh Complete for Today --}}
+                            <button
+                                class="action-icon-btn btn-complete-icon"
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#completeSingleTasbeehModal"
+                                data-tasbeeh-id="{{ $item['tasbeeh_id'] }}"
+                                data-tasbeeh-title="{{ $item['title'] }}"
+                                data-user-id="{{ $selectedUser->id }}"
+                                data-complete-url="{{ route('admin.zikr.counter.complete-today', $item['tasbeeh_id']) }}"
+                                title="Complete Today for this Tasbeeh"
+                            >
+                                <i class="bi bi-check2-all"></i>
+                            </button>
+
                             {{-- Quick Add Count Modal Trigger --}}
                             <button
                                 class="action-icon-btn btn-plus-icon"
