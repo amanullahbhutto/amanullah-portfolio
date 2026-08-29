@@ -132,6 +132,20 @@ document.addEventListener('DOMContentLoaded', function () {
             completeSingleBtn.disabled = true;
             if (spinner) spinner.classList.remove('d-none');
 
+            if (!navigator.onLine) {
+                if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
+                    await window.PwaSync.completeTasbeehToday(singleCompleteTasbeehId);
+                }
+                const modalInstance = bootstrap.Modal.getInstance(completeSingleModalEl);
+                if (modalInstance) modalInstance.hide();
+                if (window.App && typeof window.App.showToast === 'function') {
+                    window.App.showToast('info', 'Saved offline. Changes will synchronize once reconnected.');
+                }
+                completeSingleBtn.disabled = false;
+                if (spinner) spinner.classList.add('d-none');
+                return;
+            }
+
             try {
                 const response = await fetch(singleCompleteUrl, {
                     method: 'POST',
@@ -157,7 +171,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             } catch (err) {
                 console.error(err);
-                alert('An unexpected error occurred while completing tasbeeh.');
+                if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
+                    await window.PwaSync.completeTasbeehToday(singleCompleteTasbeehId);
+                    const modalInstance = bootstrap.Modal.getInstance(completeSingleModalEl);
+                    if (modalInstance) modalInstance.hide();
+                    if (window.App && typeof window.App.showToast === 'function') {
+                        window.App.showToast('info', 'Saved offline. Changes will synchronize once reconnected.');
+                    }
+                } else {
+                    alert('An unexpected error occurred while completing tasbeeh.');
+                }
             } finally {
                 completeSingleBtn.disabled = false;
                 if (spinner) spinner.classList.add('d-none');
@@ -170,6 +193,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const spinner = completeBtn.querySelector('.spinner-border');
             completeBtn.disabled = true;
             if (spinner) spinner.classList.remove('d-none');
+
+            if (!navigator.onLine) {
+                if (window.PwaSync && typeof window.PwaSync.completeAllTasbeehsToday === 'function') {
+                    await window.PwaSync.completeAllTasbeehsToday();
+                }
+                const modalEl = document.getElementById('completeAllTasbeehsModal');
+                const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (modalInstance) modalInstance.hide();
+                if (window.App && typeof window.App.showToast === 'function') {
+                    window.App.showToast('info', 'Saved offline. All tasbeehs marked completed locally.');
+                }
+                completeBtn.disabled = false;
+                if (spinner) spinner.classList.add('d-none');
+                return;
+            }
 
             try {
                 const response = await fetch('{{ route("admin.zikr.complete-all-today") }}', {
@@ -197,7 +235,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             } catch (err) {
                 console.error(err);
-                alert('An unexpected error occurred while completing tasbeehs.');
+                if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.completeAllTasbeehsToday === 'function') {
+                    await window.PwaSync.completeAllTasbeehsToday();
+                    const modalEl = document.getElementById('completeAllTasbeehsModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                    if (window.App && typeof window.App.showToast === 'function') {
+                        window.App.showToast('info', 'Saved offline. All tasbeehs marked completed locally.');
+                    }
+                } else {
+                    alert('An unexpected error occurred while completing tasbeehs.');
+                }
             } finally {
                 completeBtn.disabled = false;
                 if (spinner) spinner.classList.add('d-none');
@@ -210,6 +258,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const spinner = resetBtn.querySelector('.spinner-border');
             resetBtn.disabled = true;
             if (spinner) spinner.classList.remove('d-none');
+
+            if (!navigator.onLine) {
+                if (window.PwaSync && typeof window.PwaSync.resetAllTasbeehs === 'function') {
+                    await window.PwaSync.resetAllTasbeehs();
+                }
+                const modalEl = document.getElementById('resetAllTasbeehsModal');
+                const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (modalInstance) modalInstance.hide();
+                if (window.App && typeof window.App.showToast === 'function') {
+                    window.App.showToast('info', 'Reset queued offline. Will synchronize once online.');
+                }
+                resetBtn.disabled = false;
+                if (spinner) spinner.classList.add('d-none');
+                return;
+            }
 
             try {
                 const response = await fetch('{{ route("admin.zikr.reset-all") }}', {
@@ -237,7 +300,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             } catch (err) {
                 console.error(err);
-                alert('An unexpected error occurred while resetting tasbeehs.');
+                if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.resetAllTasbeehs === 'function') {
+                    await window.PwaSync.resetAllTasbeehs();
+                    const modalEl = document.getElementById('resetAllTasbeehsModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                    if (window.App && typeof window.App.showToast === 'function') {
+                        window.App.showToast('info', 'Reset queued offline. Will synchronize once online.');
+                    }
+                } else {
+                    alert('An unexpected error occurred while resetting tasbeehs.');
+                }
             } finally {
                 resetBtn.disabled = false;
                 if (spinner) spinner.classList.add('d-none');
@@ -250,6 +323,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const spinner = resetLifetimeBtn.querySelector('.spinner-border');
             resetLifetimeBtn.disabled = true;
             if (spinner) spinner.classList.remove('d-none');
+
+            if (!navigator.onLine) {
+                if (window.PwaSync && typeof window.PwaSync.resetLifetime === 'function') {
+                    await window.PwaSync.resetLifetime();
+                }
+                const modalEl = document.getElementById('resetLifetimeModal');
+                const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (modalInstance) modalInstance.hide();
+                if (window.App && typeof window.App.showToast === 'function') {
+                    window.App.showToast('info', 'Lifetime reset queued offline. Will synchronize once online.');
+                }
+                resetLifetimeBtn.disabled = false;
+                if (spinner) spinner.classList.add('d-none');
+                return;
+            }
 
             try {
                 const response = await fetch('{{ route("admin.zikr.reset-lifetime") }}', {
@@ -277,7 +365,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             } catch (err) {
                 console.error(err);
-                alert('An unexpected error occurred while resetting lifetime counter.');
+                if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.resetLifetime === 'function') {
+                    await window.PwaSync.resetLifetime();
+                    const modalEl = document.getElementById('resetLifetimeModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                    if (window.App && typeof window.App.showToast === 'function') {
+                        window.App.showToast('info', 'Lifetime reset queued offline. Will synchronize once online.');
+                    }
+                } else {
+                    alert('An unexpected error occurred while resetting lifetime counter.');
+                }
             } finally {
                 resetLifetimeBtn.disabled = false;
                 if (spinner) spinner.classList.add('d-none');

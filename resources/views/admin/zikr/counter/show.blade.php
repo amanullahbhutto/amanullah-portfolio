@@ -295,6 +295,18 @@
             inFlightBatch = pendingBatch;
             pendingBatch = 0;
 
+            const tasbeehId = '{{ $tasbeeh->id }}';
+
+            // If offline, save directly to IndexedDB outbox
+            if (!navigator.onLine) {
+                if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
+                    window.PwaSync.saveZikrCount(tasbeehId, inFlightBatch);
+                }
+                inFlightBatch = 0;
+                isSyncing = false;
+                return;
+            }
+
             const formData = new FormData();
             formData.append('count', inFlightBatch);
             formData.append('user_id', container.dataset.userId);
@@ -322,8 +334,10 @@
                     inFlightBatch = 0;
                 })
                 .catch((err) => {
-                    console.error('Increment sync error:', err);
-                    pendingBatch += inFlightBatch;
+                    console.warn('Increment network sync failed, saving to offline outbox:', err);
+                    if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
+                        window.PwaSync.saveZikrCount(tasbeehId, inFlightBatch);
+                    }
                     inFlightBatch = 0;
                 })
                 .finally(() => {
@@ -368,6 +382,25 @@
                 const submitBtn = manualForm.querySelector('button[type="submit"]');
                 if (submitBtn) submitBtn.disabled = true;
 
+                if (!navigator.onLine) {
+                    if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
+                        window.PwaSync.saveZikrCount('{{ $tasbeeh->id }}', val);
+                    }
+                    totalCompleted += val;
+                    updateDisplay();
+                    const modalEl = document.getElementById('controlsModal');
+                    if (modalEl && typeof bootstrap !== 'undefined') {
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                    }
+                    input.value = '';
+                    if (submitBtn) submitBtn.disabled = false;
+                    if (window.App && typeof window.App.showToast === 'function') {
+                        window.App.showToast('info', 'Zikr count saved offline. Will sync once reconnected.');
+                    }
+                    return;
+                }
+
                 fetch(manualForm.action, {
                     method: 'POST',
                     headers: {
@@ -398,7 +431,13 @@
                         }
                     })
                     .catch((err) => {
-                        alert(err?.payload?.message || 'Could not update zikr count.');
+                        if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
+                            window.PwaSync.saveZikrCount('{{ $tasbeeh->id }}', val);
+                            totalCompleted += val;
+                            updateDisplay();
+                        } else {
+                            alert(err?.payload?.message || 'Could not update zikr count.');
+                        }
                     })
                     .finally(() => {
                         if (submitBtn) submitBtn.disabled = false;

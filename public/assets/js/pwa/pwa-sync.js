@@ -275,6 +275,38 @@ class PwaSync {
             }
         });
     }
+
+    // High-level offline action helpers
+    async saveZikrCount(tasbeehId, count) {
+        return this.enqueueAction('zikr_count', 'create', {
+            tasbeeh_id: parseInt(tasbeehId, 10),
+            count: parseInt(count, 10)
+        });
+    }
+
+    async completeTasbeehToday(tasbeehId) {
+        return this.enqueueAction('tasbeeh_complete_today', 'update', {
+            tasbeeh_id: parseInt(tasbeehId, 10)
+        });
+    }
+
+    async completeAllTasbeehsToday() {
+        return this.enqueueAction('zikr_complete_all', 'update', {});
+    }
+
+    async resetTasbeeh(tasbeehId) {
+        return this.enqueueAction('tasbeeh_reset_single', 'update', {
+            tasbeeh_id: parseInt(tasbeehId, 10)
+        });
+    }
+
+    async resetAllTasbeehs() {
+        return this.enqueueAction('zikr_reset_all', 'update', {});
+    }
+
+    async resetLifetime() {
+        return this.enqueueAction('lifetime_reset', 'update', {});
+    }
 }
 
 window.PwaSync = new PwaSync();

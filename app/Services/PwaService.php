@@ -197,6 +197,23 @@ class PwaService
                             $serverId = 1;
                             break;
 
+                        case 'tasbeeh_reset_single':
+                            $tasbeehId = $payload['tasbeeh_id'] ?? null;
+                            $tasbeeh = Tasbeeh::find($tasbeehId);
+                            if ($tasbeeh) {
+                                $this->zikrService->resetProgress($user, $tasbeeh);
+                                $serverId = $tasbeeh->id;
+                            } else {
+                                $status = 'failed';
+                                $errorMessage = "Tasbeeh #{$tasbeehId} not found.";
+                            }
+                            break;
+
+                        case 'lifetime_reset':
+                            $this->zikrService->resetLifetimeZikr($user);
+                            $serverId = 1;
+                            break;
+
                         default:
                             $status = 'synced';
                             $serverId = 1;
