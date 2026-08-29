@@ -25,83 +25,7 @@
             <nav class="sidebar-nav" aria-label="Admin navigation">
                 <span class="sidebar-label">Workspace</span>
                 <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><i class="bi bi-grid-1x2"></i><span>Dashboard</span></a>
-                @can('view profile')<a href="{{ route('admin.profile.edit') }}" class="{{ request()->routeIs('admin.profile.*') ? 'active' : '' }}"><i class="bi bi-person-badge"></i><span>Profile</span></a>@endcan
-                @can('view project')<a href="{{ route('admin.content.index', 'projects') }}" class="{{ request()->is('admin/content/projects*') ? 'active' : '' }}"><i class="bi bi-kanban"></i><span>Projects</span></a>@endcan
-                @can('view post')<a href="{{ route('admin.content.index', 'posts') }}" class="{{ request()->is('admin/content/posts*') ? 'active' : '' }}"><i class="bi bi-journal-richtext"></i><span>Blog Posts</span></a>@endcan
-                @can('view service')<a href="{{ route('admin.content.index', 'services') }}" class="{{ request()->is('admin/content/services*') ? 'active' : '' }}"><i class="bi bi-grid"></i><span>Services</span></a>@endcan
-                <span class="sidebar-label mt-3">Resume</span>
-                @can('view experience')<a href="{{ route('admin.content.index', 'experiences') }}" class="{{ request()->is('admin/content/experiences*') ? 'active' : '' }}"><i class="bi bi-briefcase"></i><span>Experience</span></a>@endcan
-                @can('view education')<a href="{{ route('admin.content.index', 'educations') }}" class="{{ request()->is('admin/content/educations*') ? 'active' : '' }}"><i class="bi bi-mortarboard"></i><span>Education</span></a>@endcan
-                @can('view skill')<a href="{{ route('admin.content.index', 'skills') }}" class="{{ request()->is('admin/content/skills*') ? 'active' : '' }}"><i class="bi bi-bar-chart"></i><span>Skills</span></a>@endcan
-                @can('view date of birth')
-                    <a href="{{ route('admin.date-of-births.index') }}" class="{{ request()->routeIs('admin.date-of-births.*') ? 'active' : '' }}">
-                        <i class="bi bi-calendar-heart"></i><span>Date of Birth</span>
-                    </a>
-                @endcan
-                <span class="sidebar-label mt-3">Management</span>
-                @can('view message')
-                    <a href="{{ route('admin.messages.index') }}" class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
-                        <i class="bi bi-envelope"></i><span>Messages</span>
-                        @if($unreadMessageCount > 0)<span class="sidebar-badge">{{ $unreadMessageCount > 99 ? '99+' : $unreadMessageCount }}</span>@endif
-                    </a>
-                @endcan
-                @can('view dashboard')
-                    <a href="{{ route('admin.visitors.index') }}" class="{{ request()->routeIs('admin.visitors.*') ? 'active' : '' }}">
-                        <i class="bi bi-graph-up-arrow"></i><span>Visitors</span>
-                    </a>
-                @endcan
-                @can('view user')<a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class="bi bi-people"></i><span>Users</span></a>@endcan
-                @can('view role')<a href="{{ route('admin.roles.index') }}" class="{{ request()->routeIs('admin.roles.*') ? 'active' : '' }}"><i class="bi bi-shield-lock"></i><span>Roles</span></a>@endcan
-                @can('view permission')<a href="{{ route('admin.permissions.index') }}" class="{{ request()->routeIs('admin.permissions.*') ? 'active' : '' }}"><i class="bi bi-key"></i><span>Permissions</span></a>@endcan
-                @if(auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->can('view maintenance'))<a href="{{ route('admin.maintenance.index') }}" class="{{ request()->routeIs('admin.maintenance.*') ? 'active' : '' }}"><i class="bi bi-terminal"></i><span>Maintenance</span></a>@endif
-
                 
-                @php
-                    $canSeeKhata = auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->can('view khata');
-                    $canSeeInvestors = auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->canAny(['view investors', 'view investments', 'view profit sharing', 'view profit payments', 'view investment withdrawals', 'view investor reports']);
-                    $canSeePrograms = auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->canAny(['view programs', 'view contributions', 'view expense categories', 'view program expenses', 'view program transactions', 'view program reports']);
-                    $investorMenuOpen = request()->routeIs('admin.investor-dashboard', 'admin.investors.*', 'admin.investments.*', 'admin.profit-sharing.*', 'admin.profit-payments.*', 'admin.investment-withdrawals.*', 'admin.investor-reports.*');
-                    $programMenuOpen = request()->routeIs('admin.programs.*', 'admin.program-contributions.*', 'admin.expense-categories.*', 'admin.cities.*', 'admin.program-expenses.*', 'admin.program-transactions.*', 'admin.program-reports.*');
-                @endphp
-
-                @if($canSeeKhata || $canSeeInvestors || $canSeePrograms)
-                    <span class="sidebar-label mt-3">Finance & Khata</span>
-                @endif
-
-                @if($canSeeKhata)
-                    <a href="{{ route('admin.khata.index') }}" class="{{ request()->routeIs('admin.khata.*') ? 'active' : '' }}"><i class="bi bi-journal-bookmark-fill"></i><span>Khata System</span></a>
-                @endif
-
-                @if($canSeeInvestors)
-                    <details class="sidebar-group" {{ $investorMenuOpen ? 'open' : '' }}>
-                        <summary class="{{ $investorMenuOpen ? 'active' : '' }}"><i class="bi bi-pie-chart"></i><span>Investors & Profits</span><i class="bi bi-chevron-down sidebar-chevron"></i></summary>
-                        <div class="sidebar-subnav">
-                            @can('view investors')<a href="{{ route('admin.investor-dashboard') }}" class="{{ request()->routeIs('admin.investor-dashboard') ? 'active' : '' }}"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>@endcan
-                            @can('view investors')<a href="{{ route('admin.investors.index') }}" class="{{ request()->routeIs('admin.investors.*') ? 'active' : '' }}"><i class="bi bi-people"></i><span>Investors</span></a>@endcan
-                            @can('view investments')<a href="{{ route('admin.investments.index') }}" class="{{ request()->routeIs('admin.investments.*') ? 'active' : '' }}"><i class="bi bi-cash-stack"></i><span>Investments</span></a>@endcan
-                            @can('view profit sharing')<a href="{{ route('admin.profit-sharing.index') }}" class="{{ request()->routeIs('admin.profit-sharing.*') ? 'active' : '' }}"><i class="bi bi-calculator"></i><span>Profit Sharing</span></a>@endcan
-                            @can('view profit payments')<a href="{{ route('admin.profit-payments.index') }}" class="{{ request()->routeIs('admin.profit-payments.*') ? 'active' : '' }}"><i class="bi bi-wallet2"></i><span>Profit Payments</span></a>@endcan
-                            @can('view investment withdrawals')<a href="{{ route('admin.investment-withdrawals.index') }}" class="{{ request()->routeIs('admin.investment-withdrawals.*') ? 'active' : '' }}"><i class="bi bi-arrow-up-right-circle"></i><span>Withdrawals</span></a>@endcan
-                            @can('view investor reports')<a href="{{ route('admin.investor-reports.index') }}" class="{{ request()->routeIs('admin.investor-reports.*') ? 'active' : '' }}"><i class="bi bi-file-earmark-bar-graph"></i><span>Reports</span></a>@endcan
-                        </div>
-                    </details>
-                @endif
-
-                @if($canSeePrograms)
-                    <details class="sidebar-group" {{ $programMenuOpen ? 'open' : '' }}>
-                        <summary class="{{ $programMenuOpen ? 'active' : '' }}"><i class="bi bi-calendar2-event"></i><span>Programs</span><i class="bi bi-chevron-down sidebar-chevron"></i></summary>
-                        <div class="sidebar-subnav">
-                            @can('view programs')<a href="{{ route('admin.programs.index') }}" class="{{ request()->routeIs('admin.programs.*') ? 'active' : '' }}"><i class="bi bi-card-checklist"></i><span>Programs</span></a>@endcan
-                            @can('view contributions')<a href="{{ route('admin.program-contributions.index') }}" class="{{ request()->routeIs('admin.program-contributions.*') ? 'active' : '' }}"><i class="bi bi-wallet2"></i><span>Income</span></a>@endcan
-                            @can('view program expenses')<a href="{{ route('admin.program-expenses.index') }}" class="{{ request()->routeIs('admin.program-expenses.*') ? 'active' : '' }}"><i class="bi bi-receipt"></i><span>Expenses</span></a>@endcan
-                            @can('view expense categories')<a href="{{ route('admin.expense-categories.index') }}" class="{{ request()->routeIs('admin.expense-categories.*') ? 'active' : '' }}"><i class="bi bi-tags"></i><span>Expense Categories</span></a>@endcan
-                            <a href="{{ route('admin.cities.index') }}" class="{{ request()->routeIs('admin.cities.*') ? 'active' : '' }}"><i class="bi bi-geo-alt"></i><span>Cities</span></a>
-                            @can('view program transactions')<a href="{{ route('admin.program-transactions.index') }}" class="{{ request()->routeIs('admin.program-transactions.*') ? 'active' : '' }}"><i class="bi bi-arrow-left-right"></i><span>Transactions</span></a>@endcan
-                            @can('view program reports')<a href="{{ route('admin.program-reports.index') }}" class="{{ request()->routeIs('admin.program-reports.*') ? 'active' : '' }}"><i class="bi bi-file-earmark-text"></i><span>Reports</span></a>@endcan
-                        </div>
-                    </details>
-                @endif
-
                 @php
                     $canSeeNamaz = auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->canAny(['view namaz attendance', 'namaz_attendance.view', 'view namaz dashboard', 'namaz_dashboard.view', 'view namaz settings', 'namaz_settings.view']);
                     $namazMenuOpen = request()->routeIs('admin.namaz.*');
@@ -141,6 +65,82 @@
                         </div>
                     </details>
                 @endif
+                @can('view profile')<a href="{{ route('admin.profile.edit') }}" class="{{ request()->routeIs('admin.profile.*') ? 'active' : '' }}"><i class="bi bi-person-badge"></i><span>Profile</span></a>@endcan
+                @can('view project')<a href="{{ route('admin.content.index', 'projects') }}" class="{{ request()->is('admin/content/projects*') ? 'active' : '' }}"><i class="bi bi-kanban"></i><span>Projects</span></a>@endcan
+                @can('view post')<a href="{{ route('admin.content.index', 'posts') }}" class="{{ request()->is('admin/content/posts*') ? 'active' : '' }}"><i class="bi bi-journal-richtext"></i><span>Blog Posts</span></a>@endcan
+                @can('view service')<a href="{{ route('admin.content.index', 'services') }}" class="{{ request()->is('admin/content/services*') ? 'active' : '' }}"><i class="bi bi-grid"></i><span>Services</span></a>@endcan
+                <span class="sidebar-label mt-3">Resume</span>
+                @can('view experience')<a href="{{ route('admin.content.index', 'experiences') }}" class="{{ request()->is('admin/content/experiences*') ? 'active' : '' }}"><i class="bi bi-briefcase"></i><span>Experience</span></a>@endcan
+                @can('view education')<a href="{{ route('admin.content.index', 'educations') }}" class="{{ request()->is('admin/content/educations*') ? 'active' : '' }}"><i class="bi bi-mortarboard"></i><span>Education</span></a>@endcan
+                @can('view skill')<a href="{{ route('admin.content.index', 'skills') }}" class="{{ request()->is('admin/content/skills*') ? 'active' : '' }}"><i class="bi bi-bar-chart"></i><span>Skills</span></a>@endcan
+                @can('view date of birth')
+                    <a href="{{ route('admin.date-of-births.index') }}" class="{{ request()->routeIs('admin.date-of-births.*') ? 'active' : '' }}">
+                        <i class="bi bi-calendar-heart"></i><span>Date of Birth</span>
+                    </a>
+                @endcan
+                <span class="sidebar-label mt-3">Management</span>
+                @can('view message')
+                    <a href="{{ route('admin.messages.index') }}" class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
+                        <i class="bi bi-envelope"></i><span>Messages</span>
+                        @if($unreadMessageCount > 0)<span class="sidebar-badge">{{ $unreadMessageCount > 99 ? '99+' : $unreadMessageCount }}</span>@endif
+                    </a>
+                @endcan
+                @can('view dashboard')
+                    <a href="{{ route('admin.visitors.index') }}" class="{{ request()->routeIs('admin.visitors.*') ? 'active' : '' }}">
+                        <i class="bi bi-graph-up-arrow"></i><span>Visitors</span>
+                    </a>
+                @endcan
+                @can('view user')<a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class="bi bi-people"></i><span>Users</span></a>@endcan
+                @can('view role')<a href="{{ route('admin.roles.index') }}" class="{{ request()->routeIs('admin.roles.*') ? 'active' : '' }}"><i class="bi bi-shield-lock"></i><span>Roles</span></a>@endcan
+                @can('view permission')<a href="{{ route('admin.permissions.index') }}" class="{{ request()->routeIs('admin.permissions.*') ? 'active' : '' }}"><i class="bi bi-key"></i><span>Permissions</span></a>@endcan
+                @if(auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->can('view maintenance'))<a href="{{ route('admin.maintenance.index') }}" class="{{ request()->routeIs('admin.maintenance.*') ? 'active' : '' }}"><i class="bi bi-terminal"></i><span>Maintenance</span></a>@endif
+
+                
+                @php
+                    $canSeeKhata = auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->can('view khata');
+                    $canSeeInvestors = auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->canAny(['view investors', 'view investments', 'view profit sharing', 'view profit payments', 'view investment withdrawals', 'view investor reports']);
+                    $canSeePrograms = auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->canAny(['view programs', 'view contributions', 'view expense categories', 'view program expenses', 'view program transactions', 'view program reports']);
+                    $investorMenuOpen = request()->routeIs('admin.investor-dashboard', 'admin.investors.*', 'admin.investments.*', 'admin.profit-sharing.*', 'admin.profit-payments.*', 'admin.investment-withdrawals.*', 'admin.investor-reports.*');
+                    $programMenuOpen = request()->routeIs('admin.programs.*', 'admin.program-contributions.*', 'admin.expense-categories.*', 'admin.program-expenses.*', 'admin.program-transactions.*', 'admin.program-reports.*');
+                @endphp
+
+                @if($canSeeKhata || $canSeeInvestors || $canSeePrograms)
+                    <span class="sidebar-label mt-3">Finance & Khata</span>
+                @endif
+
+                @if($canSeeKhata)
+                    <a href="{{ route('admin.khata.index') }}" class="{{ request()->routeIs('admin.khata.*') ? 'active' : '' }}"><i class="bi bi-journal-bookmark-fill"></i><span>Khata System</span></a>
+                @endif
+
+                @if($canSeeInvestors)
+                    <details class="sidebar-group" {{ $investorMenuOpen ? 'open' : '' }}>
+                        <summary class="{{ $investorMenuOpen ? 'active' : '' }}"><i class="bi bi-pie-chart"></i><span>Investors & Profits</span><i class="bi bi-chevron-down sidebar-chevron"></i></summary>
+                        <div class="sidebar-subnav">
+                            @can('view investors')<a href="{{ route('admin.investor-dashboard') }}" class="{{ request()->routeIs('admin.investor-dashboard') ? 'active' : '' }}"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>@endcan
+                            @can('view investors')<a href="{{ route('admin.investors.index') }}" class="{{ request()->routeIs('admin.investors.*') ? 'active' : '' }}"><i class="bi bi-people"></i><span>Investors</span></a>@endcan
+                            @can('view investments')<a href="{{ route('admin.investments.index') }}" class="{{ request()->routeIs('admin.investments.*') ? 'active' : '' }}"><i class="bi bi-cash-stack"></i><span>Investments</span></a>@endcan
+                            @can('view profit sharing')<a href="{{ route('admin.profit-sharing.index') }}" class="{{ request()->routeIs('admin.profit-sharing.*') ? 'active' : '' }}"><i class="bi bi-calculator"></i><span>Profit Sharing</span></a>@endcan
+                            @can('view profit payments')<a href="{{ route('admin.profit-payments.index') }}" class="{{ request()->routeIs('admin.profit-payments.*') ? 'active' : '' }}"><i class="bi bi-wallet2"></i><span>Profit Payments</span></a>@endcan
+                            @can('view investment withdrawals')<a href="{{ route('admin.investment-withdrawals.index') }}" class="{{ request()->routeIs('admin.investment-withdrawals.*') ? 'active' : '' }}"><i class="bi bi-arrow-up-right-circle"></i><span>Withdrawals</span></a>@endcan
+                            @can('view investor reports')<a href="{{ route('admin.investor-reports.index') }}" class="{{ request()->routeIs('admin.investor-reports.*') ? 'active' : '' }}"><i class="bi bi-file-earmark-bar-graph"></i><span>Reports</span></a>@endcan
+                        </div>
+                    </details>
+                @endif
+
+                @if($canSeePrograms)
+                    <details class="sidebar-group" {{ $programMenuOpen ? 'open' : '' }}>
+                        <summary class="{{ $programMenuOpen ? 'active' : '' }}"><i class="bi bi-calendar2-event"></i><span>Programs</span><i class="bi bi-chevron-down sidebar-chevron"></i></summary>
+                        <div class="sidebar-subnav">
+                            @can('view programs')<a href="{{ route('admin.programs.index') }}" class="{{ request()->routeIs('admin.programs.*') ? 'active' : '' }}"><i class="bi bi-card-checklist"></i><span>Programs</span></a>@endcan
+                            @can('view contributions')<a href="{{ route('admin.program-contributions.index') }}" class="{{ request()->routeIs('admin.program-contributions.*') ? 'active' : '' }}"><i class="bi bi-wallet2"></i><span>Income</span></a>@endcan
+                            @can('view program expenses')<a href="{{ route('admin.program-expenses.index') }}" class="{{ request()->routeIs('admin.program-expenses.*') ? 'active' : '' }}"><i class="bi bi-receipt"></i><span>Expenses</span></a>@endcan
+                            @can('view expense categories')<a href="{{ route('admin.expense-categories.index') }}" class="{{ request()->routeIs('admin.expense-categories.*') ? 'active' : '' }}"><i class="bi bi-tags"></i><span>Expense Categories</span></a>@endcan
+                            @can('view program transactions')<a href="{{ route('admin.program-transactions.index') }}" class="{{ request()->routeIs('admin.program-transactions.*') ? 'active' : '' }}"><i class="bi bi-arrow-left-right"></i><span>Transactions</span></a>@endcan
+                            @can('view program reports')<a href="{{ route('admin.program-reports.index') }}" class="{{ request()->routeIs('admin.program-reports.*') ? 'active' : '' }}"><i class="bi bi-file-earmark-text"></i><span>Reports</span></a>@endcan
+                        </div>
+                    </details>
+                @endif
+
                 
             </nav>
             <div class="sidebar-user">
