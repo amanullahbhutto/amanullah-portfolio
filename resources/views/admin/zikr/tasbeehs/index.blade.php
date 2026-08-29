@@ -205,11 +205,43 @@
         border-color: #f87171;
         color: #ef4444;
     }
+
+    .action-btn-top.green {
+        color: #10b981;
+        border-color: rgba(16, 185, 129, 0.35);
+    }
+    .action-btn-top.green:hover {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        border-color: #10b981;
+        box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .action-btn-top.danger {
+        color: #ef4444;
+        border-color: rgba(239, 68, 68, 0.35);
+    }
+    .action-btn-top.danger:hover {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border-color: #ef4444;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+    }
 </style>
 @endpush
 
 @section('content')
 <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-4">
+    {{-- Reset All Tasbeehs Trigger (Icon 1) --}}
+    <button class="action-btn-top danger" type="button" data-bs-toggle="modal" data-bs-target="#resetAllTasbeehsModal" title="Reset All Tasbeehs to 0 (Start Date Today)">
+        <i class="bi bi-arrow-counterclockwise"></i>
+    </button>
+
+    {{-- Mark All Complete for Today Trigger (Icon 2) --}}
+    <button class="action-btn-top green" type="button" data-bs-toggle="modal" data-bs-target="#completeAllTasbeehsModal" title="Mark All Tasbeehs Complete for Today">
+        <i class="bi bi-check2-all"></i>
+    </button>
+
     {{-- Display Settings Modal Trigger --}}
     <button class="action-btn-top" type="button" data-bs-toggle="modal" data-bs-target="#zikrSettingsModal" title="Display Settings (Font Size & Visibility)">
         <i class="bi bi-gear-fill"></i>
@@ -496,4 +528,5 @@
 </div>
 
 @include('admin.zikr.partials.settings-modal')
+@include('admin.zikr.partials.bulk-actions-modals')
 @endsection

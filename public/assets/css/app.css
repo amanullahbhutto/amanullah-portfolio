@@ -249,11 +249,15 @@ h1, h2, h3, h4, h5, h6, .brand-mark { font-family: "Space Grotesk", sans-serif; 
 .contact-form-wrap { padding: clamp(35px, 6vw, 68px); background: rgba(0,0,0,.08); }
 .form-label { color: var(--text); font-weight: 700; font-size: .76rem; }
 .admin-body .form-text { color: var(--muted); }
-.form-control, .form-select {
-    min-height: 48px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: 12px; padding: .78rem 1rem;
+.form-control {
+    min-height: 48px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: 12px; padding: .75rem 1rem;
+}
+.form-select {
+    min-height: 48px; height: 48px; border: 1px solid var(--line); background-color: var(--surface-2); color: var(--text); border-radius: 12px; padding: 0 2.25rem 0 1rem; line-height: 46px; vertical-align: middle; cursor: pointer;
 }
 .form-control:focus, .form-select:focus { color: var(--text); background: var(--surface-2); border-color: var(--accent); box-shadow: 0 0 0 .22rem var(--accent-soft); }
 .form-control::placeholder { color: color-mix(in srgb, var(--muted) 65%, transparent); }
+.form-select option { background-color: var(--surface); color: var(--text); }
 textarea.form-control { min-height: 140px; }
 .form-check-input { background-color: var(--surface-2); border-color: var(--line); }
 .form-check-input:checked { background-color: var(--accent); border-color: var(--accent); }
@@ -322,10 +326,9 @@ textarea.form-control { min-height: 140px; }
 .dob-filter-form { flex: 1 1 auto; max-width: none; display: flex; align-items: center; gap: 10px; }
 .dob-filter-form .search-field { flex: 1 1 360px; min-width: 240px; }
 .dob-father-filter { flex: 0 0 230px; min-height: 44px; }
-.dob-page-size { flex: 0 0 130px; min-height: 44px; }
 .search-field { position: relative; }
-.search-field > i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
-.search-field .form-control { min-height: 44px; padding-left: 42px; padding-right: 42px; }
+.search-field > i { display: none !important; }
+.search-field .form-control { min-height: 44px; height: 44px; padding-left: 16px !important; padding-right: 42px !important; line-height: 42px; }
 .search-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border: 0; border-radius: 8px; display: grid; place-items: center; background: transparent; color: var(--muted); }
 .search-clear:hover { color: var(--accent); background: var(--accent-soft); }
 .admin-list-results { position: relative; transition: opacity .2s ease; }
@@ -616,8 +619,9 @@ textarea.form-control { min-height: 140px; }
 [data-theme="light"] .finance-modal .btn-close { filter: none; }
 .finance-modal textarea.form-control { min-height: 96px; }
 .financial-filter { max-width: none; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1 1 auto; }
-.financial-filter .search-field { flex: 1 1 240px; min-width: 190px; }
-.financial-filter .form-control, .financial-filter .form-select { min-height: 44px; height: 44px; }
+.financial-filter .form-control { min-height: 44px; height: 44px; padding: 0 1rem; line-height: 42px; }
+.financial-filter .search-field .form-control { padding-left: 16px !important; padding-right: 42px !important; }
+.financial-filter .form-select, .filter-select { min-height: 44px !important; height: 44px !important; padding: 0 2.25rem 0 1rem !important; line-height: 42px !important; vertical-align: middle !important; font-size: .9rem !important; background-color: var(--surface-2) !important; border: 1px solid var(--line) !important; color: var(--text) !important; border-radius: 12px !important; }
 .filter-select { flex: 0 1 180px; min-width: 150px; }
 .filter-date { flex: 0 1 145px; min-width: 135px; }
 

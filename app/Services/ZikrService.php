@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Tasbeeh;
 use App\Models\User;
+use App\Models\UserLifetimeZikr;
 use App\Models\UserTasbeehProgress;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
@@ -43,6 +44,21 @@ class ZikrService
             [
                 'total_completed' => 0,
                 'tracking_start_date' => $defaultStartDate,
+                'last_zikr_at' => null,
+            ]
+        );
+    }
+
+    /**
+     * Gets or initializes the persistent lifetime/all-time Zikr record for a user.
+     * This record is completely independent and never reset by standard cycle resets or tasbeeh deletions.
+     */
+    public function getOrCreateLifetimeRecord(User $user): UserLifetimeZikr
+    {
+        return UserLifetimeZikr::firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'lifetime_count' => 0,
                 'last_zikr_at' => null,
             ]
         );
@@ -158,8 +174,12 @@ class ZikrService
             ? min(round(($overallTotalCompleted / $overallTotalRequired) * 100, 1), 100)
             : 100;
 
+        $lifetimeRecord = $this->getOrCreateLifetimeRecord($user);
+
         return [
             'user' => $user,
+            'lifetime_total' => (int) $lifetimeRecord->lifetime_count,
+            'lifetime_last_zikr' => $lifetimeRecord->last_zikr_at ? Carbon::parse($lifetimeRecord->last_zikr_at, $this->getTimezone())->diffForHumans() : null,
             'total_active_tasbeehs' => $activeTasbeehs->count(),
             'overall_today_required' => $overallTodayRequired,
             'overall_total_required' => $overallTotalRequired,
@@ -173,6 +193,7 @@ class ZikrService
 
     /**
      * Atomically adds or adjusts count to a user's single active Tasbeeh progress record.
+     * Also seamlessly updates the persistent lifetime/all-time counter.
      */
     public function addCount(User $user, Tasbeeh $tasbeeh, int $count, string $source = 'live'): array
     {
@@ -182,16 +203,26 @@ class ZikrService
 
         $progress = DB::transaction(function () use ($user, $tasbeeh, $count) {
             $record = $this->getOrCreateProgress($user, $tasbeeh);
+            $lifetime = $this->getOrCreateLifetimeRecord($user);
 
             if ($count > 0) {
-                // Atomic database increment
+                // Atomic database increment for both active cycle and lifetime
                 $record->increment('total_completed', $count);
                 $record->update(['last_zikr_at' => $this->now()]);
+
+                $lifetime->increment('lifetime_count', $count);
+                $lifetime->update(['last_zikr_at' => $this->now()]);
             } else {
                 // Subtraction / adjustment (ensure total does not drop below 0)
                 $newTotal = max(((int) $record->total_completed) + $count, 0);
                 $record->update([
                     'total_completed' => $newTotal,
+                    'last_zikr_at' => $this->now(),
+                ]);
+
+                $newLifetime = max(((int) $lifetime->lifetime_count) + $count, 0);
+                $lifetime->update([
+                    'lifetime_count' => $newLifetime,
                     'last_zikr_at' => $this->now(),
                 ]);
             }
@@ -267,6 +298,84 @@ class ZikrService
             'success' => true,
             'message' => "Tracking start date updated to " . Carbon::parse($parsed)->format('d M, Y') . ".",
             'stats' => $stats,
+        ];
+    }
+
+    /**
+     * Marks all active Tasbeehs as completed for today for the user.
+     * Also increments the persistent lifetime counter by the completed difference.
+     */
+    public function completeAllForToday(User $user): array
+    {
+        $activeTasbeehs = Tasbeeh::query()->active()->get();
+        $countCompleted = 0;
+
+        DB::transaction(function () use ($user, $activeTasbeehs, &$countCompleted) {
+            $lifetime = $this->getOrCreateLifetimeRecord($user);
+
+            foreach ($activeTasbeehs as $tasbeeh) {
+                $progress = $this->getOrCreateProgress($user, $tasbeeh);
+                $stats = $this->calculateTasbeehStats($user, $tasbeeh, $progress);
+                if ($stats['remaining'] > 0) {
+                    $progress->update([
+                        'total_completed' => $stats['total_required'],
+                        'last_zikr_at' => $this->now(),
+                    ]);
+
+                    $lifetime->increment('lifetime_count', $stats['remaining']);
+                    $lifetime->update(['last_zikr_at' => $this->now()]);
+
+                    $countCompleted++;
+                }
+            }
+        });
+
+        return [
+            'success' => true,
+            'message' => "All pending tasbeehs marked as completed for today!",
+        ];
+    }
+
+    /**
+     * Resets ALL Tasbeeh tracking progress for the user to 0 and sets start date to today.
+     * NOTE: Lifetime Total Zikr is NEVER touched by this reset!
+     */
+    public function resetAllProgress(User $user): array
+    {
+        $activeTasbeehs = Tasbeeh::query()->active()->get();
+        $today = $this->now()->format('Y-m-d');
+
+        DB::transaction(function () use ($user, $activeTasbeehs, $today) {
+            foreach ($activeTasbeehs as $tasbeeh) {
+                $progress = $this->getOrCreateProgress($user, $tasbeeh);
+                $progress->update([
+                    'total_completed' => 0,
+                    'tracking_start_date' => $today,
+                    'last_zikr_at' => null,
+                ]);
+            }
+        });
+
+        return [
+            'success' => true,
+            'message' => 'All tasbeehs have been reset to 0 with start date set to today.',
+        ];
+    }
+
+    /**
+     * Dedicated reset for the Lifetime Total Zikr counter only.
+     */
+    public function resetLifetimeZikr(User $user): array
+    {
+        $lifetime = $this->getOrCreateLifetimeRecord($user);
+        $lifetime->update([
+            'lifetime_count' => 0,
+            'last_zikr_at' => null,
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Lifetime Total Zikr counter has been reset to 0.',
         ];
     }
 }

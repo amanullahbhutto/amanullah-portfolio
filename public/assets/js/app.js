@@ -222,6 +222,13 @@
                     if (!nextTarget) throw new Error('Search target missing');
 
                     target.innerHTML = nextTarget.innerHTML;
+
+                    const financeBadge = document.querySelector('.finance-badge, [data-finance-total]');
+                    const nextFinanceBadge = doc.querySelector('.finance-badge, [data-finance-total]');
+                    if (financeBadge && nextFinanceBadge) {
+                        financeBadge.innerHTML = nextFinanceBadge.innerHTML;
+                    }
+
                     window.history.replaceState({}, '', url);
                 })
                 .catch((error) => {
@@ -609,6 +616,12 @@
                     statsTarget.innerHTML = nextStats.innerHTML;
                 }
 
+                const financeBadge = document.querySelector('.finance-badge, [data-finance-total]');
+                const nextFinanceBadge = doc.querySelector('.finance-badge, [data-finance-total]');
+                if (financeBadge && nextFinanceBadge) {
+                    financeBadge.innerHTML = nextFinanceBadge.innerHTML;
+                }
+
                 initTooltips(target);
             })
             .finally(() => {
@@ -880,6 +893,30 @@
                         select.value = String(payload.category.id);
                     });
                 }
+                if (form.hasAttribute('data-quick-city') && payload.city) {
+                    document.querySelectorAll('[data-city-select]').forEach((select) => {
+                        let option = Array.from(select.options).find((item) => String(item.value) === String(payload.city.id));
+                        if (!option) {
+                            option = new Option(payload.city.name, payload.city.id);
+                            select.add(option);
+                        }
+                        select.value = String(payload.city.id);
+                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                    });
+
+                    const cityOptionsContainer = document.getElementById('citySelectOptions');
+                    if (cityOptionsContainer) {
+                        const existingOpt = Array.from(cityOptionsContainer.querySelectorAll('.searchable-option')).find((el) => String(el.dataset.value) === String(payload.city.id));
+                        if (!existingOpt) {
+                            const newOpt = document.createElement('div');
+                            newOpt.className = 'searchable-option';
+                            newOpt.dataset.value = payload.city.id;
+                            newOpt.dataset.text = payload.city.name;
+                            newOpt.innerHTML = `<span>${payload.city.name}</span>`;
+                            cityOptionsContainer.appendChild(newOpt);
+                        }
+                    }
+                }
                 if (modalElement && window.bootstrap) window.bootstrap.Modal.getOrCreateInstance(modalElement).hide();
                 showFlashToast(payload.message || 'Saved successfully.');
                 form.reset();
@@ -888,6 +925,15 @@
                     window.setTimeout(() => {
                         if (expenseModalElement && !expenseModalElement.classList.contains('show')) {
                             window.bootstrap?.Modal.getOrCreateInstance(expenseModalElement).show();
+                        }
+                    }, 180);
+                    return null;
+                }
+                if (form.hasAttribute('data-quick-city')) {
+                    const contributionModalElement = document.getElementById('contributionModal');
+                    window.setTimeout(() => {
+                        if (contributionModalElement && !contributionModalElement.classList.contains('show')) {
+                            window.bootstrap?.Modal.getOrCreateInstance(contributionModalElement).show();
                         }
                     }, 180);
                     return null;

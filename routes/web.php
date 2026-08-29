@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VisitorLogController;
+use App\Http\Controllers\Admin\CityController;
 use App\Http\Controllers\Admin\DateOfBirthController;
 use App\Http\Controllers\Admin\ExpenseCategoryController;
 use App\Http\Controllers\Admin\InvestmentController;
@@ -131,6 +132,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): v
     Route::post('/zikr/tasbeeh/{tasbeeh}/manual', [ZikrCounterController::class, 'manual'])->name('zikr.counter.manual');
     Route::post('/zikr/tasbeeh/{tasbeeh}/reset', [ZikrCounterController::class, 'reset'])->name('zikr.counter.reset');
     Route::post('/zikr/tasbeeh/{tasbeeh}/start-date', [ZikrCounterController::class, 'updateStartDate'])->name('zikr.counter.start-date');
+    Route::post('/zikr/complete-all-today', [ZikrCounterController::class, 'completeAllToday'])->name('zikr.complete-all-today');
+    Route::post('/zikr/reset-all', [ZikrCounterController::class, 'resetAll'])->name('zikr.reset-all');
+    Route::post('/zikr/reset-lifetime', [ZikrCounterController::class, 'resetLifetime'])->name('zikr.reset-lifetime');
     Route::post('/zikr/settings', [ZikrDashboardController::class, 'updateSettings'])->name('zikr.settings.update');
 
     // Admin Tasbeeh Definitions CRUD
@@ -168,6 +172,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): v
     Route::delete('/programs/{program}', [ProgramController::class, 'destroy'])->name('programs.destroy');
 
     Route::get('/program-contributions', [ProgramContributionController::class, 'index'])->name('program-contributions.index');
+    Route::get('/program-contributions/suggest-contributors', [ProgramContributionController::class, 'suggestContributors'])->name('program-contributions.suggest-contributors');
     Route::post('/program-contributions', [ProgramContributionController::class, 'store'])->name('program-contributions.store');
     Route::put('/program-contributions/{contribution}', [ProgramContributionController::class, 'update'])->name('program-contributions.update');
     Route::delete('/program-contributions/{contribution}', [ProgramContributionController::class, 'destroy'])->name('program-contributions.destroy');
@@ -176,6 +181,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): v
     Route::post('/expense-categories', [ExpenseCategoryController::class, 'store'])->name('expense-categories.store');
     Route::put('/expense-categories/{expenseCategory}', [ExpenseCategoryController::class, 'update'])->name('expense-categories.update');
     Route::delete('/expense-categories/{expenseCategory}', [ExpenseCategoryController::class, 'destroy'])->name('expense-categories.destroy');
+
+    Route::resource('cities', CityController::class);
 
     Route::get('/program-expenses', [ProgramExpenseController::class, 'index'])->name('program-expenses.index');
     Route::post('/program-expenses', [ProgramExpenseController::class, 'store'])->name('program-expenses.store');

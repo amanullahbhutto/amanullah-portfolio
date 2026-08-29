@@ -115,5 +115,44 @@ class ZikrCounterController extends Controller
 
         return response()->json($result);
     }
+
+    public function completeAllToday(Request $request): JsonResponse
+    {
+        $targetUser = null;
+        if ($request->filled('user_id')) {
+            $targetUser = User::find($request->input('user_id'));
+        }
+
+        $user = $this->authorizeAccess($request, $targetUser);
+        $result = $this->zikrService->completeAllForToday($user);
+
+        return response()->json($result);
+    }
+
+    public function resetAll(Request $request): JsonResponse
+    {
+        $targetUser = null;
+        if ($request->filled('user_id')) {
+            $targetUser = User::find($request->input('user_id'));
+        }
+
+        $user = $this->authorizeAccess($request, $targetUser);
+        $result = $this->zikrService->resetAllProgress($user);
+
+        return response()->json($result);
+    }
+
+    public function resetLifetime(Request $request): JsonResponse
+    {
+        $targetUser = null;
+        if ($request->filled('user_id')) {
+            $targetUser = User::find($request->input('user_id'));
+        }
+
+        $user = $this->authorizeAccess($request, $targetUser);
+        $result = $this->zikrService->resetLifetimeZikr($user);
+
+        return response()->json($result);
+    }
 }
 

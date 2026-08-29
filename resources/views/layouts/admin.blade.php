@@ -61,7 +61,7 @@
                     $canSeeInvestors = auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->canAny(['view investors', 'view investments', 'view profit sharing', 'view profit payments', 'view investment withdrawals', 'view investor reports']);
                     $canSeePrograms = auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->canAny(['view programs', 'view contributions', 'view expense categories', 'view program expenses', 'view program transactions', 'view program reports']);
                     $investorMenuOpen = request()->routeIs('admin.investor-dashboard', 'admin.investors.*', 'admin.investments.*', 'admin.profit-sharing.*', 'admin.profit-payments.*', 'admin.investment-withdrawals.*', 'admin.investor-reports.*');
-                    $programMenuOpen = request()->routeIs('admin.programs.*', 'admin.program-contributions.*', 'admin.expense-categories.*', 'admin.program-expenses.*', 'admin.program-transactions.*', 'admin.program-reports.*');
+                    $programMenuOpen = request()->routeIs('admin.programs.*', 'admin.program-contributions.*', 'admin.expense-categories.*', 'admin.cities.*', 'admin.program-expenses.*', 'admin.program-transactions.*', 'admin.program-reports.*');
                 @endphp
 
                 @if($canSeeKhata || $canSeeInvestors || $canSeePrograms)
@@ -95,6 +95,7 @@
                             @can('view contributions')<a href="{{ route('admin.program-contributions.index') }}" class="{{ request()->routeIs('admin.program-contributions.*') ? 'active' : '' }}"><i class="bi bi-wallet2"></i><span>Income</span></a>@endcan
                             @can('view program expenses')<a href="{{ route('admin.program-expenses.index') }}" class="{{ request()->routeIs('admin.program-expenses.*') ? 'active' : '' }}"><i class="bi bi-receipt"></i><span>Expenses</span></a>@endcan
                             @can('view expense categories')<a href="{{ route('admin.expense-categories.index') }}" class="{{ request()->routeIs('admin.expense-categories.*') ? 'active' : '' }}"><i class="bi bi-tags"></i><span>Expense Categories</span></a>@endcan
+                            <a href="{{ route('admin.cities.index') }}" class="{{ request()->routeIs('admin.cities.*') ? 'active' : '' }}"><i class="bi bi-geo-alt"></i><span>Cities</span></a>
                             @can('view program transactions')<a href="{{ route('admin.program-transactions.index') }}" class="{{ request()->routeIs('admin.program-transactions.*') ? 'active' : '' }}"><i class="bi bi-arrow-left-right"></i><span>Transactions</span></a>@endcan
                             @can('view program reports')<a href="{{ route('admin.program-reports.index') }}" class="{{ request()->routeIs('admin.program-reports.*') ? 'active' : '' }}"><i class="bi bi-file-earmark-text"></i><span>Reports</span></a>@endcan
                         </div>

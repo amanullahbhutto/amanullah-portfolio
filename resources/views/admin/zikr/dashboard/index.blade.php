@@ -227,11 +227,43 @@
         border-color: #fbbf24;
         color: #fbbf24;
     }
+
+    .action-btn-top.green {
+        color: #10b981;
+        border-color: rgba(16, 185, 129, 0.35);
+    }
+    .action-btn-top.green:hover {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        border-color: #10b981;
+        box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .action-btn-top.danger {
+        color: #ef4444;
+        border-color: rgba(239, 68, 68, 0.35);
+    }
+    .action-btn-top.danger:hover {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border-color: #ef4444;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+    }
 </style>
 @endpush
 
 @section('content')
 <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
+    {{-- Reset All Tasbeehs Trigger (Icon 1) --}}
+    <button class="action-btn-top danger" type="button" data-bs-toggle="modal" data-bs-target="#resetAllTasbeehsModal" title="Reset All Tasbeehs to 0 (Start Date Today)">
+        <i class="bi bi-arrow-counterclockwise"></i>
+    </button>
+
+    {{-- Mark All Complete for Today Trigger (Icon 2) --}}
+    <button class="action-btn-top green" type="button" data-bs-toggle="modal" data-bs-target="#completeAllTasbeehsModal" title="Mark All Tasbeehs Complete for Today">
+        <i class="bi bi-check2-all"></i>
+    </button>
+
     {{-- Display Settings Modal Trigger --}}
     <button class="action-btn-top" type="button" data-bs-toggle="modal" data-bs-target="#zikrSettingsModal" title="Display Settings (Font Size & Visibility)">
         <i class="bi bi-gear-fill"></i>
@@ -253,30 +285,49 @@
     </div>
 @else
 
-    {{-- Top Overall Statistics Cards --}}
+    {{-- Top Overall Statistics Cards (5 Cards Including Lifetime Permanent Zikr) --}}
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
+        {{-- Lifetime All-Time Total Card --}}
+        <div class="col-12 col-sm-6 col-xl">
+            <div class="zikr-stat-card p-3 rounded-4 border h-100 position-relative" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, #08111e 100%); border-color: rgba(249, 115, 22, 0.35);">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="small fw-bold text-uppercase" style="color: #f97316;">
+                        <i class="bi bi-infinity me-1"></i>Lifetime Total
+                    </span>
+                    <button class="btn btn-link p-0 text-secondary" data-bs-toggle="modal" data-bs-target="#resetLifetimeModal" title="Reset Lifetime Total Counter" style="line-height: 1; font-size: 0.85rem; color: #94a3b8 !important;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </div>
+                <strong class="fs-2 text-white d-block my-1 font-monospace" style="color: #f97316 !important;">{{ number_format($summary['lifetime_total']) }}</strong>
+                <small class="text-muted-custom d-block">All-Time Permanent Count</small>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl">
             <div class="zikr-stat-card p-3 rounded-4 border h-100" style="background: #08111e; border-color: #142845;">
                 <span class="text-muted-custom small fw-bold text-uppercase d-block mb-1">Daily Target</span>
                 <strong class="fs-2 text-white d-block my-1 font-monospace">{{ number_format($summary['overall_today_required']) }}</strong>
                 <small class="text-muted-custom d-block">Across {{ $summary['total_active_tasbeehs'] }} Tasbeehs</small>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+
+        <div class="col-12 col-sm-6 col-xl">
             <div class="zikr-stat-card p-3 rounded-4 border h-100" style="background: #08111e; border-color: #142845;">
                 <span class="text-muted-custom small fw-bold text-uppercase d-block mb-1">Total Required</span>
                 <strong class="fs-2 text-info d-block my-1 font-monospace">{{ number_format($summary['overall_total_required']) }}</strong>
-                <small class="text-muted-custom d-block">Cumulative till today</small>
+                <small class="text-muted-custom d-block">Active cycle till today</small>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+
+        <div class="col-12 col-sm-6 col-xl">
             <div class="zikr-stat-card p-3 rounded-4 border h-100" style="background: #08111e; border-color: #142845;">
                 <span class="text-muted-custom small fw-bold text-uppercase d-block mb-1">Total Completed</span>
                 <strong class="fs-2 text-success d-block my-1 font-monospace">{{ number_format($summary['overall_total_completed']) }}</strong>
                 <small class="text-success d-block fw-semibold">{{ $summary['overall_percentage'] }}% Completed</small>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+
+        <div class="col-12 col-sm-6 col-xl">
             <div class="zikr-stat-card p-3 rounded-4 border h-100" style="background: #08111e; border-color: #142845;">
                 @if($summary['overall_extra'] > 0)
                     <span class="text-muted-custom small fw-bold text-uppercase d-block mb-1">Extra Zikr</span>
@@ -489,4 +540,5 @@
 </div>
 
 @include('admin.zikr.partials.settings-modal')
+@include('admin.zikr.partials.bulk-actions-modals')
 @endsection
