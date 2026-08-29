@@ -179,16 +179,6 @@
                     </div>
                 </div>
                 <div class="topbar-actions">
-                    {{-- PWA Sync Status Badge --}}
-                    <button type="button" class="pwa-sync-badge badge-online d-none d-sm-inline-flex" data-pwa-sync-badge data-pwa-sync-now title="Click to Sync Now">
-                        <i class="bi bi-wifi me-1"></i><span>Online</span>
-                    </button>
-
-                    {{-- PWA Install Button (Responsive topbar icon) --}}
-                    <button type="button" class="topbar-icon" data-pwa-install-btn title="Download / Install Mobile App" aria-label="Download / Install Mobile App">
-                        <i class="bi bi-download"></i>
-                    </button>
-
                     <a class="topbar-icon" href="{{ route('home') }}" target="_blank" title="View website" aria-label="View website"><i class="bi bi-box-arrow-up-right"></i></a>
                     @can('view message')
                         <a class="topbar-icon notification-link" href="{{ route('admin.messages.index', ['filter' => 'unread']) }}" title="Unread messages" aria-label="Unread messages">
@@ -200,12 +190,60 @@
                         <i class="bi bi-sun-fill theme-icon-light"></i><i class="bi bi-moon-stars-fill theme-icon-dark"></i>
                     </button>
                     <div class="dropdown">
-                        <button class="topbar-profile dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><span>{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span><strong class="d-none d-sm-inline">{{ auth()->user()->name }}</strong></button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ route('admin.profile.edit') }}"><i class="bi bi-person me-2"></i>Edit profile</a></li>
-                            <li><hr class="dropdown-divider"></li>
+                        <button class="topbar-profile dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span>{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                            <strong class="d-none d-sm-inline">{{ auth()->user()->name }}</strong>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg" style="min-width: 240px; background: #08111e; border: 1px solid #142845; border-radius: 16px; padding: 8px;">
+                            {{-- User Info Header --}}
+                            <li class="px-3 py-2 border-bottom border-secondary border-opacity-25 mb-1">
+                                <div class="fw-bold text-white small text-truncate">{{ auth()->user()->name }}</div>
+                                <div class="text-secondary small text-truncate" style="font-size: 0.76rem;">{{ auth()->user()->email }}</div>
+                            </li>
+
+                            {{-- PWA Online / Offline Sync Status --}}
                             <li>
-                                <form method="POST" action="{{ route('logout') }}">@csrf<button class="dropdown-item text-danger" type="submit"><i class="bi bi-box-arrow-right me-2"></i>Sign out</button></form>
+                                <div class="dropdown-item d-flex align-items-center justify-content-between py-2 rounded-2" role="button" data-pwa-sync-now title="Click to Sync Now" style="cursor: pointer;">
+                                    <span class="small text-secondary"><i class="bi bi-broadcast me-2 text-info"></i>Network:</span>
+                                    <span class="pwa-sync-badge badge-online" data-pwa-sync-badge><i class="bi bi-wifi me-1"></i>Online</span>
+                                </div>
+                            </li>
+
+                            {{-- Download / Install Mobile App --}}
+                            <li>
+                                <button type="button" class="dropdown-item d-flex align-items-center py-2 rounded-2 text-white" data-pwa-install-btn title="Install Mobile App">
+                                    <i class="bi bi-download me-2 text-accent"></i>
+                                    <span>Download / Install App</span>
+                                </button>
+                            </li>
+
+                            <li><hr class="dropdown-divider my-1 border-secondary border-opacity-25"></li>
+
+                            {{-- Edit Profile --}}
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center py-2 rounded-2" href="{{ route('admin.profile.edit') }}">
+                                    <i class="bi bi-person me-2"></i><span>Edit profile</span>
+                                </a>
+                            </li>
+
+                            @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->can('manage pwa settings'))
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center py-2 rounded-2" href="{{ route('admin.pwa.settings') }}">
+                                        <i class="bi bi-phone me-2 text-info"></i><span>App Settings</span>
+                                    </a>
+                                </li>
+                            @endif
+
+                            <li><hr class="dropdown-divider my-1 border-secondary border-opacity-25"></li>
+
+                            {{-- Sign out --}}
+                            <li>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button class="dropdown-item text-danger d-flex align-items-center py-2 rounded-2" type="submit">
+                                        <i class="bi bi-box-arrow-right me-2"></i><span>Sign out</span>
+                                    </button>
+                                </form>
                             </li>
                         </ul>
                     </div>
