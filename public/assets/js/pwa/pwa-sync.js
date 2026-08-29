@@ -307,6 +307,15 @@ class PwaSync {
     async resetLifetime() {
         return this.enqueueAction('lifetime_reset', 'update', {});
     }
+
+    async updateNamazStatus(userId, date, prayer, status) {
+        return this.enqueueAction('namaz_attendance_status', 'update', {
+            user_id: parseInt(userId, 10),
+            attendance_date: date,
+            prayer: prayer,
+            status: status || ''
+        });
+    }
 }
 
 window.PwaSync = new PwaSync();

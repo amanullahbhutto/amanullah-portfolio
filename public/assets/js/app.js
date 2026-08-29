@@ -823,6 +823,14 @@
                 if (modalInstance) modalInstance.hide();
             }
 
+            if (!navigator.onLine) {
+                if (window.PwaSync && typeof window.PwaSync.updateNamazStatus === 'function') {
+                    window.PwaSync.updateNamazStatus(userId, date, prayer, status);
+                }
+                showFlashToast('Prayer status saved offline. Will sync once online.', 'info');
+                return;
+            }
+
             fetch(statusUrl, {
                 method: 'POST',
                 headers: {
@@ -842,7 +850,12 @@
                     return refreshFinanceTarget(document.querySelector('[data-ajax-crud]'));
                 })
                 .catch((error) => {
-                    showFlashToast(firstErrorMessage(error.payload, 'Could not update prayer status.'), 'danger');
+                    if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.updateNamazStatus === 'function') {
+                        window.PwaSync.updateNamazStatus(userId, date, prayer, status);
+                        showFlashToast('Prayer status saved offline. Will sync once online.', 'info');
+                    } else {
+                        showFlashToast(firstErrorMessage(error.payload, 'Could not update prayer status.'), 'danger');
+                    }
                 });
             return;
         }

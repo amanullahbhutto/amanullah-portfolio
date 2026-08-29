@@ -214,6 +214,23 @@ class PwaService
                             $serverId = 1;
                             break;
 
+                        case 'namaz_attendance_status':
+                            $targetUserId = $payload['user_id'] ?? $user->id;
+                            $targetUser = User::find($targetUserId) ?? $user;
+                            $date = $payload['attendance_date'] ?? null;
+                            $prayer = $payload['prayer'] ?? null;
+                            $prayerStatus = $payload['status'] ?? null;
+
+                            if ($date && $prayer) {
+                                $namazService = app(\App\Services\NamazAttendanceService::class);
+                                $namazService->updatePrayerStatus($targetUser, $date, $prayer, $prayerStatus ?: null);
+                                $serverId = $targetUser->id;
+                            } else {
+                                $status = 'failed';
+                                $errorMessage = 'Missing date or prayer for namaz attendance.';
+                            }
+                            break;
+
                         default:
                             $status = 'synced';
                             $serverId = 1;

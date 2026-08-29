@@ -64,6 +64,43 @@ class PwaDB {
         return this.db.transaction(storeName, mode).objectStore(storeName);
     }
 
+    // LocalStorage Mirror Helpers for 100% Durability
+    _backupToLocalStorage(record) {
+        try {
+            const key = `pwa_outbox_backup_${this.userId}`;
+            const existing = JSON.parse(localStorage.getItem(key) || '[]');
+            const index = existing.findIndex(i => i.uuid === record.uuid);
+            if (index >= 0) {
+                existing[index] = record;
+            } else {
+                existing.push(record);
+            }
+            localStorage.setItem(key, JSON.stringify(existing));
+        } catch (e) {
+            console.warn('localStorage backup error:', e);
+        }
+    }
+
+    _removeFromLocalStorage(uuid) {
+        try {
+            const key = `pwa_outbox_backup_${this.userId}`;
+            const existing = JSON.parse(localStorage.getItem(key) || '[]');
+            const filtered = existing.filter(i => i.uuid !== uuid);
+            localStorage.setItem(key, JSON.stringify(filtered));
+        } catch (e) {
+            console.warn('localStorage cleanup error:', e);
+        }
+    }
+
+    _getLocalStorageBackup() {
+        try {
+            const key = `pwa_outbox_backup_${this.userId}`;
+            return JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (e) {
+            return [];
+        }
+    }
+
     // Outbox Operations
     async addOutbox(item) {
         const record = {
@@ -80,59 +117,115 @@ class PwaDB {
             error: null,
         };
 
+        this._backupToLocalStorage(record);
+
         return new Promise((resolve, reject) => {
-            const store = this._tx('outbox', 'readwrite');
-            const req = store.put(record);
-            req.onsuccess = () => resolve(record);
-            req.onerror = () => reject(req.error);
+            try {
+                const store = this._tx('outbox', 'readwrite');
+                const req = store.put(record);
+                req.onsuccess = () => resolve(record);
+                req.onerror = () => {
+                    console.warn('IndexedDB outbox write error, saved in localStorage backup:', req.error);
+                    resolve(record);
+                };
+            } catch (e) {
+                console.warn('IndexedDB unavailable, preserved in localStorage backup:', e);
+                resolve(record);
+            }
         });
     }
 
     async getPendingOutbox() {
-        return new Promise((resolve, reject) => {
-            const store = this._tx('outbox', 'readonly');
-            const req = store.getAll();
-            req.onsuccess = () => {
-                const pending = (req.result || []).filter(item => item.status === 'pending' || item.status === 'failed');
-                // Sort by created_at ascending to maintain execution order
-                pending.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-                resolve(pending);
-            };
-            req.onerror = () => reject(req.error);
+        return new Promise((resolve) => {
+            const backupItems = this._getLocalStorageBackup().filter(item => item.status === 'pending' || item.status === 'failed');
+
+            try {
+                const store = this._tx('outbox', 'readonly');
+                const req = store.getAll();
+                req.onsuccess = () => {
+                    const dbPending = (req.result || []).filter(item => item.status === 'pending' || item.status === 'failed');
+                    
+                    // Merge unique records from IndexedDB and localStorage
+                    const itemMap = new Map();
+                    dbPending.forEach(item => itemMap.set(item.uuid, item));
+                    backupItems.forEach(item => {
+                        if (!itemMap.has(item.uuid)) {
+                            itemMap.set(item.uuid, item);
+                        }
+                    });
+
+                    const merged = Array.from(itemMap.values());
+                    merged.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                    resolve(merged);
+                };
+                req.onerror = () => {
+                    resolve(backupItems);
+                };
+            } catch (e) {
+                resolve(backupItems);
+            }
         });
     }
 
     async updateOutbox(uuid, updates) {
-        return new Promise((resolve, reject) => {
-            const store = this._tx('outbox', 'readwrite');
-            const getReq = store.get(uuid);
-            getReq.onsuccess = () => {
-                const item = getReq.result;
-                if (!item) return resolve(null);
-                Object.assign(item, updates);
-                const putReq = store.put(item);
-                putReq.onsuccess = () => resolve(item);
-                putReq.onerror = () => reject(putReq.error);
-            };
-            getReq.onerror = () => reject(getReq.error);
+        // Update in localStorage backup
+        const backupItems = this._getLocalStorageBackup();
+        const target = backupItems.find(i => i.uuid === uuid);
+        if (target) {
+            Object.assign(target, updates);
+            try {
+                localStorage.setItem(`pwa_outbox_backup_${this.userId}`, JSON.stringify(backupItems));
+            } catch (e) {}
+        }
+
+        return new Promise((resolve) => {
+            try {
+                const store = this._tx('outbox', 'readwrite');
+                const getReq = store.get(uuid);
+                getReq.onsuccess = () => {
+                    const item = getReq.result || target;
+                    if (!item) return resolve(null);
+                    Object.assign(item, updates);
+                    const putReq = store.put(item);
+                    putReq.onsuccess = () => resolve(item);
+                    putReq.onerror = () => resolve(item);
+                };
+                getReq.onerror = () => resolve(target);
+            } catch (e) {
+                resolve(target);
+            }
         });
     }
 
     async removeOutbox(uuid) {
-        return new Promise((resolve, reject) => {
-            const store = this._tx('outbox', 'readwrite');
-            const req = store.delete(uuid);
-            req.onsuccess = () => resolve(true);
-            req.onerror = () => reject(req.error);
+        this._removeFromLocalStorage(uuid);
+
+        return new Promise((resolve) => {
+            try {
+                const store = this._tx('outbox', 'readwrite');
+                const req = store.delete(uuid);
+                req.onsuccess = () => resolve(true);
+                req.onerror = () => resolve(true);
+            } catch (e) {
+                resolve(true);
+            }
         });
     }
 
     async clearOutbox() {
-        return new Promise((resolve, reject) => {
-            const store = this._tx('outbox', 'readwrite');
-            const req = store.clear();
-            req.onsuccess = () => resolve(true);
-            req.onerror = () => reject(req.error);
+        try {
+            localStorage.removeItem(`pwa_outbox_backup_${this.userId}`);
+        } catch (e) {}
+
+        return new Promise((resolve) => {
+            try {
+                const store = this._tx('outbox', 'readwrite');
+                const req = store.clear();
+                req.onsuccess = () => resolve(true);
+                req.onerror = () => resolve(true);
+            } catch (e) {
+                resolve(true);
+            }
         });
     }
 

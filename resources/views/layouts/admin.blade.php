@@ -262,6 +262,12 @@
 
     {{-- Mobile Bottom Navigation Bar (PWA Mobile View) --}}
     <nav class="pwa-bottom-nav d-lg-none" aria-label="Mobile Navigation">
+        @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->canAny(['view namaz attendance', 'namaz_attendance.view', 'view namaz dashboard', 'namaz_dashboard.view']))
+            <a href="{{ route('admin.namaz.attendance.index') }}" class="pwa-nav-item {{ request()->routeIs('admin.namaz.*') ? 'active' : '' }}">
+                <i class="bi bi-moon-stars"></i>
+                <span>Namaz</span>
+            </a>
+        @endif
         <a href="{{ route('admin.zikr.index') }}" class="pwa-nav-item {{ request()->routeIs('admin.zikr.*') ? 'active' : '' }}">
             <i class="bi bi-gem"></i>
             <span>Zikr</span>
