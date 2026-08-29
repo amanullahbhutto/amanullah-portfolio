@@ -20,7 +20,12 @@
     <meta name="apple-mobile-web-app-title" content="{{ $pwaSettings?->short_name ?? 'Amanullah' }}">
     <link rel="apple-touch-icon" href="{{ $pwaSettings?->icon_192_url ?? asset('assets/pwa-icons/icon-192x192.png') }}">
     
-    <script>document.documentElement.dataset.theme=localStorage.getItem('portfolio-theme')||'dark';</script>
+    <script>
+        document.documentElement.dataset.theme = localStorage.getItem('portfolio-theme') || 'dark';
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || document.referrer.includes('android-app://')) {
+            document.documentElement.classList.add('is-pwa-app');
+        }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="icon" type="image/png" href="{{ asset('assets/images/amanullah.png') }}">
@@ -190,9 +195,8 @@
                         <i class="bi bi-sun-fill theme-icon-light"></i><i class="bi bi-moon-stars-fill theme-icon-dark"></i>
                     </button>
                     <div class="dropdown">
-                        <button class="topbar-profile dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="topbar-profile dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="{{ auth()->user()->name }}" aria-label="User menu">
                             <span>{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
-                            <strong class="d-none d-sm-inline">{{ auth()->user()->name }}</strong>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow-lg" style="min-width: 240px; background: #08111e; border: 1px solid #142845; border-radius: 16px; padding: 8px;">
                             {{-- User Info Header --}}

@@ -9,6 +9,10 @@ class PwaInstaller {
     }
 
     init() {
+        if (this.isStandalone) {
+            document.documentElement.classList.add('is-pwa-app');
+            document.body.classList.add('is-standalone-pwa');
+        }
         this.registerServiceWorker();
         this.setupInstallPrompt();
         this.setupAppDisabledListener();

@@ -312,8 +312,9 @@ textarea.form-control { min-height: 140px; }
 .topbar-title { font-size: clamp(0.95rem, 3.2vw, 1.35rem); margin: 0; white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
 .topbar-actions { display: flex; align-items: center; gap: 9px; }
 .notification-link { position: relative; }
-.notification-link > span { position: absolute; right: -5px; top: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 8px; display: grid; place-items: center; background: var(--accent); color: #fff; border: 2px solid var(--bg); font-size: .58rem; font-weight: 800; }
-.topbar-profile { border: 0; background: transparent; color: var(--text); display: flex; align-items: center; gap: 9px; font-size: .8rem; padding: 0 3px 0 6px; }
+.topbar-profile { border: 0; background: transparent; color: var(--text); display: flex; align-items: center; gap: 6px; font-size: .8rem; padding: 2px; cursor: pointer; }
+.topbar-profile > span { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.topbar-profile:hover > span { transform: scale(1.05); box-shadow: 0 0 12px rgba(255, 107, 44, 0.45); }
 .topbar-profile::after { color: var(--muted); }
 .admin-content { padding: 30px; }
 .admin-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 12px 34px rgba(0,0,0,.04); }
@@ -2110,7 +2111,7 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     animation: pwa-spin 1s linear infinite;
 }
 
-/* PWA Mobile Bottom Navigation Bar */
+/* PWA Mobile Bottom Navigation Bar: Hidden by default on standard website browser */
 .pwa-bottom-nav {
     position: fixed;
     bottom: 0;
@@ -2121,11 +2122,31 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border-top: 1px solid rgba(20, 40, 69, 0.85);
-    display: flex;
+    display: none !important; /* Hidden on regular website */
     align-items: center;
     justify-content: space-around;
     padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
     box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.6);
+}
+
+/* ONLY display bottom navigation when running inside Installed Mobile/Desktop Standalone App */
+@media all and (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+    .pwa-bottom-nav {
+        display: flex !important;
+    }
+    .admin-main {
+        padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+    }
+}
+
+html.is-pwa-app .pwa-bottom-nav,
+body.is-standalone-pwa .pwa-bottom-nav {
+    display: flex !important;
+}
+
+html.is-pwa-app .admin-main,
+body.is-standalone-pwa .admin-main {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
 }
 
 .pwa-nav-item {
@@ -2167,12 +2188,6 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     padding: 2px 6px;
     font-size: 0.9rem;
     margin-bottom: 2px;
-}
-
-@media (max-width: 991.98px) {
-    .admin-main {
-        padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
-    }
 }
 
 /* User Profile Topbar Dropdown */
