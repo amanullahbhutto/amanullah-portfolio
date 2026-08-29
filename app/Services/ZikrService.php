@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ZikrService
 {
@@ -55,6 +56,14 @@ class ZikrService
      */
     public function getOrCreateLifetimeRecord(User $user): UserLifetimeZikr
     {
+        if (!Schema::hasTable('user_lifetime_zikrs')) {
+            $dummy = new UserLifetimeZikr();
+            $dummy->user_id = $user->id;
+            $dummy->lifetime_count = 0;
+            $dummy->last_zikr_at = null;
+            return $dummy;
+        }
+
         return UserLifetimeZikr::firstOrCreate(
             ['user_id' => $user->id],
             [
@@ -210,8 +219,10 @@ class ZikrService
                 $record->increment('total_completed', $count);
                 $record->update(['last_zikr_at' => $this->now()]);
 
-                $lifetime->increment('lifetime_count', $count);
-                $lifetime->update(['last_zikr_at' => $this->now()]);
+                if ($lifetime->exists) {
+                    $lifetime->increment('lifetime_count', $count);
+                    $lifetime->update(['last_zikr_at' => $this->now()]);
+                }
             } else {
                 // Subtraction / adjustment (ensure total does not drop below 0)
                 $newTotal = max(((int) $record->total_completed) + $count, 0);
@@ -220,11 +231,13 @@ class ZikrService
                     'last_zikr_at' => $this->now(),
                 ]);
 
-                $newLifetime = max(((int) $lifetime->lifetime_count) + $count, 0);
-                $lifetime->update([
-                    'lifetime_count' => $newLifetime,
-                    'last_zikr_at' => $this->now(),
-                ]);
+                if ($lifetime->exists) {
+                    $newLifetime = max(((int) $lifetime->lifetime_count) + $count, 0);
+                    $lifetime->update([
+                        'lifetime_count' => $newLifetime,
+                        'last_zikr_at' => $this->now(),
+                    ]);
+                }
             }
 
             return $record->fresh();
@@ -319,8 +332,10 @@ class ZikrService
                 ]);
 
                 $lifetime = $this->getOrCreateLifetimeRecord($user);
-                $lifetime->increment('lifetime_count', $difference);
-                $lifetime->update(['last_zikr_at' => $this->now()]);
+                if ($lifetime->exists) {
+                    $lifetime->increment('lifetime_count', $difference);
+                    $lifetime->update(['last_zikr_at' => $this->now()]);
+                }
             });
         }
 
@@ -354,8 +369,10 @@ class ZikrService
                         'last_zikr_at' => $this->now(),
                     ]);
 
-                    $lifetime->increment('lifetime_count', $stats['remaining']);
-                    $lifetime->update(['last_zikr_at' => $this->now()]);
+                    if ($lifetime->exists) {
+                        $lifetime->increment('lifetime_count', $stats['remaining']);
+                        $lifetime->update(['last_zikr_at' => $this->now()]);
+                    }
 
                     $countCompleted++;
                 }
@@ -400,10 +417,12 @@ class ZikrService
     public function resetLifetimeZikr(User $user): array
     {
         $lifetime = $this->getOrCreateLifetimeRecord($user);
-        $lifetime->update([
-            'lifetime_count' => 0,
-            'last_zikr_at' => null,
-        ]);
+        if ($lifetime->exists) {
+            $lifetime->update([
+                'lifetime_count' => 0,
+                'last_zikr_at' => null,
+            ]);
+        }
 
         return [
             'success' => true,
