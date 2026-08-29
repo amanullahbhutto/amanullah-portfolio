@@ -1,0 +1,333 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\PwaSetting;
+use App\Models\PwaSyncLog;
+use App\Models\Tasbeeh;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+
+class PwaService
+{
+    protected ZikrService $zikrService;
+
+    public function __construct(ZikrService $zikrService)
+    {
+        $this->zikrService = $zikrService;
+    }
+
+    public function getSettings(): PwaSetting
+    {
+        return PwaSetting::getSettings();
+    }
+
+    public function isAppActive(): bool
+    {
+        return (bool) $this->getSettings()->is_active;
+    }
+
+    /**
+     * Builds standard Web App Manifest array from current database settings.
+     */
+    public function getManifestData(): array
+    {
+        $settings = $this->getSettings();
+
+        $icons = [];
+
+        if (!empty($settings->icon_192)) {
+            $icons[] = [
+                'src' => asset($settings->icon_192) . '?v=' . urlencode($settings->app_version),
+                'sizes' => '192x192',
+                'type' => 'image/png',
+                'purpose' => 'any',
+            ];
+        }
+
+        if (!empty($settings->icon_512)) {
+            $icons[] = [
+                'src' => asset($settings->icon_512) . '?v=' . urlencode($settings->app_version),
+                'sizes' => '512x512',
+                'type' => 'image/png',
+                'purpose' => 'any',
+            ];
+        }
+
+        if (!empty($settings->icon_maskable)) {
+            $icons[] = [
+                'src' => asset($settings->icon_maskable) . '?v=' . urlencode($settings->app_version),
+                'sizes' => '512x512',
+                'type' => 'image/png',
+                'purpose' => 'maskable',
+            ];
+        }
+
+        // Fallback default icon if none present
+        if (empty($icons)) {
+            $icons[] = [
+                'src' => asset('assets/pwa-icons/icon-192x192.png'),
+                'sizes' => '192x192',
+                'type' => 'image/png',
+                'purpose' => 'any maskable',
+            ];
+        }
+
+        return [
+            'name' => $settings->app_name,
+            'short_name' => $settings->short_name,
+            'description' => $settings->description ?? 'Official Portfolio and Islamic Management System',
+            'start_url' => url($settings->start_url ?? '/admin/dashboard'),
+            'scope' => url($settings->scope ?? '/'),
+            'display' => $settings->display_mode ?? 'standalone',
+            'orientation' => $settings->orientation ?? 'portrait-primary',
+            'theme_color' => $settings->theme_color ?? '#070d18',
+            'background_color' => $settings->background_color ?? '#070d18',
+            'icons' => $icons,
+            'shortcuts' => [
+                [
+                    'name' => 'Tasbeeh Counter',
+                    'short_name' => 'Tasbeeh',
+                    'description' => 'Open Islamic Zikr and Tasbeeh Counter',
+                    'url' => route('admin.zikr.index'),
+                    'icons' => [
+                        [
+                            'src' => asset('assets/pwa-icons/icon-192x192.png'),
+                            'sizes' => '192x192',
+                            'type' => 'image/png',
+                        ],
+                    ],
+                ],
+                [
+                    'name' => 'Dashboard',
+                    'short_name' => 'Dashboard',
+                    'description' => 'Admin Overview Dashboard',
+                    'url' => route('admin.dashboard'),
+                    'icons' => [
+                        [
+                            'src' => asset('assets/pwa-icons/icon-192x192.png'),
+                            'sizes' => '192x192',
+                            'type' => 'image/png',
+                        ],
+                    ],
+                ],
+            ],
+            'categories' => ['lifestyle', 'utilities', 'productivity'],
+            'lang' => 'en-US',
+            'dir' => 'auto',
+        ];
+    }
+
+    /**
+     * Process batch of offline queue operations from client with idempotency and transaction safety.
+     */
+    public function processPushSync(User $user, array $operations): array
+    {
+        $settings = $this->getSettings();
+        if (!$settings->is_active) {
+            return [
+                'success' => false,
+                'app_active' => false,
+                'message' => $settings->disabled_message ?? 'Application is currently disabled.',
+                'synced_operations' => [],
+            ];
+        }
+
+        $syncedResults = [];
+        $idMappings = []; // client_temp_id => server_id
+
+        foreach ($operations as $op) {
+            $opUuid = $op['uuid'] ?? (string) Str::uuid();
+            $idempotencyKey = $op['idempotency_key'] ?? $opUuid;
+            $entity = $op['entity'] ?? 'unknown';
+            $action = $op['action'] ?? 'create';
+            $clientTempId = $op['temp_id'] ?? null;
+            $payload = $op['payload'] ?? [];
+
+            // 1. Check if already processed (Idempotency protection)
+            $existingLog = PwaSyncLog::where('user_id', $user->id)
+                ->where('operation_uuid', $opUuid)
+                ->first();
+
+            if ($existingLog) {
+                $syncedResults[] = [
+                    'uuid' => $opUuid,
+                    'temp_id' => $clientTempId,
+                    'server_id' => $existingLog->server_id,
+                    'status' => $existingLog->status,
+                    'message' => 'Already processed (idempotent)',
+                ];
+
+                if ($clientTempId && $existingLog->server_id) {
+                    $idMappings[$clientTempId] = $existingLog->server_id;
+                }
+                continue;
+            }
+
+            // 2. Execute operation inside Database Transaction
+            try {
+                $serverId = null;
+                $status = 'synced';
+                $errorMessage = null;
+
+                DB::transaction(function () use ($user, $entity, $action, $payload, &$serverId, &$status, &$errorMessage) {
+                    switch ($entity) {
+                        case 'zikr_count':
+                        case 'tasbeeh_count':
+                            $tasbeehId = $payload['tasbeeh_id'] ?? null;
+                            $count = (int) ($payload['count'] ?? 1);
+                            $tasbeeh = Tasbeeh::find($tasbeehId);
+                            if ($tasbeeh) {
+                                $this->zikrService->addCount($user, $tasbeeh, $count);
+                                $serverId = $tasbeeh->id;
+                            } else {
+                                $status = 'failed';
+                                $errorMessage = "Tasbeeh #{$tasbeehId} not found.";
+                            }
+                            break;
+
+                        case 'tasbeeh_complete_today':
+                            $tasbeehId = $payload['tasbeeh_id'] ?? null;
+                            $tasbeeh = Tasbeeh::find($tasbeehId);
+                            if ($tasbeeh) {
+                                $this->zikrService->completeSingleForToday($user, $tasbeeh);
+                                $serverId = $tasbeeh->id;
+                            } else {
+                                $status = 'failed';
+                                $errorMessage = "Tasbeeh #{$tasbeehId} not found.";
+                            }
+                            break;
+
+                        case 'zikr_complete_all':
+                            $this->zikrService->completeAllForToday($user);
+                            $serverId = 1;
+                            break;
+
+                        case 'zikr_reset_all':
+                            $this->zikrService->resetAllProgress($user);
+                            $serverId = 1;
+                            break;
+
+                        default:
+                            $status = 'synced';
+                            $serverId = 1;
+                            break;
+                    }
+                });
+
+                // Record audit log
+                PwaSyncLog::create([
+                    'user_id' => $user->id,
+                    'operation_uuid' => $opUuid,
+                    'idempotency_key' => $idempotencyKey,
+                    'entity' => $entity,
+                    'action' => $action,
+                    'status' => $status,
+                    'payload' => $payload,
+                    'server_id' => $serverId,
+                    'client_temp_id' => $clientTempId,
+                    'error_message' => $errorMessage,
+                    'retry_count' => (int) ($op['retry_count'] ?? 0),
+                ]);
+
+                if ($clientTempId && $serverId) {
+                    $idMappings[$clientTempId] = $serverId;
+                }
+
+                $syncedResults[] = [
+                    'uuid' => $opUuid,
+                    'temp_id' => $clientTempId,
+                    'server_id' => $serverId,
+                    'status' => $status,
+                    'error' => $errorMessage,
+                ];
+            } catch (\Throwable $e) {
+                Log::error("PWA Sync Error on operation {$opUuid}: " . $e->getMessage());
+
+                PwaSyncLog::create([
+                    'user_id' => $user->id,
+                    'operation_uuid' => $opUuid,
+                    'idempotency_key' => $idempotencyKey,
+                    'entity' => $entity,
+                    'action' => $action,
+                    'status' => 'failed',
+                    'payload' => $payload,
+                    'client_temp_id' => $clientTempId,
+                    'error_message' => $e->getMessage(),
+                    'retry_count' => (int) ($op['retry_count'] ?? 0) + 1,
+                ]);
+
+                $syncedResults[] = [
+                    'uuid' => $opUuid,
+                    'temp_id' => $clientTempId,
+                    'server_id' => null,
+                    'status' => 'failed',
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return [
+            'success' => true,
+            'app_active' => true,
+            'message' => 'Sync operations processed successfully.',
+            'synced_operations' => $syncedResults,
+            'id_mappings' => $idMappings,
+            'server_time' => now()->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Pull latest delta records for local IndexedDB caching.
+     */
+    public function processPullSync(User $user, ?string $lastSyncedAt = null): array
+    {
+        $settings = $this->getSettings();
+        if (!$settings->is_active) {
+            return [
+                'success' => false,
+                'app_active' => false,
+                'message' => $settings->disabled_message ?? 'Application is currently disabled.',
+            ];
+        }
+
+        // 1. Zikr summary and tasbeehs
+        $zikrSummary = $this->zikrService->getDashboardSummary($user);
+
+        // 2. Active tasbeeh list
+        $tasbeehs = Tasbeeh::query()
+            ->active()
+            ->ordered()
+            ->get([
+                'id',
+                'title',
+                'arabic_text',
+                'urdu_meaning',
+                'daily_target',
+                'sort_order',
+                'is_active',
+                'updated_at',
+            ]);
+
+        return [
+            'success' => true,
+            'app_active' => true,
+            'server_time' => now()->toIso8601String(),
+            'app_version' => $settings->app_version,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $user->roles->pluck('name'),
+                'is_muslim' => $user->isMuslim(),
+            ],
+            'data' => [
+                'tasbeehs' => $tasbeehs,
+                'zikr_summary' => $zikrSummary,
+            ],
+        ];
+    }
+}
+

@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\ProgramController;
 use App\Http\Controllers\Admin\ProgramExpenseController;
 use App\Http\Controllers\Admin\ProgramReportController;
 use App\Http\Controllers\Admin\ProgramTransactionController;
+use App\Http\Controllers\Admin\PwaSettingsController;
 use App\Http\Controllers\Admin\TasbeehAdminController;
 use App\Http\Controllers\Admin\ZikrCounterController;
 use App\Http\Controllers\Admin\ZikrDashboardController;
@@ -37,6 +38,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PortfolioController;
+use App\Http\Controllers\Pwa\PwaManifestController;
+use App\Http\Controllers\Pwa\PwaSyncController;
 use App\Http\Middleware\TrackVisitor;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +54,17 @@ Route::middleware(TrackVisitor::class)->group(function (): void {
     Route::get('/contact', [ContactController::class, 'create'])->name('contact.create');
 });
 Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:6,1')->name('contact.store');
+
+// Progressive Web App (PWA) Core Routes
+Route::get('/manifest.json', [PwaManifestController::class, 'manifest'])->name('pwa.manifest');
+Route::get('/manifest.webmanifest', [PwaManifestController::class, 'manifest']);
+Route::get('/sw.js', [PwaManifestController::class, 'serviceWorker'])->name('pwa.sw');
+Route::get('/pwa/offline', [PwaManifestController::class, 'offline'])->name('pwa.offline');
+Route::get('/pwa/status', [PwaSyncController::class, 'status'])->name('pwa.status');
+
+// PWA Offline Sync Endpoints
+Route::post('/pwa/sync/push', [PwaSyncController::class, 'push'])->name('pwa.sync.push');
+Route::get('/pwa/sync/pull', [PwaSyncController::class, 'pull'])->name('pwa.sync.pull');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthController::class, 'login'])->name('login');
@@ -198,4 +212,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): v
     Route::get('/content/{type}/{id}/edit', [PortfolioContentController::class, 'edit'])->name('content.edit');
     Route::put('/content/{type}/{id}', [PortfolioContentController::class, 'update'])->name('content.update');
     Route::delete('/content/{type}/{id}', [PortfolioContentController::class, 'destroy'])->name('content.destroy');
+
+    // Mobile Application (PWA) Settings
+    Route::get('/pwa/settings', [PwaSettingsController::class, 'index'])->name('pwa.settings');
+    Route::put('/pwa/settings', [PwaSettingsController::class, 'update'])->name('pwa.settings.update');
+    Route::post('/pwa/toggle-active', [PwaSettingsController::class, 'toggleActive'])->name('pwa.toggle-active');
 });

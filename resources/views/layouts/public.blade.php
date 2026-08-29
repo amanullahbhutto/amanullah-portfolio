@@ -7,6 +7,18 @@
     <title>@yield('title', ($profile?->full_name ?? 'Amanullah'))</title>
     <link rel="icon" type="image/png" href="{{ asset('assets/images/amanullah.png') }}">
 
+    {{-- Progressive Web App (PWA) Meta & Icons --}}
+    @php
+        $pwaSettings = \App\Models\PwaSetting::getSettings();
+    @endphp
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="{{ $pwaSettings->theme_color ?? '#070d18' }}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ $pwaSettings->short_name ?? 'Amanullah' }}">
+    <link rel="apple-touch-icon" href="{{ $pwaSettings->icon_192_url }}">
+
     <meta name="description" content="@yield('meta_description', 'Amanullah is a PHP and Laravel developer in Karachi building responsive, secure, and maintainable web applications.')">
     <script>document.documentElement.dataset.theme=localStorage.getItem('portfolio-theme')||'dark';</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,6 +39,9 @@
                     <span class="brand-symbol">A</span><span>AMANULLAH<span class="brand-dot">.</span></span>
                 </a>
                 <div class="d-flex align-items-center gap-2 order-lg-3">
+                    <button type="button" class="btn btn-outline-theme btn-sm d-none" data-pwa-install-btn title="Install App">
+                        <i class="bi bi-download me-1"></i><span>{{ $pwaSettings->install_button_text ?? 'Install App' }}</span>
+                    </button>
                     <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch colour theme" title="Day / night mode">
                         <i class="bi bi-sun-fill theme-icon-light"></i>
                         <i class="bi bi-moon-stars-fill theme-icon-dark"></i>
@@ -94,9 +109,16 @@
     </footer>
 
     <button class="back-to-top" type="button" data-back-to-top aria-label="Back to top"><i class="bi bi-arrow-up"></i></button>
+    
+    {{-- iOS Safari Installation Instructions Modal --}}
+    @include('admin.pwa.partials.ios-modal')
+
     <script src="{{ asset('vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('vendor/aos/aos.js') }}"></script>
     <script src="{{ asset('assets/js/app.js') }}"></script>
+    
+    {{-- PWA Installer & Service Worker Registration --}}
+    <script src="{{ asset('assets/js/pwa/pwa-installer.js') }}?v={{ file_exists(public_path('assets/js/pwa/pwa-installer.js')) ? filemtime(public_path('assets/js/pwa/pwa-installer.js')) : time() }}"></script>
     @stack('scripts')
 </body>
 </html>

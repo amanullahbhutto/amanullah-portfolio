@@ -4,7 +4,21 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="auth-user-id" content="{{ auth()->id() }}">
     <title>@yield('title', 'Dashboard') - Amanullah</title>
+    
+    {{-- Progressive Web App (PWA) Meta & Icons --}}
+    @php
+        $pwaSettings = \App\Models\PwaSetting::getSettings();
+    @endphp
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="{{ $pwaSettings->theme_color ?? '#070d18' }}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ $pwaSettings->short_name ?? 'Amanullah' }}">
+    <link rel="apple-touch-icon" href="{{ $pwaSettings->icon_192_url }}">
+    
     <script>document.documentElement.dataset.theme=localStorage.getItem('portfolio-theme')||'dark';</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,6 +108,11 @@
                 @can('view role')<a href="{{ route('admin.roles.index') }}" class="{{ request()->routeIs('admin.roles.*') ? 'active' : '' }}"><i class="bi bi-shield-lock"></i><span>Roles</span></a>@endcan
                 @can('view permission')<a href="{{ route('admin.permissions.index') }}" class="{{ request()->routeIs('admin.permissions.*') ? 'active' : '' }}"><i class="bi bi-key"></i><span>Permissions</span></a>@endcan
                 @if(auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->can('view maintenance'))<a href="{{ route('admin.maintenance.index') }}" class="{{ request()->routeIs('admin.maintenance.*') ? 'active' : '' }}"><i class="bi bi-terminal"></i><span>Maintenance</span></a>@endif
+                @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->can('manage pwa settings'))
+                    <a href="{{ route('admin.pwa.settings') }}" class="{{ request()->routeIs('admin.pwa.settings*') ? 'active' : '' }}">
+                        <i class="bi bi-phone"></i><span>Mobile App Settings</span>
+                    </a>
+                @endif
 
                 
                 @php
@@ -159,6 +178,16 @@
                     </div>
                 </div>
                 <div class="topbar-actions">
+                    {{-- PWA Sync Status Badge --}}
+                    <button type="button" class="pwa-sync-badge badge-online d-none d-sm-inline-flex" data-pwa-sync-badge data-pwa-sync-now title="Click to Sync Now">
+                        <i class="bi bi-wifi me-1"></i><span>Online</span>
+                    </button>
+
+                    {{-- PWA Install Button --}}
+                    <button type="button" class="btn btn-accent btn-sm d-none" data-pwa-install-btn title="Install Application">
+                        <i class="bi bi-download me-1"></i><span class="d-none d-md-inline">{{ $pwaSettings->install_button_text ?? 'Install App' }}</span>
+                    </button>
+
                     <a class="topbar-icon" href="{{ route('home') }}" target="_blank" title="View website" aria-label="View website"><i class="bi bi-box-arrow-up-right"></i></a>
                     @can('view message')
                         <a class="topbar-icon notification-link" href="{{ route('admin.messages.index', ['filter' => 'unread']) }}" title="Unread messages" aria-label="Unread messages">
@@ -187,8 +216,45 @@
             </main>
         </div>
     </div>
+
+    {{-- Mobile Bottom Navigation Bar (PWA Mobile View) --}}
+    <nav class="pwa-bottom-nav d-lg-none" aria-label="Mobile Navigation">
+        <a href="{{ route('admin.dashboard') }}" class="pwa-nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+            <i class="bi bi-grid-1x2"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="{{ route('admin.zikr.index') }}" class="pwa-nav-item {{ request()->routeIs('admin.zikr.*') ? 'active' : '' }}">
+            <i class="bi bi-gem"></i>
+            <span>Zikr</span>
+        </a>
+        @if(auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->can('view khata'))
+            <a href="{{ route('admin.khata.index') }}" class="pwa-nav-item {{ request()->routeIs('admin.khata.*') ? 'active' : '' }}">
+                <i class="bi bi-journal-bookmark"></i>
+                <span>Khata</span>
+            </a>
+        @endif
+        @if(auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->can('view programs'))
+            <a href="{{ route('admin.programs.index') }}" class="pwa-nav-item {{ request()->routeIs('admin.programs.*') ? 'active' : '' }}">
+                <i class="bi bi-calendar2-event"></i>
+                <span>Programs</span>
+            </a>
+        @endif
+        <button type="button" class="pwa-nav-item pwa-nav-sync" data-pwa-sync-now title="Sync Data">
+            <span class="pwa-sync-badge badge-online" data-pwa-sync-badge><i class="bi bi-wifi"></i></span>
+            <span>Sync</span>
+        </button>
+    </nav>
+
+    {{-- iOS Safari PWA Installation Instructions Modal --}}
+    @include('admin.pwa.partials.ios-modal')
+
     <script src="{{ asset('vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('assets/js/app.js') }}?v={{ file_exists(public_path('assets/js/app.js')) ? filemtime(public_path('assets/js/app.js')) : time() }}"></script>
+    
+    {{-- Progressive Web App (PWA) Core Scripts --}}
+    <script src="{{ asset('assets/js/pwa/pwa-db.js') }}?v={{ file_exists(public_path('assets/js/pwa/pwa-db.js')) ? filemtime(public_path('assets/js/pwa/pwa-db.js')) : time() }}"></script>
+    <script src="{{ asset('assets/js/pwa/pwa-sync.js') }}?v={{ file_exists(public_path('assets/js/pwa/pwa-sync.js')) ? filemtime(public_path('assets/js/pwa/pwa-sync.js')) : time() }}"></script>
+    <script src="{{ asset('assets/js/pwa/pwa-installer.js') }}?v={{ file_exists(public_path('assets/js/pwa/pwa-installer.js')) ? filemtime(public_path('assets/js/pwa/pwa-installer.js')) : time() }}"></script>
     @stack('scripts')
 </body>
 </html>

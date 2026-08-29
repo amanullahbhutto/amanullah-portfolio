@@ -2032,4 +2032,148 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     }
 }
 
+/* ==========================================================================
+   PROGRESSIVE WEB APPLICATION (PWA) STYLES
+   ========================================================================== */
+
+/* Sync Status Badges */
+.pwa-sync-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 20px;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: transparent;
+    text-decoration: none;
+}
+
+.pwa-sync-badge.badge-online {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.35);
+    color: #10b981;
+}
+.pwa-sync-badge.badge-online:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #34d399;
+}
+
+.pwa-sync-badge.badge-offline {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #f59e0b;
+}
+
+.pwa-sync-badge.badge-syncing {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+}
+
+.pwa-sync-badge.badge-pending {
+    background: rgba(249, 115, 22, 0.15);
+    border-color: rgba(249, 115, 22, 0.4);
+    color: #f97316;
+}
+
+.pwa-sync-badge.badge-synced {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: #10b981;
+    color: #34d399;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+}
+
+.pwa-sync-badge.badge-disabled {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+}
+
+.pwa-sync-badge.badge-auth {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: rgba(168, 85, 247, 0.4);
+    color: #c084fc;
+}
+
+/* Spinner Animation for Syncing */
+@keyframes pwa-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+.pwa-sync-badge .spin {
+    display: inline-block;
+    animation: pwa-spin 1s linear infinite;
+}
+
+/* PWA Mobile Bottom Navigation Bar */
+.pwa-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1040;
+    background: rgba(7, 13, 24, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(20, 40, 69, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.6);
+}
+
+.pwa-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    min-width: 58px;
+}
+
+.pwa-nav-item i {
+    font-size: 1.25rem;
+    margin-bottom: 2px;
+    transition: transform 0.2s ease;
+}
+
+.pwa-nav-item:hover,
+.pwa-nav-item.active {
+    color: #38bdf8;
+}
+
+.pwa-nav-item.active i {
+    transform: translateY(-2px);
+    color: #38bdf8;
+    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.5));
+}
+
+.pwa-nav-item.pwa-nav-sync .pwa-sync-badge {
+    padding: 2px 6px;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+@media (max-width: 991.98px) {
+    .admin-main {
+        padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+    }
+}
+
+
 
