@@ -32,12 +32,12 @@
                     <div class="tab-pane fade show active" id="pwa-android-pane" role="tabpanel">
                         <div class="text-center p-3 rounded-3 mb-3" style="background: rgba(16, 185, 129, 0.08); border: 1px dashed rgba(16, 185, 129, 0.35);">
                             <button type="button" class="btn btn-accent btn-sm px-4 py-2 fw-bold" id="pwaModalDirectInstallBtn">
-                                <i class="bi bi-download me-1"></i><span id="pwaModalDirectInstallBtnText">Direct 1-Click Install</span>
+                                <i class="bi bi-download me-1"></i><span id="pwaModalDirectInstallBtnText">Install App Now</span>
                             </button>
                             <div id="pwa-install-inline-alert" class="d-none mt-2 text-start p-2 rounded-2 small" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #bae6fd;">
-                                <i class="bi bi-info-circle me-1"></i>Browser popup nahi khula? Barah-e-karam upar <strong>3 Dots (⋮)</strong> menu dabayein aur <strong>"Install app"</strong> ya <strong>"Add to Home screen"</strong> select karein.
+                                <i class="bi bi-phone me-1"></i>Browser ke top right par <strong>3 Dots (⋮)</strong> dabayein aur <strong>"Install app" / "Add to Home screen"</strong> select karein.
                             </div>
-                            <small class="d-block text-secondary mt-2" style="font-size: 0.76rem;">Click above to install instantly on your home screen or desktop.</small>
+                            <small class="d-block text-secondary mt-2" style="font-size: 0.76rem;">Apne phone ki home screen par direct install karne ke liye click karein.</small>
                         </div>
 
                         <div class="d-flex flex-column gap-2">

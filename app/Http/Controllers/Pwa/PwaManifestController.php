@@ -58,14 +58,22 @@ const CACHE_NAME = '{$cacheVersion}';
 const OFFLINE_URL = '/pwa/offline';
 const PRECACHE_ASSETS = {$precacheJson};
 
-// Install Event: Cache Core App Shell & Static Assets
+// Install Event: Cache Core App Shell & Static Assets with Resilient Fallback
 self.addEventListener('install', (event) => {
     self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(PRECACHE_ASSETS).catch((err) => {
-                console.warn('PWA: Some assets failed to precache during install', err);
-            });
+            return Promise.allSettled(
+                PRECACHE_ASSETS.map((url) => {
+                    return fetch(url).then((response) => {
+                        if (response && response.ok) {
+                            return cache.put(url, response);
+                        }
+                    }).catch((err) => {
+                        console.warn('PWA: Precaching skipped for asset:', url);
+                    });
+                })
+            );
         })
     );
 });
