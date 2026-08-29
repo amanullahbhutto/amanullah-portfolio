@@ -8,7 +8,11 @@
     <title>@yield('title', 'Dashboard') - Amanullah</title>
     
     {{-- Progressive Web App (PWA) Meta & Icons --}}
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="{{ route('pwa.manifest') }}">
+    <meta name="pwa-sw-url" content="{{ route('pwa.sw') }}">
+    <meta name="pwa-status-url" content="{{ route('pwa.status') }}">
+    <meta name="pwa-sync-push-url" content="{{ route('pwa.sync.push') }}">
+    <meta name="pwa-sync-pull-url" content="{{ route('pwa.sync.pull') }}">
     <meta name="theme-color" content="{{ $pwaSettings?->theme_color ?? '#070d18' }}">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">

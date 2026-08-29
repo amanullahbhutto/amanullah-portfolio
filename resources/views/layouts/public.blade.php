@@ -8,7 +8,9 @@
     <link rel="icon" type="image/png" href="{{ asset('assets/images/amanullah.png') }}">
 
     {{-- Progressive Web App (PWA) Meta & Icons --}}
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="{{ route('pwa.manifest') }}">
+    <meta name="pwa-sw-url" content="{{ route('pwa.sw') }}">
+    <meta name="pwa-status-url" content="{{ route('pwa.status') }}">
     <meta name="theme-color" content="{{ $pwaSettings?->theme_color ?? '#070d18' }}">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">

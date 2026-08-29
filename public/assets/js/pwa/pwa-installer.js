@@ -1,11 +1,11 @@
 /**
- * PwaInstaller: Manages Progressive Web App Installation, iOS Guides, Service Worker Registration & App Status Overlays
+ * PwaInstaller: Manages Progressive Web App Installation, Universal Guides, Service Worker Registration & App Status Overlays
  */
 class PwaInstaller {
     constructor() {
         this.deferredPrompt = null;
         this.isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        this.isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        this.isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || document.referrer.includes('android-app://');
     }
 
     init() {
@@ -13,12 +13,33 @@ class PwaInstaller {
         this.setupInstallPrompt();
         this.setupAppDisabledListener();
         this.checkInitialAppStatus();
+        this.initInstallButtons();
+    }
+
+    getSwUrl() {
+        const meta = document.querySelector('meta[name="pwa-sw-url"]');
+        return meta ? meta.getAttribute('content') : '/sw.js';
+    }
+
+    getStatusUrl() {
+        const meta = document.querySelector('meta[name="pwa-status-url"]');
+        return meta ? meta.getAttribute('content') : '/pwa/status';
+    }
+
+    initInstallButtons() {
+        // If not already in standalone mode, show install buttons
+        if (!this.isStandalone) {
+            this.toggleInstallButtons(true);
+        } else {
+            this.toggleInstallButtons(false);
+        }
     }
 
     async registerServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
-                const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                const swUrl = this.getSwUrl();
+                const registration = await navigator.serviceWorker.register(swUrl, { scope: '/' });
                 console.log('PWA Service Worker registered with scope:', registration.scope);
 
                 // Listen for updates
@@ -39,11 +60,13 @@ class PwaInstaller {
     }
 
     setupInstallPrompt() {
-        // Android / Desktop beforeinstallprompt
+        // Android / Chrome / Edge beforeinstallprompt
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             this.deferredPrompt = e;
-            this.toggleInstallButtons(true);
+            if (!this.isStandalone) {
+                this.toggleInstallButtons(true);
+            }
         });
 
         // App successfully installed
@@ -62,12 +85,13 @@ class PwaInstaller {
                 e.preventDefault();
                 this.triggerInstall();
             }
-        });
 
-        // If iOS and not already standalone, make install buttons visible
-        if (this.isIos && !this.isStandalone) {
-            this.toggleInstallButtons(true);
-        }
+            const modalDirectBtn = e.target.closest('#pwaModalDirectInstallBtn');
+            if (modalDirectBtn) {
+                e.preventDefault();
+                this.handleDirectModalInstall();
+            }
+        });
     }
 
     toggleInstallButtons(show) {
@@ -82,7 +106,7 @@ class PwaInstaller {
     }
 
     async triggerInstall() {
-        // 1. If standard browser prompt available (Android / Chrome)
+        // 1. If standard browser prompt available (Android / Chrome / Edge)
         if (this.deferredPrompt) {
             this.deferredPrompt.prompt();
             const { outcome } = await this.deferredPrompt.userChoice;
@@ -94,20 +118,53 @@ class PwaInstaller {
             return;
         }
 
-        // 2. If iOS Safari -> Open iOS Guide Modal
-        if (this.isIos) {
-            const iosModalEl = document.getElementById('pwaIosInstallModal');
-            if (iosModalEl && window.bootstrap) {
-                const modal = new bootstrap.Modal(iosModalEl);
-                modal.show();
+        // 2. Open Universal Installation Modal
+        const installModalEl = document.getElementById('pwaInstallModal');
+        if (installModalEl && window.bootstrap) {
+            // Select appropriate tab based on device
+            if (this.isIos) {
+                const iosTabBtn = document.getElementById('pwa-ios-tab');
+                if (iosTabBtn) {
+                    const tab = new bootstrap.Tab(iosTabBtn);
+                    tab.show();
+                }
             } else {
-                alert('To install on iPhone/iPad: Tap the Share button at bottom and select "Add to Home Screen".');
+                const androidTabBtn = document.getElementById('pwa-android-tab');
+                if (androidTabBtn) {
+                    const tab = new bootstrap.Tab(androidTabBtn);
+                    tab.show();
+                }
             }
+
+            const modal = new bootstrap.Modal(installModalEl);
+            modal.show();
             return;
         }
 
-        // 3. Fallback instructions for other browsers
-        alert('To install this app, tap your browser menu (⋮) and select "Install app" or "Add to Home screen".');
+        // 3. Fallback alert
+        if (this.isIos) {
+            alert('To install on iPhone/iPad: Tap the Share button (⎋) at bottom and select "Add to Home Screen".');
+        } else {
+            alert('To install this app: Tap your browser menu (⋮) and select "Install app" or "Add to Home screen".');
+        }
+    }
+
+    async handleDirectModalInstall() {
+        if (this.deferredPrompt) {
+            this.deferredPrompt.prompt();
+            const { outcome } = await this.deferredPrompt.userChoice;
+            this.deferredPrompt = null;
+            if (outcome === 'accepted') {
+                this.toggleInstallButtons(false);
+                const installModalEl = document.getElementById('pwaInstallModal');
+                if (installModalEl && window.bootstrap) {
+                    const modal = bootstrap.Modal.getInstance(installModalEl);
+                    if (modal) modal.hide();
+                }
+            }
+        } else {
+            alert('Please tap your browser menu (⋮) at top right and select "Install app" or "Add to Home screen".');
+        }
     }
 
     setupAppDisabledListener() {
@@ -119,7 +176,8 @@ class PwaInstaller {
 
     async checkInitialAppStatus() {
         try {
-            const res = await fetch('/pwa/status');
+            const statusUrl = this.getStatusUrl();
+            const res = await fetch(statusUrl);
             if (res.ok) {
                 const data = await res.json();
                 if (!data.is_active) {
@@ -158,5 +216,6 @@ class PwaInstaller {
 }
 
 window.PwaInstaller = new PwaInstaller();
-document.addEventListener('DOMContentLoaded', () => window.PwaInstaller.init());
-
+document.addEventListener('DOMContentLoaded', () => {
+    window.PwaInstaller.init();
+});

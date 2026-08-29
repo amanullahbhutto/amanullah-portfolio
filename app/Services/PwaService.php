@@ -76,10 +76,11 @@ class PwaService
         }
 
         return [
+            'id' => url('/'),
             'name' => $settings->app_name,
             'short_name' => $settings->short_name,
             'description' => $settings->description ?? 'Official Portfolio and Islamic Management System',
-            'start_url' => url($settings->start_url ?? '/admin/dashboard'),
+            'start_url' => url($settings->start_url ?? '/admin'),
             'scope' => url($settings->scope ?? '/'),
             'display' => $settings->display_mode ?? 'standalone',
             'orientation' => $settings->orientation ?? 'portrait-primary',
