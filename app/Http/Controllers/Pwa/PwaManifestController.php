@@ -37,20 +37,17 @@ class PwaManifestController extends Controller
     {
         $settings = $this->pwaService->getSettings();
         $cacheVersion = 'portfolio-pwa-v' . preg_replace('/[^0-9a-zA-Z\.\-]/', '', $settings->app_version ?? '1.0.0');
-        $offlineUrl = route('pwa.offline');
-
-        // Precache URLs list
+        // Precache URLs list (relative paths match current origin and scheme automatically)
         $precacheUrls = [
             '/',
-            $offlineUrl,
-            asset('assets/css/app.css'),
-            asset('assets/js/app.js'),
-            asset('assets/js/pwa/pwa-db.js'),
-            asset('assets/js/pwa/pwa-sync.js'),
-            asset('assets/js/pwa/pwa-installer.js'),
-            asset('assets/pwa-icons/icon-192x192.png'),
-            asset('assets/pwa-icons/icon-512x512.png'),
-            'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css',
+            '/pwa/offline',
+            '/assets/css/app.css',
+            '/assets/js/app.js',
+            '/assets/js/pwa/pwa-db.js',
+            '/assets/js/pwa/pwa-sync.js',
+            '/assets/js/pwa/pwa-installer.js',
+            '/assets/pwa-icons/icon-192x192.png',
+            '/assets/pwa-icons/icon-512x512.png',
         ];
 
         $precacheJson = json_encode($precacheUrls, JSON_UNESCAPED_SLASHES);
@@ -58,7 +55,7 @@ class PwaManifestController extends Controller
         $swScript = <<<JS
 /* Progressive Web App Service Worker */
 const CACHE_NAME = '{$cacheVersion}';
-const OFFLINE_URL = '{$offlineUrl}';
+const OFFLINE_URL = '/pwa/offline';
 const PRECACHE_ASSETS = {$precacheJson};
 
 // Install Event: Cache Core App Shell & Static Assets

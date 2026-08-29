@@ -36,52 +36,38 @@ class PwaService
     {
         $settings = $this->getSettings();
 
-        $icons = [];
+        $icon192 = !empty($settings->icon_192) ? '/' . ltrim($settings->icon_192, '/') : '/assets/pwa-icons/icon-192x192.png';
+        $icon512 = !empty($settings->icon_512) ? '/' . ltrim($settings->icon_512, '/') : '/assets/pwa-icons/icon-512x512.png';
+        $iconMaskable = !empty($settings->icon_maskable) ? '/' . ltrim($settings->icon_maskable, '/') : $icon512;
 
-        if (!empty($settings->icon_192)) {
-            $icons[] = [
-                'src' => asset($settings->icon_192) . '?v=' . urlencode($settings->app_version),
+        $icons = [
+            [
+                'src' => $icon192,
                 'sizes' => '192x192',
                 'type' => 'image/png',
                 'purpose' => 'any',
-            ];
-        }
-
-        if (!empty($settings->icon_512)) {
-            $icons[] = [
-                'src' => asset($settings->icon_512) . '?v=' . urlencode($settings->app_version),
+            ],
+            [
+                'src' => $icon512,
                 'sizes' => '512x512',
                 'type' => 'image/png',
                 'purpose' => 'any',
-            ];
-        }
-
-        if (!empty($settings->icon_maskable)) {
-            $icons[] = [
-                'src' => asset($settings->icon_maskable) . '?v=' . urlencode($settings->app_version),
+            ],
+            [
+                'src' => $iconMaskable,
                 'sizes' => '512x512',
                 'type' => 'image/png',
                 'purpose' => 'maskable',
-            ];
-        }
-
-        // Fallback default icon if none present
-        if (empty($icons)) {
-            $icons[] = [
-                'src' => asset('assets/pwa-icons/icon-192x192.png'),
-                'sizes' => '192x192',
-                'type' => 'image/png',
-                'purpose' => 'any maskable',
-            ];
-        }
+            ],
+        ];
 
         return [
-            'id' => url('/'),
-            'name' => $settings->app_name,
-            'short_name' => $settings->short_name,
+            'id' => '/?source=pwa',
+            'name' => $settings->app_name ?? 'Amanullah Portfolio & Management',
+            'short_name' => $settings->short_name ?? 'Amanullah',
             'description' => $settings->description ?? 'Official Portfolio and Islamic Management System',
-            'start_url' => url($settings->start_url ?? '/admin'),
-            'scope' => url($settings->scope ?? '/'),
+            'start_url' => '/admin',
+            'scope' => '/',
             'display' => $settings->display_mode ?? 'standalone',
             'orientation' => $settings->orientation ?? 'portrait-primary',
             'theme_color' => $settings->theme_color ?? '#070d18',
@@ -92,10 +78,10 @@ class PwaService
                     'name' => 'Tasbeeh Counter',
                     'short_name' => 'Tasbeeh',
                     'description' => 'Open Islamic Zikr and Tasbeeh Counter',
-                    'url' => route('admin.zikr.index'),
+                    'url' => '/admin/zikr',
                     'icons' => [
                         [
-                            'src' => asset('assets/pwa-icons/icon-192x192.png'),
+                            'src' => $icon192,
                             'sizes' => '192x192',
                             'type' => 'image/png',
                         ],
@@ -105,10 +91,10 @@ class PwaService
                     'name' => 'Dashboard',
                     'short_name' => 'Dashboard',
                     'description' => 'Admin Overview Dashboard',
-                    'url' => route('admin.dashboard'),
+                    'url' => '/admin',
                     'icons' => [
                         [
-                            'src' => asset('assets/pwa-icons/icon-192x192.png'),
+                            'src' => $icon192,
                             'sizes' => '192x192',
                             'type' => 'image/png',
                         ],

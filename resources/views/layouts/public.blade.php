@@ -38,8 +38,8 @@
                     <span class="brand-symbol">A</span><span>AMANULLAH<span class="brand-dot">.</span></span>
                 </a>
                 <div class="d-flex align-items-center gap-2 order-lg-3">
-                    <button type="button" class="btn btn-outline-theme btn-sm d-none" data-pwa-install-btn title="Install App">
-                        <i class="bi bi-download me-1"></i><span>{{ $pwaSettings->install_button_text ?? 'Install App' }}</span>
+                    <button type="button" class="btn btn-outline-theme btn-sm d-none d-md-inline-flex align-items-center gap-1" data-pwa-install-btn title="Install App">
+                        <i class="bi bi-download"></i><span>{{ $pwaSettings?->install_button_text ?? 'Install App' }}</span>
                     </button>
                     <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch colour theme" title="Day / night mode">
                         <i class="bi bi-sun-fill theme-icon-light"></i>
@@ -58,6 +58,7 @@
                         <li class="nav-item"><a class="nav-link {{ request()->routeIs('services.*') ? 'active' : '' }}" href="{{ route('services.index') }}">Services</a></li>
                         <li class="nav-item"><a class="nav-link {{ request()->routeIs('about') ? 'active' : '' }}" href="{{ route('about') }}">About Me</a></li>
                         <li class="nav-item d-sm-none"><a class="nav-link {{ request()->routeIs('contact.*') ? 'active' : '' }}" href="{{ route('contact.create') }}">Contact</a></li>
+                        <li class="nav-item d-lg-none"><a class="nav-link text-info fw-bold" href="javascript:void(0)" data-pwa-install-btn><i class="bi bi-download me-1"></i>Install Mobile App</a></li>
                     </ul>
                 </div>
             </div>

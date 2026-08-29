@@ -184,9 +184,9 @@
                         <i class="bi bi-wifi me-1"></i><span>Online</span>
                     </button>
 
-                    {{-- PWA Install Button --}}
-                    <button type="button" class="btn btn-accent btn-sm d-none" data-pwa-install-btn title="Install Application">
-                        <i class="bi bi-download me-1"></i><span class="d-none d-md-inline">{{ $pwaSettings->install_button_text ?? 'Install App' }}</span>
+                    {{-- PWA Install Button (Responsive topbar icon) --}}
+                    <button type="button" class="topbar-icon" data-pwa-install-btn title="Download / Install Mobile App" aria-label="Download / Install Mobile App">
+                        <i class="bi bi-download"></i>
                     </button>
 
                     <a class="topbar-icon" href="{{ route('home') }}" target="_blank" title="View website" aria-label="View website"><i class="bi bi-box-arrow-up-right"></i></a>

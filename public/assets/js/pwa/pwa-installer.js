@@ -163,7 +163,12 @@ class PwaInstaller {
                 }
             }
         } else {
-            alert('Please tap your browser menu (⋮) at top right and select "Install app" or "Add to Home screen".');
+            const inlineAlert = document.getElementById('pwa-install-inline-alert');
+            if (inlineAlert) {
+                inlineAlert.classList.remove('d-none');
+            } else {
+                alert('Please tap your browser menu (⋮) at top right and select "Install app" or "Add to Home screen".');
+            }
         }
     }
 

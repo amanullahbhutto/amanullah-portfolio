@@ -56,6 +56,38 @@
     </div>
 </div>
 
+{{-- Prominent Download & Install Mobile App Card in Body --}}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="p-4 rounded-4 border position-relative overflow-hidden" style="background: linear-gradient(135deg, rgba(8, 17, 30, 0.95) 0%, rgba(12, 22, 38, 0.95) 100%); border-color: rgba(56, 189, 248, 0.35) !important; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);">
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-4">
+                <div class="d-flex align-items-center gap-3">
+                    <img src="{{ $settings->icon_192_url }}" alt="App Icon" style="width: 64px; height: 64px; border-radius: 18px; border: 2px solid rgba(56, 189, 248, 0.4); padding: 2px; box-shadow: 0 8px 20px rgba(0,0,0,0.5);">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <h3 class="mb-0 text-white fs-5 fw-bold">{{ $settings->app_name }}</h3>
+                            <span class="badge bg-info text-dark fw-bold">v{{ $settings->app_version }}</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2"><i class="bi bi-shield-check me-1"></i>PWA Ready</span>
+                        </div>
+                        <p class="text-secondary small mb-0" style="line-height: 1.5;">
+                            Is website ko apne Mobile (Android / iPhone) ya Computer (Desktop) par direct install karein. Yeh full-screen mobile app ki tarah offline chalegi.
+                        </p>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-accent px-4 py-2 fw-bold d-inline-flex align-items-center gap-2" data-pwa-install-btn style="border-radius: 12px; font-size: 0.95rem; box-shadow: 0 0 20px rgba(255, 107, 44, 0.35);">
+                        <i class="bi bi-download fs-6"></i>
+                        <span>Download & Install Mobile App</span>
+                    </button>
+                    <a href="{{ route('pwa.manifest') }}" target="_blank" class="btn btn-outline-theme px-3 py-2 btn-sm" style="border-radius: 12px;" title="View Web App Manifest">
+                        <i class="bi bi-filetype-json me-1"></i>Manifest
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <form method="POST" action="{{ route('admin.pwa.settings.update') }}" enctype="multipart/form-data" id="pwaSettingsForm">
     @csrf
     @method('PUT')
