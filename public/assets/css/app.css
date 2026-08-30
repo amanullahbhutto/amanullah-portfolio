@@ -1799,12 +1799,20 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
 /* Live Tasbeeh Counter UI (Interactive Mehrab & Arch)                        */
 /* ========================================================================== */
 
-.live-counter-page-wrapper {
-    min-height: calc(100vh - 90px);
+.admin-content:has(.live-counter-page-wrapper) {
+    padding: 10px 16px;
+    min-height: calc(100vh - 82px);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 8px 12px;
+}
+.live-counter-page-wrapper {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    padding: 0;
     user-select: none;
     -webkit-user-select: none;
 }
@@ -1814,8 +1822,8 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     border-radius: 28px;
     width: 100%;
     max-width: 440px;
+    margin: 0 auto;
     height: auto;
-    min-height: 520px;
     padding: 16px 18px 12px 18px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
     position: relative;
@@ -2060,6 +2068,21 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     }
     .bottom-stats-row {
         padding: 4px 2px 2px 2px;
+    }
+}
+
+@media (max-width: 576px) {
+    .live-counter-page-wrapper {
+        min-height: calc(100vh - 120px);
+        padding: 4px 0;
+        margin: 0 auto;
+    }
+    .tasbeeh-card {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        border-radius: 24px;
+        padding: 14px 16px 10px 16px;
     }
 }
 
