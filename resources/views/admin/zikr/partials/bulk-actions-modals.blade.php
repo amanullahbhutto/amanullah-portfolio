@@ -70,130 +70,84 @@
     </div>
 </div>
 
-{{-- Complete Single Tasbeeh for Today Modal --}}
-<div class="modal fade" id="completeSingleTasbeehModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content text-white" style="background: #08111e; border: 1px solid #162a45; border-radius: 18px; box-shadow: 0 20px 45px rgba(0,0,0,0.85);">
-            <div class="modal-body text-center p-4">
-                <div class="mb-3 d-inline-flex align-items-center justify-content-center" style="width: 56px; height: 56px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981;">
-                    <i class="bi bi-check2-all fs-2"></i>
-                </div>
-                <h5 class="fw-bold mb-1 text-white">Complete for Today</h5>
-                <p class="text-info small fw-semibold mb-2 text-truncate" id="completeSingleTasbeehTitle">Tasbeeh</p>
-                <p class="text-muted-custom small mb-4" style="line-height: 1.6;">
-                    Kia aap is tasbeeh ka aaj ka target 100% complete mark karna chahte hain?
-                </p>
-                <div class="d-flex gap-2 justify-content-center">
-                    <button type="button" class="btn btn-outline-theme btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success btn-sm px-4 fw-bold" id="btnConfirmCompleteSingle" style="background: #10b981; border-color: #10b981;">
-                        <span class="spinner-border spinner-border-sm me-1 d-none" role="status" aria-hidden="true"></span>
-                        Yes, Complete
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const completeBtn = document.getElementById('btnConfirmCompleteAll');
-    const completeSingleBtn = document.getElementById('btnConfirmCompleteSingle');
     const resetBtn = document.getElementById('btnConfirmResetAll');
     const resetLifetimeBtn = document.getElementById('btnConfirmResetLifetime');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     const urlParams = new URLSearchParams(window.location.search);
     const defaultUserId = urlParams.get('user_id') || '{{ $selectedUser->id ?? auth()->id() }}';
 
-    // Single complete modal state
-    let singleCompleteUrl = '';
-    let singleCompleteUserId = defaultUserId;
+    // Direct 1-Click Complete for Individual Tasbeeh (No Modal / No Prompt)
+    document.addEventListener('click', async function (e) {
+        const completeBtn = e.target.closest('.btn-complete-icon');
+        if (!completeBtn) return;
+        e.preventDefault();
 
-    const completeSingleModalEl = document.getElementById('completeSingleTasbeehModal');
-    if (completeSingleModalEl) {
-        completeSingleModalEl.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            if (button) {
-                singleCompleteUrl = button.getAttribute('data-complete-url') || '';
-                singleCompleteUserId = button.getAttribute('data-user-id') || defaultUserId;
-                const title = button.getAttribute('data-tasbeeh-title') || 'Tasbeeh';
-                const titleEl = document.getElementById('completeSingleTasbeehTitle');
-                if (titleEl) titleEl.textContent = title;
+        const tasbeehId = completeBtn.getAttribute('data-tasbeeh-id');
+        const completeUrl = completeBtn.getAttribute('data-complete-url');
+        const userId = completeBtn.getAttribute('data-user-id') || defaultUserId;
+        const title = completeBtn.getAttribute('data-tasbeeh-title') || 'Tasbeeh';
+
+        if (!tasbeehId || !completeUrl) return;
+
+        // Instant visual update on card (0ms delay)
+        if (typeof window.updateZikrCardDom === 'function') {
+            const card = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
+            const badgeText = card?.querySelector('.badge-completed')?.textContent || '';
+            const match = badgeText.match(/\/\s*([0-9,]+)/);
+            const targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
+            window.updateZikrCardDom(tasbeehId, targetReq, true);
+        }
+
+        // Visual click feedback
+        completeBtn.style.transform = 'scale(1.25)';
+        completeBtn.style.transition = 'transform 0.2s ease';
+        setTimeout(() => { completeBtn.style.transform = 'scale(1)'; }, 250);
+
+        if (!navigator.onLine) {
+            if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
+                await window.PwaSync.completeTasbeehToday(tasbeehId);
             }
-        });
-    }
-
-    if (completeSingleBtn) {
-        completeSingleBtn.addEventListener('click', async function () {
-            if (!singleCompleteUrl) return;
-
-            const spinner = completeSingleBtn.querySelector('.spinner-border');
-            completeSingleBtn.disabled = true;
-            if (spinner) spinner.classList.remove('d-none');
-
-            if (!navigator.onLine) {
-                if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
-                    await window.PwaSync.completeTasbeehToday(singleCompleteTasbeehId);
-                }
-                if (singleCompleteTasbeehId && typeof window.updateZikrCardDom === 'function') {
-                    const card = document.getElementById(`tasbeeh-card-${singleCompleteTasbeehId}`);
-                    const badgeText = card?.querySelector('.badge-completed')?.textContent || '';
-                    const match = badgeText.match(/\/\s*([0-9,]+)/);
-                    const targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
-                    window.updateZikrCardDom(singleCompleteTasbeehId, targetReq, true);
-                }
-                const modalInstance = bootstrap.Modal.getInstance(completeSingleModalEl);
-                if (modalInstance) modalInstance.hide();
-                if (window.App && typeof window.App.showToast === 'function') {
-                    window.App.showToast('info', 'Saved offline and updated on screen!');
-                }
-                completeSingleBtn.disabled = false;
-                if (spinner) spinner.classList.add('d-none');
-                return;
+            if (typeof window.showFlashToast === 'function') {
+                window.showFlashToast(`'${title}' marked as completed for today (saved offline)!`, 'info');
             }
+            return;
+        }
 
-            try {
-                const response = await fetch(singleCompleteUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: JSON.stringify({ user_id: singleCompleteUserId })
-                });
+        try {
+            const response = await fetch(completeUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({ user_id: userId })
+            });
 
-                const data = await response.json();
-                if (data.success) {
-                    const modalInstance = bootstrap.Modal.getInstance(completeSingleModalEl);
-                    if (modalInstance) modalInstance.hide();
-
-                    if (window.App && typeof window.App.showToast === 'function') {
-                        window.App.showToast('success', data.message || 'Tasbeeh marked as completed for today!');
-                    }
-                    setTimeout(() => window.location.reload(), 500);
-                } else {
-                    alert(data.message || 'Failed to complete tasbeeh.');
+            const data = await response.json();
+            if (data.success) {
+                if (typeof window.showFlashToast === 'function') {
+                    window.showFlashToast(data.message || `'${title}' marked as completed for today!`, 'success');
                 }
-            } catch (err) {
-                console.error(err);
-                if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
-                    await window.PwaSync.completeTasbeehToday(singleCompleteTasbeehId);
-                    const modalInstance = bootstrap.Modal.getInstance(completeSingleModalEl);
-                    if (modalInstance) modalInstance.hide();
-                    if (window.App && typeof window.App.showToast === 'function') {
-                        window.App.showToast('info', 'Saved offline. Changes will synchronize once reconnected.');
-                    }
-                } else {
-                    alert('An unexpected error occurred while completing tasbeeh.');
+            } else {
+                if (typeof window.showFlashToast === 'function') {
+                    window.showFlashToast(data.message || 'Failed to complete tasbeeh.', 'danger');
                 }
-            } finally {
-                completeSingleBtn.disabled = false;
-                if (spinner) spinner.classList.add('d-none');
             }
-        });
-    }
+        } catch (err) {
+            console.error(err);
+            if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
+                await window.PwaSync.completeTasbeehToday(tasbeehId);
+                if (typeof window.showFlashToast === 'function') {
+                    window.showFlashToast(`'${title}' marked as completed for today (saved offline)!`, 'info');
+                }
+            }
+        }
+    });
 
     if (completeBtn) {
         completeBtn.addEventListener('click', async function () {
@@ -238,6 +192,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const data = await response.json();
                 if (data.success) {
+                    if (typeof window.updateZikrCardDom === 'function') {
+                        document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                            const tId = card.id.replace('tasbeeh-card-', '');
+                            const badgeText = card.querySelector('.badge-completed')?.textContent || '';
+                            const match = badgeText.match(/\/\s*([0-9,]+)/);
+                            const targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
+                            window.updateZikrCardDom(tId, targetReq, true);
+                        });
+                    }
+
                     const modalEl = document.getElementById('completeAllTasbeehsModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalEl);
                     if (modalInstance) modalInstance.hide();
@@ -245,7 +209,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (window.App && typeof window.App.showToast === 'function') {
                         window.App.showToast('success', data.message || 'All tasbeehs marked as completed for today!');
                     }
-                    setTimeout(() => window.location.reload(), 500);
                 } else {
                     alert(data.message || 'Failed to complete tasbeehs.');
                 }
@@ -253,6 +216,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error(err);
                 if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.completeAllTasbeehsToday === 'function') {
                     await window.PwaSync.completeAllTasbeehsToday();
+                    if (typeof window.updateZikrCardDom === 'function') {
+                        document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                            const tId = card.id.replace('tasbeeh-card-', '');
+                            const badgeText = card.querySelector('.badge-completed')?.textContent || '';
+                            const match = badgeText.match(/\/\s*([0-9,]+)/);
+                            const targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
+                            window.updateZikrCardDom(tId, targetReq, true);
+                        });
+                    }
                     const modalEl = document.getElementById('completeAllTasbeehsModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalEl);
                     if (modalInstance) modalInstance.hide();
@@ -309,6 +281,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const data = await response.json();
                 if (data.success) {
+                    if (typeof window.updateZikrCardDom === 'function') {
+                        document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                            const tId = card.id.replace('tasbeeh-card-', '');
+                            window.updateZikrCardDom(tId, 0, true);
+                        });
+                    }
+
                     const modalEl = document.getElementById('resetAllTasbeehsModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalEl);
                     if (modalInstance) modalInstance.hide();
@@ -316,7 +295,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (window.App && typeof window.App.showToast === 'function') {
                         window.App.showToast('success', data.message || 'All tasbeehs have been reset to 0.');
                     }
-                    setTimeout(() => window.location.reload(), 500);
                 } else {
                     alert(data.message || 'Failed to reset tasbeehs.');
                 }
@@ -324,6 +302,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error(err);
                 if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.resetAllTasbeehs === 'function') {
                     await window.PwaSync.resetAllTasbeehs();
+                    if (typeof window.updateZikrCardDom === 'function') {
+                        document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                            const tId = card.id.replace('tasbeeh-card-', '');
+                            window.updateZikrCardDom(tId, 0, true);
+                        });
+                    }
                     const modalEl = document.getElementById('resetAllTasbeehsModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalEl);
                     if (modalInstance) modalInstance.hide();
@@ -350,6 +334,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (window.PwaSync && typeof window.PwaSync.resetLifetime === 'function') {
                     await window.PwaSync.resetLifetime();
                 }
+                const lifetimeEl = document.getElementById('top-stat-lifetime-total');
+                if (lifetimeEl) lifetimeEl.textContent = '0';
                 const modalEl = document.getElementById('resetLifetimeModal');
                 const modalInstance = bootstrap.Modal.getInstance(modalEl);
                 if (modalInstance) modalInstance.hide();
@@ -374,6 +360,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const data = await response.json();
                 if (data.success) {
+                    const lifetimeEl = document.getElementById('top-stat-lifetime-total');
+                    if (lifetimeEl) lifetimeEl.textContent = '0';
+
                     const modalEl = document.getElementById('resetLifetimeModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalEl);
                     if (modalInstance) modalInstance.hide();
@@ -381,7 +370,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (window.App && typeof window.App.showToast === 'function') {
                         window.App.showToast('success', data.message || 'Lifetime total zikr has been reset.');
                     }
-                    setTimeout(() => window.location.reload(), 500);
                 } else {
                     alert(data.message || 'Failed to reset lifetime counter.');
                 }
@@ -389,6 +377,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error(err);
                 if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.resetLifetime === 'function') {
                     await window.PwaSync.resetLifetime();
+                    const lifetimeEl = document.getElementById('top-stat-lifetime-total');
+                    if (lifetimeEl) lifetimeEl.textContent = '0';
                     const modalEl = document.getElementById('resetLifetimeModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalEl);
                     if (modalInstance) modalInstance.hide();

@@ -288,7 +288,13 @@ class PortfolioContentController extends Controller
         $directory = public_path('assets/images/'.$folder);
         File::ensureDirectoryExists($directory);
 
-        $filename = $prefix.'-'.now()->format('YmdHis').'-'.Str::random(8).'.'.strtolower($file->getClientOriginalExtension());
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'svg', 'gif'];
+        $extension = strtolower($file->extension() ?: $file->getClientOriginalExtension());
+        if (!in_array($extension, $allowedExtensions, true)) {
+            $extension = 'jpg';
+        }
+
+        $filename = $prefix.'-'.now()->format('YmdHis').'-'.Str::random(12).'.'.$extension;
         $file->move($directory, $filename);
 
         return 'assets/images/'.$folder.'/'.$filename;

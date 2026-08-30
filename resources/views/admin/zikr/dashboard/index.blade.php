@@ -48,7 +48,7 @@
                         <i class="bi bi-trash3"></i>
                     </button>
                 </div>
-                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0" style="color: #f97316 !important; line-height: 1.2;">{{ number_format($summary['lifetime_total']) }}</strong>
+                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0" id="top-stat-lifetime-total" style="color: #f97316 !important; line-height: 1.2;">{{ number_format($summary['lifetime_total']) }}</strong>
                 <small class="text-muted-custom d-block text-truncate" style="font-size: 0.72rem;">All-Time Permanent</small>
             </div>
         </div>
@@ -57,7 +57,7 @@
         <div class="col-6 col-md-4 col-xl">
             <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
                 <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Daily Target</span>
-                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0" style="line-height: 1.2;">{{ number_format($summary['overall_today_required']) }}</strong>
+                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0" id="top-stat-daily-target" style="line-height: 1.2;">{{ number_format($summary['overall_today_required']) }}</strong>
                 <small class="text-muted-custom d-block text-truncate" style="font-size: 0.72rem;">{{ $summary['total_active_tasbeehs'] }} Tasbeehs</small>
             </div>
         </div>
@@ -66,7 +66,7 @@
         <div class="col-6 col-md-4 col-xl">
             <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
                 <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Total Required</span>
-                <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0" style="line-height: 1.2;">{{ number_format($summary['overall_total_required']) }}</strong>
+                <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0" id="top-stat-total-required" style="line-height: 1.2;">{{ number_format($summary['overall_total_required']) }}</strong>
                 <small class="text-muted-custom d-block text-truncate" style="font-size: 0.72rem;">Active cycle till today</small>
             </div>
         </div>
@@ -75,14 +75,14 @@
         <div class="col-6 col-md-4 col-xl">
             <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
                 <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Total Completed</span>
-                <strong class="fs-3 fs-md-2 text-success d-block font-monospace my-0" style="line-height: 1.2;">{{ number_format($summary['overall_total_completed']) }}</strong>
-                <small class="text-success d-block fw-semibold text-truncate" style="font-size: 0.72rem;">{{ $summary['overall_percentage'] }}% Completed</small>
+                <strong class="fs-3 fs-md-2 text-success d-block font-monospace my-0" id="top-stat-total-completed" style="line-height: 1.2;">{{ number_format($summary['overall_total_completed']) }}</strong>
+                <small class="text-success d-block fw-semibold text-truncate" id="top-stat-overall-percentage" style="font-size: 0.72rem;">{{ $summary['overall_percentage'] }}% Completed</small>
             </div>
         </div>
 
         {{-- Extra Zikr / Backlog --}}
         <div class="col-12 col-md-4 col-xl">
-            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" id="top-stat-backlog-container" style="background: #08111e; border-color: #142845; min-height: 104px;">
                 @if($summary['overall_extra'] > 0)
                     <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Extra Zikr</span>
                     <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0" style="line-height: 1.2;">+{{ number_format($summary['overall_extra']) }}</strong>
@@ -93,7 +93,7 @@
                         {{ number_format($summary['overall_backlog']) }}
                     </strong>
                     <small class="{{ $summary['overall_backlog'] > 0 ? 'text-warning' : 'text-success' }} d-block fw-semibold text-truncate" style="font-size: 0.72rem;">
-                        {{ $summary['overall_backlog'] > 0 ? 'Pending to complete' : 'All completed!' }}
+                        {{ $summary['overall_backlog'] > 0 ? 'Behind schedule' : 'On track' }}
                     </small>
                 @endif
             </div>
@@ -172,12 +172,10 @@
 
                         {{-- Action Icons Group --}}
                         <div class="badge-actions-group">
-                            {{-- Mark This Tasbeeh Complete for Today --}}
+                            {{-- Mark This Tasbeeh Complete for Today (Direct 1-Click Complete) --}}
                             <button
                                 class="action-icon-btn btn-complete-icon"
                                 type="button"
-                                data-bs-toggle="modal"
-                                data-bs-target="#completeSingleTasbeehModal"
                                 data-tasbeeh-id="{{ $item['tasbeeh_id'] }}"
                                 data-tasbeeh-title="{{ $item['title'] }}"
                                 data-user-id="{{ $selectedUser->id }}"

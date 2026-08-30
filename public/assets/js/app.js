@@ -153,6 +153,10 @@
         prepareFlashToast(toast);
     };
 
+    window.showFlashToast = showFlashToast;
+    window.App = window.App || {};
+    window.App.showToast = (type, message) => showFlashToast(message, type);
+
     document.querySelectorAll('[data-flash-toast]').forEach(prepareFlashToast);
 
     document.addEventListener('click', (event) => {
@@ -1392,9 +1396,17 @@
             const form = document.getElementById('quickAddForm');
             const titleEl = document.getElementById('quickAddTasbeehTitle');
             const userInput = document.getElementById('quickAddUserId');
-            if (form && postUrl) form.action = postUrl;
+            const countInput = document.getElementById('quickAddCountInput');
+            if (form) {
+                if (postUrl) form.action = postUrl;
+                if (tasbeehId) form.dataset.tasbeehId = tasbeehId;
+            }
             if (titleEl) titleEl.textContent = tasbeehTitle || 'Tasbeeh';
             if (userInput) userInput.value = userId || '';
+            if (countInput) {
+                countInput.value = '';
+                setTimeout(() => countInput.focus(), 150);
+            }
         }
 
         const resetTrigger = e.target.closest?.('[data-bs-target="#resetTasbeehModal"]');
@@ -1430,6 +1442,57 @@
             if (refInput) refInput.value = ref || '';
         }
     });
+
+    window.recalculateZikrTopStats = function () {
+        let overallTotalCompleted = 0;
+        let overallTotalRequired = 0;
+        let cards = document.querySelectorAll('[id^="tasbeeh-card-"]');
+
+        cards.forEach(card => {
+            let completedEl = card.querySelector('.badge-completed strong');
+            let badgeCompletedText = card.querySelector('.badge-completed')?.textContent || '';
+            let matchReq = badgeCompletedText.match(/\/\s*([0-9,]+)/);
+
+            let completed = completedEl ? (parseInt(completedEl.textContent.replace(/,/g, ''), 10) || 0) : 0;
+            let required = matchReq ? (parseInt(matchReq[1].replace(/,/g, ''), 10) || 0) : 0;
+
+            overallTotalCompleted += completed;
+            overallTotalRequired += required;
+        });
+
+        let completedStatEl = document.getElementById('top-stat-total-completed');
+        let percentStatEl = document.getElementById('top-stat-overall-percentage');
+        let backlogContainerEl = document.getElementById('top-stat-backlog-container');
+
+        if (completedStatEl) {
+            completedStatEl.textContent = overallTotalCompleted.toLocaleString();
+        }
+
+        let percentage = overallTotalRequired > 0 ? Math.min(100, Math.round((overallTotalCompleted / overallTotalRequired) * 100)) : 100;
+        if (percentStatEl) {
+            percentStatEl.textContent = `${percentage}% Completed`;
+        }
+
+        if (backlogContainerEl) {
+            let diff = overallTotalCompleted - overallTotalRequired;
+            if (diff > 0) {
+                backlogContainerEl.innerHTML = `
+                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Extra Zikr</span>
+                    <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0" style="line-height: 1.2;">+${diff.toLocaleString()}</strong>
+                    <small class="text-info d-block fw-semibold text-truncate" style="font-size: 0.72rem;">Ahead of schedule</small>
+                `;
+            } else {
+                let backlog = Math.abs(diff);
+                let colorClass = backlog > 0 ? 'text-warning' : 'text-success';
+                let label = backlog > 0 ? 'Behind schedule' : 'On track';
+                backlogContainerEl.innerHTML = `
+                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Remaining Backlog</span>
+                    <strong class="fs-3 fs-md-2 ${colorClass} d-block font-monospace my-0" style="line-height: 1.2;">${backlog.toLocaleString()}</strong>
+                    <small class="${colorClass} d-block fw-semibold text-truncate" style="font-size: 0.72rem;">${label}</small>
+                `;
+            }
+        }
+    };
 
     window.updateZikrCardDom = function (tasbeehId, countDelta, isAbsolute = false) {
         const cardCol = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
@@ -1485,6 +1548,10 @@
                 }
                 progressEl.className = `progress-bar-custom ${barClass}`;
             }
+        }
+
+        if (typeof window.recalculateZikrTopStats === 'function') {
+            window.recalculateZikrTopStats();
         }
     };
 
@@ -1548,8 +1615,10 @@
                     if (modal && window.bootstrap) {
                         window.bootstrap.Modal.getInstance(modal)?.hide();
                     }
+                    if (tasbeehId) {
+                        window.updateZikrCardDom(tasbeehId, 0, true);
+                    }
                     showFlashToast(payload.message || 'Tracking reset successfully.');
-                    setTimeout(() => window.location.reload(), 300);
                 })
                 .catch((err) => {
                     if (!navigator.onLine && window.PwaSync && tasbeehId) {
@@ -1582,7 +1651,7 @@
             const countVal = parseInt(formData.get('count'), 10);
             const actionUrl = quickAddForm.action || '';
             const match = actionUrl.match(/counter\/(\d+)/);
-            const tasbeehId = match ? match[1] : null;
+            const tasbeehId = quickAddForm.dataset.tasbeehId || (match ? match[1] : null);
 
             if (!navigator.onLine) {
                 if (window.PwaSync && tasbeehId) {
@@ -1594,6 +1663,8 @@
                 if (modal && window.bootstrap) {
                     window.bootstrap.Modal.getInstance(modal)?.hide();
                 }
+                const countInput = document.getElementById('quickAddCountInput');
+                if (countInput) countInput.value = '';
                 if (btn) btn.disabled = false;
                 showFlashToast('Zikr count saved offline and updated on screen!', 'info');
                 return;
@@ -1617,8 +1688,12 @@
                     if (modal && window.bootstrap) {
                         window.bootstrap.Modal.getInstance(modal)?.hide();
                     }
-                    showFlashToast(payload.message || 'Zikr added successfully.');
-                    setTimeout(() => window.location.reload(), 300);
+                    if (tasbeehId && !isNaN(countVal)) {
+                        window.updateZikrCardDom(tasbeehId, countVal);
+                    }
+                    const countInput = document.getElementById('quickAddCountInput');
+                    if (countInput) countInput.value = '';
+                    showFlashToast(payload.message || 'Zikr added successfully.', 'success');
                 })
                 .catch((err) => {
                     if (!navigator.onLine && window.PwaSync && tasbeehId) {
@@ -1664,7 +1739,6 @@
                         window.bootstrap.Modal.getInstance(modal)?.hide();
                     }
                     showFlashToast(payload.message || 'Start date updated.');
-                    setTimeout(() => window.location.reload(), 300);
                 })
                 .catch((err) => {
                     showFlashToast(firstErrorMessage(err.payload, 'Could not update start date.'), 'danger');

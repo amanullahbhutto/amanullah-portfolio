@@ -90,7 +90,13 @@ class ProfileController extends Controller
         File::ensureDirectoryExists($directory);
 
         $file = $request->file($field);
-        $filename = $field.'-'.now()->format('YmdHis').'-'.Str::random(8).'.'.$file->getClientOriginalExtension();
+        $allowedExtensions = $field === 'cv_file' ? ['pdf'] : ['jpg', 'jpeg', 'png', 'webp'];
+        $extension = strtolower($file->extension() ?: $file->getClientOriginalExtension());
+        if (!in_array($extension, $allowedExtensions, true)) {
+            $extension = $field === 'cv_file' ? 'pdf' : 'jpg';
+        }
+
+        $filename = $field.'-'.now()->format('YmdHis').'-'.Str::random(12).'.'.$extension;
         $file->move($directory, $filename);
 
         return 'assets/images/'.$filename;

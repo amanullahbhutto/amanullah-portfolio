@@ -216,7 +216,11 @@ class PwaService
                             break;
 
                         case 'namaz_attendance_status':
-                            $targetUserId = $payload['user_id'] ?? $user->id;
+                            $targetUserId = (int) ($payload['user_id'] ?? $user->id);
+                            // IDOR Protection: non-admins can only sync for themselves
+                            if ($targetUserId !== $user->id && !($user->can('view namaz attendance') || $user->hasAnyRole(['Super Admin', 'Admin', 'admin']))) {
+                                $targetUserId = $user->id;
+                            }
                             $targetUser = User::find($targetUserId) ?? $user;
                             $date = $payload['attendance_date'] ?? null;
                             $prayer = $payload['prayer'] ?? null;
@@ -233,7 +237,11 @@ class PwaService
                             break;
 
                         case 'namaz_attendance_day':
-                            $targetUserId = $payload['user_id'] ?? $user->id;
+                            $targetUserId = (int) ($payload['user_id'] ?? $user->id);
+                            // IDOR Protection: non-admins can only sync for themselves
+                            if ($targetUserId !== $user->id && !($user->can('view namaz attendance') || $user->hasAnyRole(['Super Admin', 'Admin', 'admin']))) {
+                                $targetUserId = $user->id;
+                            }
                             $targetUser = User::find($targetUserId) ?? $user;
                             $date = $payload['attendance_date'] ?? null;
                             $statuses = [
@@ -262,6 +270,11 @@ class PwaService
                             $endDate = $payload['end_date'] ?? null;
 
                             if ($action === 'create') {
+                                if (!$user->can('create date of birth') && !$user->hasAnyRole(['Super Admin', 'Admin', 'admin'])) {
+                                    $status = 'failed';
+                                    $errorMessage = 'Unauthorized to create date of birth records.';
+                                    break;
+                                }
                                 if ($name && $startDate) {
                                     $dob = DateOfBirth::create([
                                         'name' => $name,
@@ -275,6 +288,11 @@ class PwaService
                                     $errorMessage = 'Missing name or birth date.';
                                 }
                             } elseif ($action === 'update') {
+                                if (!$user->can('update date of birth') && !$user->hasAnyRole(['Super Admin', 'Admin', 'admin'])) {
+                                    $status = 'failed';
+                                    $errorMessage = 'Unauthorized to update date of birth records.';
+                                    break;
+                                }
                                 $dob = DateOfBirth::find($recordId);
                                 if ($dob) {
                                     $dob->update([
@@ -289,6 +307,11 @@ class PwaService
                                     $errorMessage = "DOB record #{$recordId} not found.";
                                 }
                             } elseif ($action === 'delete') {
+                                if (!$user->can('delete date of birth') && !$user->hasAnyRole(['Super Admin', 'Admin', 'admin'])) {
+                                    $status = 'failed';
+                                    $errorMessage = 'Unauthorized to delete date of birth records.';
+                                    break;
+                                }
                                 $dob = DateOfBirth::find($recordId);
                                 if ($dob) {
                                     $dob->delete();

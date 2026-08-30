@@ -34,7 +34,7 @@
     <div id="tasbeehs-grid-container" class="admin-list-results">
         <div class="row g-3 g-md-4">
             @forelse($tasbeehs as $t)
-                <div class="col-12 col-lg-6 d-flex">
+                <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $t->id }}">
                     <div class="zikr-item-card w-100 d-flex flex-column justify-content-between">
                         <!-- Right-Aligned Text Area with Custom Center Divider -->
                         <div class="text-container">
@@ -77,12 +77,10 @@
 
                             <!-- Action Buttons -->
                             <div class="badge-actions-group">
-                                {{-- Mark This Tasbeeh Complete for Today --}}
+                                {{-- Mark This Tasbeeh Complete for Today (Direct 1-Click Complete) --}}
                                 <button
                                     class="action-icon-btn btn-complete-icon"
                                     type="button"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#completeSingleTasbeehModal"
                                     data-tasbeeh-id="{{ $t->id }}"
                                     data-tasbeeh-title="{{ $t->title }}"
                                     data-user-id="{{ auth()->id() }}"

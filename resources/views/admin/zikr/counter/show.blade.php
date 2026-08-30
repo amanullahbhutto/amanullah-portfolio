@@ -46,8 +46,8 @@
 
         {{-- Islamic Mehrab Arch with Dynamic Arc Beads & Main Counter --}}
         <div class="mehrab-arch" id="mehrabArchBox">
-            <svg class="svg-arc-container" viewBox="0 0 300 150">
-                <path d="M 30,135 A 120,120 0 0,1 270,135" fill="none" stroke="rgba(255, 255, 255, 0.12)" stroke-dasharray="3,3" stroke-width="1.5"/>
+            <svg class="svg-arc-container" viewBox="0 0 300 115">
+                <path d="M 60,105 A 90,90 0 0,1 240,105" fill="none" stroke="rgba(255, 255, 255, 0.12)" stroke-dasharray="3,3" stroke-width="1.5"/>
                 <g id="beadsGroup"></g>
             </svg>
 
@@ -215,7 +215,7 @@
             if (!beadsGroup) return;
             beadsGroup.innerHTML = '';
 
-            const cx = 150, cy = 135, r = 120;
+            const cx = 150, cy = 105, r = 90;
 
             for (let i = 1; i <= maxBeads; i++) {
                 const angle = Math.PI - (i / maxBeads) * Math.PI;

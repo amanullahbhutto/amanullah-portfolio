@@ -63,8 +63,8 @@ Route::get('/pwa/offline', [PwaManifestController::class, 'offline'])->name('pwa
 Route::get('/pwa/status', [PwaSyncController::class, 'status'])->name('pwa.status');
 
 // PWA Offline Sync Endpoints
-Route::post('/pwa/sync/push', [PwaSyncController::class, 'push'])->name('pwa.sync.push');
-Route::get('/pwa/sync/pull', [PwaSyncController::class, 'pull'])->name('pwa.sync.pull');
+Route::post('/pwa/sync/push', [PwaSyncController::class, 'push'])->middleware('throttle:60,1')->name('pwa.sync.push');
+Route::get('/pwa/sync/pull', [PwaSyncController::class, 'pull'])->middleware('throttle:60,1')->name('pwa.sync.pull');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthController::class, 'login'])->name('login');
@@ -115,7 +115,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): v
     Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
 
     Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
-    Route::post('/maintenance/run', [MaintenanceController::class, 'run'])->name('maintenance.run');
+    Route::post('/maintenance/run', [MaintenanceController::class, 'run'])->middleware('throttle:10,1')->name('maintenance.run');
 
     // Khata System (Ledger & Accounts)
     Route::get('/khata', [KhataCustomerController::class, 'index'])->name('khata.index');
