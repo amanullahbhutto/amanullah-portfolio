@@ -37,8 +37,21 @@ class PwaManifestController extends Controller
     {
         $settings = $this->pwaService->getSettings();
         $cacheVersion = 'portfolio-pwa-v' . preg_replace('/[^0-9a-zA-Z\.\-]/', '', $settings->app_version ?? '1.0.0');
+        // Dynamic Tasbeeh Counter URLs
+        $tasbeehUrls = [];
+        try {
+            $activeTasbeehIds = \App\Models\Tasbeeh::query()
+                ->where('is_active', true)
+                ->pluck('id');
+            foreach ($activeTasbeehIds as $tId) {
+                $tasbeehUrls[] = "/admin/zikr/tasbeeh/{$tId}";
+            }
+        } catch (\Throwable $e) {
+            // Silently ignore if table not ready
+        }
+
         // Precache URLs list (relative paths match current origin and scheme automatically)
-        $precacheUrls = [
+        $precacheUrls = array_unique(array_merge([
             '/',
             '/pwa/offline',
             '/admin',
@@ -52,9 +65,9 @@ class PwaManifestController extends Controller
             '/assets/js/pwa/pwa-installer.js',
             '/assets/pwa-icons/icon-192x192.png',
             '/assets/pwa-icons/icon-512x512.png',
-        ];
+        ], $tasbeehUrls));
 
-        $precacheJson = json_encode($precacheUrls, JSON_UNESCAPED_SLASHES);
+        $precacheJson = json_encode(array_values($precacheUrls), JSON_UNESCAPED_SLASHES);
 
         $swScript = <<<JS
 /* Progressive Web App Service Worker */
@@ -69,7 +82,7 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME).then((cache) => {
             return Promise.allSettled(
                 PRECACHE_ASSETS.map((url) => {
-                    return fetch(url).then((response) => {
+                    return fetch(url, { credentials: 'same-origin' }).then((response) => {
                         if (response && response.ok) {
                             return cache.put(url, response);
                         }
@@ -152,19 +165,28 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 2. HTML Navigation Strategy -> Network First with Offline Fallback
+    // 2. HTML Navigation Strategy -> Network First with Resilient Cache Fallback
     if (request.mode === 'navigate' || (request.headers.get('accept') && request.headers.get('accept').includes('text/html'))) {
         event.respondWith(
             fetch(request)
                 .then((networkResponse) => {
                     if (networkResponse && networkResponse.status === 200) {
                         const cloned = networkResponse.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(request, cloned));
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(request, cloned);
+                            cache.put(url.pathname, networkResponse.clone());
+                        });
                     }
                     return networkResponse;
                 })
                 .catch(async () => {
-                    const cachedResponse = await caches.match(request);
+                    let cachedResponse = await caches.match(request);
+                    if (!cachedResponse) {
+                        cachedResponse = await caches.match(url.pathname);
+                    }
+                    if (!cachedResponse) {
+                        cachedResponse = await caches.match(request.url);
+                    }
                     if (cachedResponse) {
                         return cachedResponse;
                     }

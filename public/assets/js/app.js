@@ -448,6 +448,129 @@
             }
         });
 
+        const calculateDobStats = (startDateStr) => {
+            if (!startDateStr) return { ageText: '—', countdownText: '—', nextBirthdayFormatted: '—', startFormattedShort: '—', startFormattedLong: '—' };
+            const birth = new Date(startDateStr);
+            const today = new Date();
+
+            let years = today.getFullYear() - birth.getFullYear();
+            let months = today.getMonth() - birth.getMonth();
+            let days = today.getDate() - birth.getDate();
+            if (days < 0) {
+                months--;
+                days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+            }
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+
+            let nextBday = new Date(today.getFullYear(), birth.getMonth(), birth.getDate());
+            if (nextBday < today) {
+                nextBday.setFullYear(today.getFullYear() + 1);
+            }
+            const diffMs = nextBday - today;
+            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+            const countdownText = diffDays === 0 ? 'Today' : `In ${diffDays} Day${diffDays > 1 ? 's' : ''}`;
+            const nextBirthdayFormatted = nextBday.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+            const startFormattedShort = birth.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const startFormattedLong = birth.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+
+            return {
+                ageText: `<strong>${years}</strong> Years, <strong>${months}</strong> Months, <strong>${days}</strong> Days`,
+                countdownText,
+                nextBirthdayFormatted,
+                startFormattedShort,
+                startFormattedLong,
+            };
+        };
+
+        const addDobRowDom = (data) => {
+            const tbody = document.querySelector('.table tbody') || document.querySelector('tbody');
+            if (!tbody) return;
+
+            const emptyRow = tbody.querySelector('td[colspan]');
+            if (emptyRow) emptyRow.closest('tr')?.remove();
+
+            const stats = calculateDobStats(data.start_date);
+            const avatarLetter = (data.name || 'D').charAt(0).toUpperCase();
+
+            const tr = document.createElement('tr');
+            tr.id = `dob-row-${data.id}`;
+            tr.dataset.dobRow = data.id;
+            tr.innerHTML = `
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="user-avatar" style="width:34px;height:34px">${avatarLetter}</span>
+                        <div>
+                            <strong>${data.name || '—'}</strong>
+                            <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;"><i class="bi bi-cloud-arrow-up"></i> Offline</span>
+                        </div>
+                    </div>
+                </td>
+                <td>${data.father_name || '&mdash;'}</td>
+                <td>
+                    <strong>${stats.startFormattedShort}</strong>
+                    <small class="duration-range d-block">${stats.startFormattedLong}</small>
+                </td>
+                <td>
+                    <span class="duration-pill">${stats.countdownText}</span>
+                    <small class="duration-range d-block">Next: ${stats.nextBirthdayFormatted}</small>
+                </td>
+                <td>
+                    ${data.end_date ? data.end_date : '<span class="status-badge live">Present</span>'}
+                </td>
+                <td>${stats.ageText}</td>
+                <td class="text-end">
+                    <div class="d-inline-flex gap-1">
+                        <button class="btn-icon danger" type="button" onclick="this.closest('tr').remove(); if(window.PwaSync) window.PwaSync.deleteDateOfBirth('${data.id}')" title="Delete record">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.prepend(tr);
+        };
+
+        const updateDobRowDom = (id, data) => {
+            const tr = document.getElementById(`dob-row-${id}`) || document.querySelector(`[data-dob-row="${id}"]`);
+            if (!tr) return;
+
+            const stats = calculateDobStats(data.start_date);
+            const avatarLetter = (data.name || 'D').charAt(0).toUpperCase();
+
+            if (tr.cells[0]) {
+                tr.cells[0].innerHTML = `
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="user-avatar" style="width:34px;height:34px">${avatarLetter}</span>
+                        <div>
+                            <strong>${data.name || '—'}</strong>
+                            <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;"><i class="bi bi-cloud-arrow-up"></i> Offline</span>
+                        </div>
+                    </div>
+                `;
+            }
+            if (tr.cells[1]) tr.cells[1].innerHTML = data.father_name || '&mdash;';
+            if (tr.cells[2]) {
+                tr.cells[2].innerHTML = `
+                    <strong>${stats.startFormattedShort}</strong>
+                    <small class="duration-range d-block">${stats.startFormattedLong}</small>
+                `;
+            }
+            if (tr.cells[3]) {
+                tr.cells[3].innerHTML = `
+                    <span class="duration-pill">${stats.countdownText}</span>
+                    <small class="duration-range d-block">Next: ${stats.nextBirthdayFormatted}</small>
+                `;
+            }
+            if (tr.cells[4]) {
+                tr.cells[4].innerHTML = data.end_date ? data.end_date : '<span class="status-badge live">Present</span>';
+            }
+            if (tr.cells[5]) {
+                tr.cells[5].innerHTML = stats.ageText;
+            }
+        };
+
         dobForm?.addEventListener('submit', (event) => {
             event.preventDefault();
             clearDobErrors();
@@ -463,6 +586,7 @@
             const recordId = isUpdate ? parseInt(match[1], 10) : null;
 
             if (!navigator.onLine) {
+                const tempId = recordId || `offline_${Date.now()}`;
                 if (window.PwaSync) {
                     if (isUpdate && recordId) {
                         window.PwaSync.updateDateOfBirth(recordId, { name, father_name: fatherName, start_date: startDate, end_date: endDate });
@@ -470,8 +594,15 @@
                         window.PwaSync.saveDateOfBirth({ name, father_name: fatherName, start_date: startDate, end_date: endDate });
                     }
                 }
+
+                if (isUpdate && recordId) {
+                    updateDobRowDom(recordId, { name, father_name: fatherName, start_date: startDate, end_date: endDate });
+                } else {
+                    addDobRowDom({ id: tempId, name, father_name: fatherName, start_date: startDate, end_date: endDate });
+                }
+
                 formModal?.hide();
-                showFlashToast('Date of birth record saved offline. Will sync once online.', 'info');
+                showFlashToast('Date of birth record saved offline and displayed!', 'info');
                 return;
             }
 
@@ -504,13 +635,16 @@
                 })
                 .catch((error) => {
                     if (!navigator.onLine && window.PwaSync) {
+                        const tempId = recordId || `offline_${Date.now()}`;
                         if (isUpdate && recordId) {
                             window.PwaSync.updateDateOfBirth(recordId, { name, father_name: fatherName, start_date: startDate, end_date: endDate });
+                            updateDobRowDom(recordId, { name, father_name: fatherName, start_date: startDate, end_date: endDate });
                         } else {
                             window.PwaSync.saveDateOfBirth({ name, father_name: fatherName, start_date: startDate, end_date: endDate });
+                            addDobRowDom({ id: tempId, name, father_name: fatherName, start_date: startDate, end_date: endDate });
                         }
                         formModal?.hide();
-                        showFlashToast('Date of birth record saved offline. Will sync once online.', 'info');
+                        showFlashToast('Date of birth record saved offline and displayed!', 'info');
                     } else if (error.message !== 'Validation failed') {
                         showFlashToast('Date of birth record could not be saved.', 'danger');
                     }
@@ -532,8 +666,8 @@
                     window.PwaSync.deleteDateOfBirth(recordId);
                 }
                 const row = deleteForm.closest('tr') || deleteForm.closest('.dob-card');
-                if (row) row.style.display = 'none';
-                showFlashToast('Date of birth deletion saved offline. Will sync once online.', 'info');
+                if (row) row.remove();
+                showFlashToast('Date of birth deletion saved offline.', 'info');
                 return;
             }
 
@@ -558,8 +692,8 @@
                     if (!navigator.onLine && window.PwaSync && recordId) {
                         window.PwaSync.deleteDateOfBirth(recordId);
                         const row = deleteForm.closest('tr') || deleteForm.closest('.dob-card');
-                        if (row) row.style.display = 'none';
-                        showFlashToast('Date of birth deletion saved offline. Will sync once online.', 'info');
+                        if (row) row.remove();
+                        showFlashToast('Date of birth deletion saved offline.', 'info');
                     } else {
                         showFlashToast('Date of birth record could not be deleted.', 'danger');
                     }
@@ -1297,6 +1431,81 @@
         }
     });
 
+    window.updateZikrCardDom = function (tasbeehId, countDelta, isAbsolute = false) {
+        const cardCol = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
+        if (!cardCol) return;
+
+        let completedEl = cardCol.querySelector('.badge-completed strong');
+        let remainingEl = cardCol.querySelector('.badge-remaining');
+        let progressEl = cardCol.querySelector('.progress-bar-custom');
+        let percentTextEl = cardCol.querySelector('.progress-container')?.parentElement?.querySelector('.font-monospace');
+
+        let rawCompletedText = completedEl ? completedEl.textContent.replace(/,/g, '') : '0';
+        let currentCompleted = parseInt(rawCompletedText, 10) || 0;
+
+        let totalRequired = 0;
+        let badgeCompletedText = cardCol.querySelector('.badge-completed')?.textContent || '';
+        let matchReq = badgeCompletedText.match(/\/\s*([0-9,]+)/);
+        if (matchReq) {
+            totalRequired = parseInt(matchReq[1].replace(/,/g, ''), 10) || 0;
+        }
+
+        let newCompleted = isAbsolute ? countDelta : currentCompleted + countDelta;
+        if (newCompleted < 0) newCompleted = 0;
+
+        if (completedEl) {
+            completedEl.textContent = newCompleted.toLocaleString();
+        }
+
+        if (totalRequired > 0) {
+            let percentage = Math.min(100, Math.round((newCompleted / totalRequired) * 100));
+            if (percentTextEl) percentTextEl.textContent = `${percentage}%`;
+
+            let diff = newCompleted - totalRequired;
+            if (remainingEl) {
+                if (diff > 0) {
+                    remainingEl.className = 'badge-remaining extra';
+                    remainingEl.textContent = `+${diff.toLocaleString()} Extra`;
+                } else if (diff === 0) {
+                    remainingEl.className = 'badge-remaining completed-badge';
+                    remainingEl.textContent = 'Completed';
+                } else {
+                    remainingEl.className = 'badge-remaining';
+                    remainingEl.textContent = `Remaining ${(totalRequired - newCompleted).toLocaleString()}`;
+                }
+            }
+
+            if (progressEl) {
+                progressEl.style.width = `${percentage}%`;
+                let barClass = 'amber';
+                if (diff > 0) {
+                    barClass = 'cyan';
+                } else if (diff === 0) {
+                    barClass = 'emerald';
+                }
+                progressEl.className = `progress-bar-custom ${barClass}`;
+            }
+        }
+    };
+
+    // Reconcile pending offline counts on Zikr dashboard cards
+    if (window.PwaDB && typeof window.PwaDB.getPendingOutbox === 'function') {
+        window.PwaDB.getPendingOutbox().then(items => {
+            const countByTasbeeh = {};
+            (items || []).forEach(item => {
+                if ((item.entity === 'tasbeeh_count' || item.entity === 'zikr_count') && item.payload?.tasbeeh_id) {
+                    const tId = item.payload.tasbeeh_id;
+                    countByTasbeeh[tId] = (countByTasbeeh[tId] || 0) + (parseInt(item.payload.count, 10) || 0);
+                }
+            });
+            Object.entries(countByTasbeeh).forEach(([tId, count]) => {
+                if (count > 0 && typeof window.updateZikrCardDom === 'function') {
+                    window.updateZikrCardDom(tId, count);
+                }
+            });
+        }).catch(() => {});
+    }
+
     const resetFormHandler = (formId) => {
         const form = document.getElementById(formId);
         if (!form) return;
@@ -1311,10 +1520,13 @@
                 if (window.PwaSync && tasbeehId) {
                     window.PwaSync.resetTasbeeh(tasbeehId);
                 }
+                if (tasbeehId) {
+                    window.updateZikrCardDom(tasbeehId, 0, true);
+                }
                 if (modal && window.bootstrap) {
                     window.bootstrap.Modal.getInstance(modal)?.hide();
                 }
-                showFlashToast('Tracking reset saved offline. Will sync once online.', 'info');
+                showFlashToast('Tracking reset saved offline and updated on screen.', 'info');
                 return;
             }
 
@@ -1342,10 +1554,13 @@
                 .catch((err) => {
                     if (!navigator.onLine && window.PwaSync && tasbeehId) {
                         window.PwaSync.resetTasbeeh(tasbeehId);
+                        if (tasbeehId) {
+                            window.updateZikrCardDom(tasbeehId, 0, true);
+                        }
                         if (modal && window.bootstrap) {
                             window.bootstrap.Modal.getInstance(modal)?.hide();
                         }
-                        showFlashToast('Tracking reset saved offline. Will sync once online.', 'info');
+                        showFlashToast('Tracking reset saved offline and updated on screen.', 'info');
                     } else {
                         showFlashToast(firstErrorMessage(err.payload, 'Could not reset tracking.'), 'danger');
                     }
@@ -1373,11 +1588,14 @@
                 if (window.PwaSync && tasbeehId) {
                     window.PwaSync.saveZikrCount(tasbeehId, countVal);
                 }
+                if (tasbeehId && !isNaN(countVal)) {
+                    window.updateZikrCardDom(tasbeehId, countVal);
+                }
                 if (modal && window.bootstrap) {
                     window.bootstrap.Modal.getInstance(modal)?.hide();
                 }
                 if (btn) btn.disabled = false;
-                showFlashToast('Zikr count saved offline. Will sync once online.', 'info');
+                showFlashToast('Zikr count saved offline and updated on screen!', 'info');
                 return;
             }
 
@@ -1405,10 +1623,13 @@
                 .catch((err) => {
                     if (!navigator.onLine && window.PwaSync && tasbeehId) {
                         window.PwaSync.saveZikrCount(tasbeehId, countVal);
+                        if (tasbeehId && !isNaN(countVal)) {
+                            window.updateZikrCardDom(tasbeehId, countVal);
+                        }
                         if (modal && window.bootstrap) {
                             window.bootstrap.Modal.getInstance(modal)?.hide();
                         }
-                        showFlashToast('Zikr count saved offline. Will sync once online.', 'info');
+                        showFlashToast('Zikr count saved offline and updated on screen!', 'info');
                     } else {
                         showFlashToast(firstErrorMessage(err.payload, 'Could not add zikr.'), 'danger');
                     }

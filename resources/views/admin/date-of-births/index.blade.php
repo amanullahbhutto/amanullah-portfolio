@@ -145,12 +145,11 @@
 
                 </thead>
 
-
                 <tbody>
 
                     @forelse($dateOfBirths as $dateOfBirth)
 
-                        <tr>
+                        <tr id="dob-row-{{ $dateOfBirth->id }}" data-dob-row="{{ $dateOfBirth->id }}">
 
                             <td>
 
@@ -170,7 +169,6 @@
                                 </div>
 
                             </td>
-
 
                             <td>
 

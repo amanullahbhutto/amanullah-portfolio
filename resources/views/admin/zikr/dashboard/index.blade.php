@@ -312,3 +312,28 @@
 @include('admin.zikr.partials.settings-modal')
 @include('admin.zikr.partials.bulk-actions-modals')
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if ('caches' in window && navigator.onLine) {
+            caches.keys().then(function (names) {
+                const pwaCacheName = names.find(n => n.startsWith('portfolio-pwa-v'));
+                if (!pwaCacheName) return;
+                caches.open(pwaCacheName).then(function (cache) {
+                    document.querySelectorAll('a[href*="/admin/zikr/tasbeeh/"]').forEach(function (link) {
+                        const href = link.getAttribute('href');
+                        if (href) {
+                            fetch(href, { credentials: 'same-origin' }).then(function (res) {
+                                if (res && res.ok) {
+                                    cache.put(href, res);
+                                }
+                            }).catch(function () {});
+                        }
+                    });
+                });
+            }).catch(function () {});
+        }
+    });
+</script>
+@endpush

@@ -136,10 +136,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
                     await window.PwaSync.completeTasbeehToday(singleCompleteTasbeehId);
                 }
+                if (singleCompleteTasbeehId && typeof window.updateZikrCardDom === 'function') {
+                    const card = document.getElementById(`tasbeeh-card-${singleCompleteTasbeehId}`);
+                    const badgeText = card?.querySelector('.badge-completed')?.textContent || '';
+                    const match = badgeText.match(/\/\s*([0-9,]+)/);
+                    const targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
+                    window.updateZikrCardDom(singleCompleteTasbeehId, targetReq, true);
+                }
                 const modalInstance = bootstrap.Modal.getInstance(completeSingleModalEl);
                 if (modalInstance) modalInstance.hide();
                 if (window.App && typeof window.App.showToast === 'function') {
-                    window.App.showToast('info', 'Saved offline. Changes will synchronize once reconnected.');
+                    window.App.showToast('info', 'Saved offline and updated on screen!');
                 }
                 completeSingleBtn.disabled = false;
                 if (spinner) spinner.classList.add('d-none');
@@ -198,11 +205,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (window.PwaSync && typeof window.PwaSync.completeAllTasbeehsToday === 'function') {
                     await window.PwaSync.completeAllTasbeehsToday();
                 }
+                if (typeof window.updateZikrCardDom === 'function') {
+                    document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                        const tId = card.id.replace('tasbeeh-card-', '');
+                        const badgeText = card.querySelector('.badge-completed')?.textContent || '';
+                        const match = badgeText.match(/\/\s*([0-9,]+)/);
+                        const targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
+                        window.updateZikrCardDom(tId, targetReq, true);
+                    });
+                }
                 const modalEl = document.getElementById('completeAllTasbeehsModal');
                 const modalInstance = bootstrap.Modal.getInstance(modalEl);
                 if (modalInstance) modalInstance.hide();
                 if (window.App && typeof window.App.showToast === 'function') {
-                    window.App.showToast('info', 'Saved offline. All tasbeehs marked completed locally.');
+                    window.App.showToast('info', 'Saved offline. All tasbeehs marked completed on screen!');
                 }
                 completeBtn.disabled = false;
                 if (spinner) spinner.classList.add('d-none');
@@ -263,11 +279,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (window.PwaSync && typeof window.PwaSync.resetAllTasbeehs === 'function') {
                     await window.PwaSync.resetAllTasbeehs();
                 }
+                if (typeof window.updateZikrCardDom === 'function') {
+                    document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                        const tId = card.id.replace('tasbeeh-card-', '');
+                        window.updateZikrCardDom(tId, 0, true);
+                    });
+                }
                 const modalEl = document.getElementById('resetAllTasbeehsModal');
                 const modalInstance = bootstrap.Modal.getInstance(modalEl);
                 if (modalInstance) modalInstance.hide();
                 if (window.App && typeof window.App.showToast === 'function') {
-                    window.App.showToast('info', 'Reset queued offline. Will synchronize once online.');
+                    window.App.showToast('info', 'All tasbeehs reset to 0 offline and updated on screen!');
                 }
                 resetBtn.disabled = false;
                 if (spinner) spinner.classList.add('d-none');

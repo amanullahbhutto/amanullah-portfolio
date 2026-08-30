@@ -460,6 +460,32 @@
 
         // Initial bead render & display update
         updateDisplay();
+
+        // Reconcile pending offline counts stored for this tasbeeh
+        if (window.PwaDB && typeof window.PwaDB.getPendingOutbox === 'function') {
+            window.PwaDB.getPendingOutbox().then(items => {
+                const pendingForThis = (items || [])
+                    .filter(i => (i.entity === 'tasbeeh_count' || i.entity === 'zikr_count') && String(i.payload?.tasbeeh_id) === '{{ $tasbeeh->id }}')
+                    .reduce((sum, i) => sum + (parseInt(i.payload?.count, 10) || 0), 0);
+                if (pendingForThis > 0) {
+                    totalCompleted += pendingForThis;
+                    updateDisplay();
+                }
+            }).catch(() => {});
+        }
+
+        // Cache this counter page dynamically into Service Worker Cache
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                const pwaCacheName = names.find(n => n.startsWith('portfolio-pwa-v'));
+                if (pwaCacheName) {
+                    caches.open(pwaCacheName).then(cache => {
+                        cache.add(window.location.href).catch(() => {});
+                        cache.add(window.location.pathname).catch(() => {});
+                    });
+                }
+            }).catch(() => {});
+        }
     })();
 </script>
 @endpush
