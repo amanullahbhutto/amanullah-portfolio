@@ -1915,7 +1915,7 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
 }
 .svg-arc-container {
     position: absolute;
-    top: 8px;
+    top: 0px;
     left: 50%;
     transform: translateX(-50%);
     width: 270px;
@@ -2050,7 +2050,7 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
         padding: 6px 8px 2px 8px;
     }
     .svg-arc-container {
-        top: 4px;
+        top: 0px;
         transform: translateX(-50%) scale(0.9);
         transform-origin: top center;
     }

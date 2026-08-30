@@ -218,7 +218,7 @@
             const cx = 150, cy = 105, r = 90;
 
             for (let i = 1; i <= maxBeads; i++) {
-                const angle = Math.PI - (i / maxBeads) * Math.PI;
+                const angle = Math.PI - ((i - 1) / (maxBeads - 1)) * Math.PI;
                 const x = cx + r * Math.cos(angle);
                 const y = cy - r * Math.sin(angle);
 
