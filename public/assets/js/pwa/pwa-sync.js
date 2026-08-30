@@ -60,6 +60,17 @@ class PwaSync {
         } else {
             this.updateBadge('offline');
         }
+
+        // Automatic periodic background sync heartbeat (every 20s if pending items exist)
+        setInterval(() => {
+            if (navigator.onLine && !this.isSyncing) {
+                this.refreshPendingCount().then(pending => {
+                    if (pending.length > 0) {
+                        this.syncNow();
+                    }
+                });
+            }
+        }, 20000);
     }
 
     async handleNetworkChange(isOnline) {
@@ -315,6 +326,18 @@ class PwaSync {
             prayer: prayer,
             status: status || ''
         });
+    }
+
+    async saveDateOfBirth(data) {
+        return this.enqueueAction('date_of_birth', 'create', data);
+    }
+
+    async updateDateOfBirth(id, data) {
+        return this.enqueueAction('date_of_birth', 'update', { id: parseInt(id, 10), ...data });
+    }
+
+    async deleteDateOfBirth(id) {
+        return this.enqueueAction('date_of_birth', 'delete', { id: parseInt(id, 10) });
     }
 }
 

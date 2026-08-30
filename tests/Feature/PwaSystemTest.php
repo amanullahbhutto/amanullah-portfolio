@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\DateOfBirth;
 use App\Models\PwaSetting;
 use App\Models\Tasbeeh;
 use App\Models\User;
@@ -279,5 +280,79 @@ class PwaSystemTest extends TestCase
                 'success' => false,
                 'app_active' => false,
             ]);
+    }
+
+    public function test_pwa_push_sync_handles_date_of_birth_create_update_and_delete(): void
+    {
+        $this->actingAs($this->admin);
+
+        // 1. Create DOB via Sync Push
+        $createUuid = (string) Str::uuid();
+        $payloadCreate = [
+            'operations' => [
+                [
+                    'uuid' => $createUuid,
+                    'entity' => 'date_of_birth',
+                    'action' => 'create',
+                    'temp_id' => 'temp_dob_1',
+                    'payload' => [
+                        'name' => 'Offline Person',
+                        'father_name' => 'Offline Father',
+                        'start_date' => '1995-05-15',
+                        'end_date' => null,
+                    ],
+                ],
+            ],
+        ];
+
+        $res1 = $this->postJson(route('pwa.sync.push'), $payloadCreate);
+        $res1->assertOk()->assertJson(['success' => true]);
+
+        $dob = DateOfBirth::where('name', 'Offline Person')->first();
+        $this->assertNotNull($dob);
+        $this->assertSame('Offline Father', $dob->father_name);
+        $this->assertSame('1995-05-15', $dob->start_date->format('Y-m-d'));
+
+        // 2. Update DOB via Sync Push
+        $updateUuid = (string) Str::uuid();
+        $payloadUpdate = [
+            'operations' => [
+                [
+                    'uuid' => $updateUuid,
+                    'entity' => 'date_of_birth',
+                    'action' => 'update',
+                    'payload' => [
+                        'id' => $dob->id,
+                        'name' => 'Updated Person Name',
+                        'father_name' => 'Updated Father',
+                        'start_date' => '1995-05-15',
+                        'end_date' => null,
+                    ],
+                ],
+            ],
+        ];
+
+        $res2 = $this->postJson(route('pwa.sync.push'), $payloadUpdate);
+        $res2->assertOk()->assertJson(['success' => true]);
+        $this->assertSame('Updated Person Name', $dob->fresh()->name);
+
+        // 3. Delete DOB via Sync Push
+        $deleteUuid = (string) Str::uuid();
+        $payloadDelete = [
+            'operations' => [
+                [
+                    'uuid' => $deleteUuid,
+                    'entity' => 'date_of_birth',
+                    'action' => 'delete',
+                    'payload' => [
+                        'id' => $dob->id,
+                    ],
+                ],
+            ],
+        ];
+
+        $res3 = $this->postJson(route('pwa.sync.push'), $payloadDelete);
+        $res3->assertOk()->assertJson(['success' => true]);
+        $this->assertNull(DateOfBirth::find($dob->id));
     }
 }

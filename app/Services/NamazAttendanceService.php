@@ -376,6 +376,55 @@ class NamazAttendanceService
     }
 
     /**
+     * Updates full day attendance for all 5 prayers at once.
+     */
+    public function updateDayAttendance(
+        User $user,
+        string $date,
+        array $statuses,
+        ?int $authUserId = null
+    ): array {
+        $attendance = NamazAttendance::query()
+            ->where('user_id', $user->id)
+            ->whereDate('attendance_date', $date)
+            ->first();
+
+        if (! $attendance) {
+            $attendance = new NamazAttendance([
+                'user_id' => $user->id,
+                'attendance_date' => $date,
+                'created_by' => $authUserId ?? $user->id,
+            ]);
+        }
+
+        foreach (self::PRAYERS as $p) {
+            $key = "{$p}_status";
+            if (array_key_exists($key, $statuses)) {
+                $attendance->{$key} = $statuses[$key] ?: null;
+            } elseif (array_key_exists($p, $statuses)) {
+                $attendance->{$key} = $statuses[$p] ?: null;
+            }
+        }
+
+        $attendance->updated_by = $authUserId ?? $user->id;
+
+        $allNull = ! ($attendance->fajr_status || $attendance->zuhr_status || $attendance->asr_status || $attendance->maghrib_status || $attendance->isha_status);
+
+        if ($allNull && $attendance->exists) {
+            $attendance->delete();
+            $attendance = null;
+        } else {
+            $attendance->save();
+        }
+
+        return [
+            'success' => true,
+            'attendance' => $attendance,
+            'message' => "Attendance for " . Carbon::parse($date)->format('d-m-Y') . " updated successfully.",
+        ];
+    }
+
+    /**
      * Calculates comprehensive dashboard statistics for all Muslim users or an individual user.
      */
     public function calculateDashboardStatistics(

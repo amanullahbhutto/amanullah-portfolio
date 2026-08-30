@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DateOfBirth;
 use App\Models\PwaSetting;
 use App\Models\PwaSyncLog;
 use App\Models\Tasbeeh;
@@ -228,6 +229,74 @@ class PwaService
                             } else {
                                 $status = 'failed';
                                 $errorMessage = 'Missing date or prayer for namaz attendance.';
+                            }
+                            break;
+
+                        case 'namaz_attendance_day':
+                            $targetUserId = $payload['user_id'] ?? $user->id;
+                            $targetUser = User::find($targetUserId) ?? $user;
+                            $date = $payload['attendance_date'] ?? null;
+                            $statuses = [
+                                'fajr' => $payload['fajr_status'] ?? null,
+                                'zuhr' => $payload['zuhr_status'] ?? null,
+                                'asr' => $payload['asr_status'] ?? null,
+                                'maghrib' => $payload['maghrib_status'] ?? null,
+                                'isha' => $payload['isha_status'] ?? null,
+                            ];
+
+                            if ($date) {
+                                $namazService = app(\App\Services\NamazAttendanceService::class);
+                                $namazService->updateDayAttendance($targetUser, $date, $statuses);
+                                $serverId = $targetUser->id;
+                            } else {
+                                $status = 'failed';
+                                $errorMessage = 'Missing date for namaz day attendance.';
+                            }
+                            break;
+
+                        case 'date_of_birth':
+                            $recordId = $payload['id'] ?? null;
+                            $name = $payload['name'] ?? null;
+                            $fatherName = $payload['father_name'] ?? null;
+                            $startDate = $payload['start_date'] ?? null;
+                            $endDate = $payload['end_date'] ?? null;
+
+                            if ($action === 'create') {
+                                if ($name && $startDate) {
+                                    $dob = DateOfBirth::create([
+                                        'name' => $name,
+                                        'father_name' => $fatherName,
+                                        'start_date' => $startDate,
+                                        'end_date' => $endDate,
+                                    ]);
+                                    $serverId = $dob->id;
+                                } else {
+                                    $status = 'failed';
+                                    $errorMessage = 'Missing name or birth date.';
+                                }
+                            } elseif ($action === 'update') {
+                                $dob = DateOfBirth::find($recordId);
+                                if ($dob) {
+                                    $dob->update([
+                                        'name' => $name ?? $dob->name,
+                                        'father_name' => $fatherName ?? $dob->father_name,
+                                        'start_date' => $startDate ?? $dob->start_date,
+                                        'end_date' => $endDate ?? $dob->end_date,
+                                    ]);
+                                    $serverId = $dob->id;
+                                } else {
+                                    $status = 'failed';
+                                    $errorMessage = "DOB record #{$recordId} not found.";
+                                }
+                            } elseif ($action === 'delete') {
+                                $dob = DateOfBirth::find($recordId);
+                                if ($dob) {
+                                    $dob->delete();
+                                    $serverId = $recordId;
+                                } else {
+                                    $status = 'synced'; // already deleted
+                                    $serverId = $recordId;
+                                }
                             }
                             break;
 

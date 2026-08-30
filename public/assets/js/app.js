@@ -451,6 +451,30 @@
         dobForm?.addEventListener('submit', (event) => {
             event.preventDefault();
             clearDobErrors();
+
+            const formData = new FormData(dobForm);
+            const name = formData.get('name');
+            const fatherName = formData.get('father_name');
+            const startDate = formData.get('start_date');
+            const endDate = formData.get('end_date');
+            const actionUrl = dobForm.action || '';
+            const match = actionUrl.match(/date-of-births\/(\d+)/);
+            const isUpdate = methodInput && !methodInput.disabled && match;
+            const recordId = isUpdate ? parseInt(match[1], 10) : null;
+
+            if (!navigator.onLine) {
+                if (window.PwaSync) {
+                    if (isUpdate && recordId) {
+                        window.PwaSync.updateDateOfBirth(recordId, { name, father_name: fatherName, start_date: startDate, end_date: endDate });
+                    } else {
+                        window.PwaSync.saveDateOfBirth({ name, father_name: fatherName, start_date: startDate, end_date: endDate });
+                    }
+                }
+                formModal?.hide();
+                showFlashToast('Date of birth record saved offline. Will sync once online.', 'info');
+                return;
+            }
+
             setDobSubmitting(true);
 
             fetch(dobForm.action, {
@@ -460,7 +484,7 @@
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': csrfToken,
                 },
-                body: new FormData(dobForm),
+                body: formData,
             })
                 .then((response) => {
                     if (response.status === 422) {
@@ -479,7 +503,15 @@
                     return refreshDobResults();
                 })
                 .catch((error) => {
-                    if (error.message !== 'Validation failed') {
+                    if (!navigator.onLine && window.PwaSync) {
+                        if (isUpdate && recordId) {
+                            window.PwaSync.updateDateOfBirth(recordId, { name, father_name: fatherName, start_date: startDate, end_date: endDate });
+                        } else {
+                            window.PwaSync.saveDateOfBirth({ name, father_name: fatherName, start_date: startDate, end_date: endDate });
+                        }
+                        formModal?.hide();
+                        showFlashToast('Date of birth record saved offline. Will sync once online.', 'info');
+                    } else if (error.message !== 'Validation failed') {
                         showFlashToast('Date of birth record could not be saved.', 'danger');
                     }
                 })
@@ -491,6 +523,19 @@
             if (!deleteForm || event.defaultPrevented) return;
 
             event.preventDefault();
+            const actionUrl = deleteForm.action || '';
+            const match = actionUrl.match(/date-of-births\/(\d+)/);
+            const recordId = match ? parseInt(match[1], 10) : null;
+
+            if (!navigator.onLine) {
+                if (window.PwaSync && recordId) {
+                    window.PwaSync.deleteDateOfBirth(recordId);
+                }
+                const row = deleteForm.closest('tr') || deleteForm.closest('.dob-card');
+                if (row) row.style.display = 'none';
+                showFlashToast('Date of birth deletion saved offline. Will sync once online.', 'info');
+                return;
+            }
 
             fetch(deleteForm.action, {
                 method: 'POST',
@@ -509,7 +554,16 @@
                     showFlashToast(payload.message || 'Date of birth record deleted successfully.');
                     return refreshDobResults();
                 })
-                .catch(() => showFlashToast('Date of birth record could not be deleted.', 'danger'));
+                .catch(() => {
+                    if (!navigator.onLine && window.PwaSync && recordId) {
+                        window.PwaSync.deleteDateOfBirth(recordId);
+                        const row = deleteForm.closest('tr') || deleteForm.closest('.dob-card');
+                        if (row) row.style.display = 'none';
+                        showFlashToast('Date of birth deletion saved offline. Will sync once online.', 'info');
+                    } else {
+                        showFlashToast('Date of birth record could not be deleted.', 'danger');
+                    }
+                });
         });
     }
 
@@ -637,6 +691,37 @@
         });
     };
     initTooltips();
+
+    function updateNamazCellDom(userId, date, prayer, status) {
+        const selector = `[data-bs-target="#quickPrayerModal"][data-user-id="${userId}"][data-date="${date}"][data-prayer="${prayer}"]`;
+        const btn = document.querySelector(selector);
+        if (!btn) return;
+
+        btn.dataset.currentStatus = status || '';
+        btn.dataset.isManual = status ? '1' : '0';
+
+        const pill = btn.querySelector('.namaz-status-pill');
+        if (!pill) return;
+
+        const metaMap = {
+            'jamat': { label: 'Jamat', icon: 'bi bi-check-circle-fill' },
+            'without_jamat': { label: 'Without Jamat', icon: 'bi bi-person-fill' },
+            'kaza': { label: 'Kaza', icon: 'bi bi-clock-history' },
+            'absent': { label: 'Absent', icon: 'bi bi-x-circle-fill' },
+        };
+        const meta = metaMap[status] || { label: 'Pending', icon: null };
+
+        pill.className = `namaz-status-pill ${status || 'pending'}`;
+        let html = '';
+        if (meta.icon) {
+            html += `<span class="status-icon"><i class="${meta.icon}"></i></span>`;
+        }
+        html += `<span class="status-label">${meta.label}</span>`;
+        if (status) {
+            html += `<span class="manual-dot" title="Recorded"><i class="bi bi-check2"></i></span>`;
+        }
+        pill.innerHTML = html;
+    }
 
     document.addEventListener('click', (event) => {
         const create = event.target.closest?.('[data-crud-open]');
@@ -813,6 +898,9 @@
 
             if (!userId || !date || !prayer) return;
 
+            // Immediately update visual table cell for instant feedback
+            updateNamazCellDom(userId, date, prayer, status);
+
             const formData = new FormData();
             formData.append('user_id', userId);
             formData.append('attendance_date', date);
@@ -879,7 +967,44 @@
         event.preventDefault();
         clearAjaxErrors(form);
         setAjaxSubmitting(form, true);
-        const url = form.getAttribute('action') || form.dataset.storeUrl;
+        const url = form.getAttribute('action') || form.dataset.storeUrl || '';
+
+        // Offline Day Attendance Interception
+        if (!navigator.onLine && url.includes('/namaz-attendance/day')) {
+            const formData = new FormData(form);
+            const userId = formData.get('user_id');
+            const date = formData.get('attendance_date');
+            const statuses = {
+                fajr: formData.get('fajr_status') || '',
+                zuhr: formData.get('zuhr_status') || '',
+                asr: formData.get('asr_status') || '',
+                maghrib: formData.get('maghrib_status') || '',
+                isha: formData.get('isha_status') || '',
+            };
+
+            if (window.PwaSync && typeof window.PwaSync.enqueueAction === 'function') {
+                window.PwaSync.enqueueAction('namaz_attendance_day', 'update', {
+                    user_id: parseInt(userId, 10),
+                    attendance_date: date,
+                    fajr_status: statuses.fajr,
+                    zuhr_status: statuses.zuhr,
+                    asr_status: statuses.asr,
+                    maghrib_status: statuses.maghrib,
+                    isha_status: statuses.isha,
+                });
+            }
+
+            // Immediately update visual table cells
+            ['fajr', 'zuhr', 'asr', 'maghrib', 'isha'].forEach((p) => {
+                updateNamazCellDom(userId, date, p, statuses[p]);
+            });
+
+            const modalElement = form.closest('.modal');
+            if (modalElement && window.bootstrap) window.bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+            showFlashToast('Day attendance saved offline. Will sync once online.', 'info');
+            setAjaxSubmitting(form, false);
+            return;
+        }
         fetch(url, {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': financeCsrf },
@@ -1178,6 +1303,21 @@
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             const modal = form.closest('.modal');
+            const actionUrl = form.action || '';
+            const match = actionUrl.match(/counter\/(\d+)/);
+            const tasbeehId = match ? match[1] : null;
+
+            if (!navigator.onLine) {
+                if (window.PwaSync && tasbeehId) {
+                    window.PwaSync.resetTasbeeh(tasbeehId);
+                }
+                if (modal && window.bootstrap) {
+                    window.bootstrap.Modal.getInstance(modal)?.hide();
+                }
+                showFlashToast('Tracking reset saved offline. Will sync once online.', 'info');
+                return;
+            }
+
             fetch(form.action, {
                 method: 'POST',
                 headers: {
@@ -1200,7 +1340,15 @@
                     setTimeout(() => window.location.reload(), 300);
                 })
                 .catch((err) => {
-                    showFlashToast(firstErrorMessage(err.payload, 'Could not reset tracking.'), 'danger');
+                    if (!navigator.onLine && window.PwaSync && tasbeehId) {
+                        window.PwaSync.resetTasbeeh(tasbeehId);
+                        if (modal && window.bootstrap) {
+                            window.bootstrap.Modal.getInstance(modal)?.hide();
+                        }
+                        showFlashToast('Tracking reset saved offline. Will sync once online.', 'info');
+                    } else {
+                        showFlashToast(firstErrorMessage(err.payload, 'Could not reset tracking.'), 'danger');
+                    }
                 });
         });
     };
@@ -1215,6 +1363,24 @@
             const btn = document.getElementById('quickAddSubmitBtn');
             if (btn) btn.disabled = true;
 
+            const formData = new FormData(quickAddForm);
+            const countVal = parseInt(formData.get('count'), 10);
+            const actionUrl = quickAddForm.action || '';
+            const match = actionUrl.match(/counter\/(\d+)/);
+            const tasbeehId = match ? match[1] : null;
+
+            if (!navigator.onLine) {
+                if (window.PwaSync && tasbeehId) {
+                    window.PwaSync.saveZikrCount(tasbeehId, countVal);
+                }
+                if (modal && window.bootstrap) {
+                    window.bootstrap.Modal.getInstance(modal)?.hide();
+                }
+                if (btn) btn.disabled = false;
+                showFlashToast('Zikr count saved offline. Will sync once online.', 'info');
+                return;
+            }
+
             fetch(quickAddForm.action, {
                 method: 'POST',
                 headers: {
@@ -1222,7 +1388,7 @@
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': financeCsrf,
                 },
-                body: new FormData(quickAddForm),
+                body: formData,
             })
                 .then(async (res) => {
                     const payload = await res.json().catch(() => ({}));
@@ -1237,7 +1403,15 @@
                     setTimeout(() => window.location.reload(), 300);
                 })
                 .catch((err) => {
-                    showFlashToast(firstErrorMessage(err.payload, 'Could not add zikr.'), 'danger');
+                    if (!navigator.onLine && window.PwaSync && tasbeehId) {
+                        window.PwaSync.saveZikrCount(tasbeehId, countVal);
+                        if (modal && window.bootstrap) {
+                            window.bootstrap.Modal.getInstance(modal)?.hide();
+                        }
+                        showFlashToast('Zikr count saved offline. Will sync once online.', 'info');
+                    } else {
+                        showFlashToast(firstErrorMessage(err.payload, 'Could not add zikr.'), 'danger');
+                    }
                 })
                 .finally(() => {
                     if (btn) btn.disabled = false;

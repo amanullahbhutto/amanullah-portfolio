@@ -41,6 +41,10 @@ class PwaManifestController extends Controller
         $precacheUrls = [
             '/',
             '/pwa/offline',
+            '/admin',
+            '/admin/namaz-attendance',
+            '/admin/zikr',
+            '/admin/date-of-births',
             '/assets/css/app.css',
             '/assets/js/app.js',
             '/assets/js/pwa/pwa-db.js',

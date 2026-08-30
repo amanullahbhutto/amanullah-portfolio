@@ -272,6 +272,12 @@
             <i class="bi bi-gem"></i>
             <span>Zikr</span>
         </a>
+        @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->can('view date of birth'))
+            <a href="{{ route('admin.date-of-births.index') }}" class="pwa-nav-item {{ request()->routeIs('admin.date-of-births.*') ? 'active' : '' }}">
+                <i class="bi bi-calendar-heart"></i>
+                <span>DOB</span>
+            </a>
+        @endif
         @if(auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->can('view khata'))
             <a href="{{ route('admin.khata.index') }}" class="pwa-nav-item {{ request()->routeIs('admin.khata.*') ? 'active' : '' }}">
                 <i class="bi bi-journal-bookmark"></i>
