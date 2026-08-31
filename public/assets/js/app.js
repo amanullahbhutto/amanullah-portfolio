@@ -1446,6 +1446,8 @@
     window.recalculateZikrTopStats = function () {
         let overallTotalCompleted = 0;
         let overallTotalRequired = 0;
+        let overallTodayCompleted = 0;
+        let overallTodayRequired = 0;
         let cards = document.querySelectorAll('[id^="tasbeeh-card-"]');
 
         cards.forEach(card => {
@@ -1456,13 +1458,31 @@
             let completed = completedEl ? (parseInt(completedEl.textContent.replace(/,/g, ''), 10) || 0) : 0;
             let required = matchReq ? (parseInt(matchReq[1].replace(/,/g, ''), 10) || 0) : 0;
 
+            let dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10);
+            let activeDays = parseInt(card.dataset.activeDays || '1', 10);
+            let priorRequired = Math.max(activeDays - 1, 0) * dailyTarget;
+            let todayCompleted = Math.max(completed - priorRequired, 0);
+
+            overallTodayCompleted += todayCompleted;
+            overallTodayRequired += dailyTarget;
             overallTotalCompleted += completed;
             overallTotalRequired += required;
         });
 
+        let todayCompletedStatEl = document.getElementById('top-stat-today-completed');
+        let todayPercentStatEl = document.getElementById('top-stat-today-percentage');
         let completedStatEl = document.getElementById('top-stat-total-completed');
         let percentStatEl = document.getElementById('top-stat-overall-percentage');
         let backlogContainerEl = document.getElementById('top-stat-backlog-container');
+
+        if (todayCompletedStatEl) {
+            todayCompletedStatEl.textContent = overallTodayCompleted.toLocaleString();
+        }
+
+        if (todayPercentStatEl) {
+            let todayPercent = overallTodayRequired > 0 ? Math.min(100, Math.round((overallTodayCompleted / overallTodayRequired) * 100)) : 100;
+            todayPercentStatEl.textContent = `${todayPercent}% of daily target`;
+        }
 
         if (completedStatEl) {
             completedStatEl.textContent = overallTotalCompleted.toLocaleString();

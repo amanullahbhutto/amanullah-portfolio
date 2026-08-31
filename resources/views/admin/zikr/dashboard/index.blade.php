@@ -35,10 +35,10 @@
     </div>
 @else
 
-    {{-- Top Overall Statistics Cards (2 cards per row on mobile, compact height) --}}
+    {{-- Top Overall Statistics Cards (2 cards per row on mobile, 3 on tablet, 6 on desktop) --}}
     <div class="row g-2 g-md-3 mb-4">
         {{-- Lifetime All-Time Total Card --}}
-        <div class="col-6 col-md-4 col-xl">
+        <div class="col-6 col-md-4 col-xl-2">
             <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 position-relative d-flex flex-column justify-content-between" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.14) 0%, #08111e 100%); border-color: rgba(249, 115, 22, 0.4); min-height: 104px;">
                 <div class="d-flex align-items-center justify-content-between">
                     <span class="small fw-bold text-uppercase text-truncate" style="color: #f97316; font-size: 0.7rem;">
@@ -54,7 +54,7 @@
         </div>
 
         {{-- Daily Target --}}
-        <div class="col-6 col-md-4 col-xl">
+        <div class="col-6 col-md-4 col-xl-2">
             <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
                 <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Daily Target</span>
                 <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0" id="top-stat-daily-target" style="line-height: 1.2;">{{ number_format($summary['overall_today_required']) }}</strong>
@@ -62,8 +62,19 @@
             </div>
         </div>
 
+        {{-- Total Read Today --}}
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: rgba(16, 185, 129, 0.35); min-height: 104px;">
+                <span class="small fw-bold text-uppercase d-block text-truncate" style="color: #10b981; font-size: 0.7rem;">
+                    <i class="bi bi-calendar-check me-1"></i>Read Today
+                </span>
+                <strong class="fs-3 fs-md-2 d-block font-monospace my-0" id="top-stat-today-completed" style="color: #10b981 !important; line-height: 1.2;">{{ number_format($summary['overall_today_completed']) }}</strong>
+                <small class="text-muted-custom d-block text-truncate" id="top-stat-today-percentage" style="font-size: 0.72rem;">{{ $summary['overall_today_percentage'] }}% of daily target</small>
+            </div>
+        </div>
+
         {{-- Total Required --}}
-        <div class="col-6 col-md-4 col-xl">
+        <div class="col-6 col-md-4 col-xl-2">
             <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
                 <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Total Required</span>
                 <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0" id="top-stat-total-required" style="line-height: 1.2;">{{ number_format($summary['overall_total_required']) }}</strong>
@@ -72,7 +83,7 @@
         </div>
 
         {{-- Total Completed --}}
-        <div class="col-6 col-md-4 col-xl">
+        <div class="col-6 col-md-4 col-xl-2">
             <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
                 <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Total Completed</span>
                 <strong class="fs-3 fs-md-2 text-success d-block font-monospace my-0" id="top-stat-total-completed" style="line-height: 1.2;">{{ number_format($summary['overall_total_completed']) }}</strong>
@@ -81,7 +92,7 @@
         </div>
 
         {{-- Extra Zikr / Backlog --}}
-        <div class="col-12 col-md-4 col-xl">
+        <div class="col-6 col-md-4 col-xl-2">
             <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" id="top-stat-backlog-container" style="background: #08111e; border-color: #142845; min-height: 104px;">
                 @if($summary['overall_extra'] > 0)
                     <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Extra Zikr</span>
@@ -103,7 +114,7 @@
     {{-- Tasbeeh Items Grid --}}
     <div class="row g-3 g-md-4" id="tasbeeh-list-container">
         @forelse($summary['tasbeehs'] as $item)
-            <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $item['tasbeeh_id'] }}">
+            <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $item['tasbeeh_id'] }}" data-daily-target="{{ $item['daily_target'] }}" data-active-days="{{ $item['active_days'] }}">
                 <div class="zikr-item-card w-100 d-flex flex-column justify-content-between position-relative">
                     <div>
                         {{-- Top Header with Title and Target Info --}}

@@ -108,6 +108,12 @@ class ZikrService
         $remaining = max($totalRequired - $totalCompleted, 0);
         $extra = max($totalCompleted - $totalRequired, 0);
 
+        // Calculate completed portion for today's quota
+        $priorRequired = max($activeDays - 1, 0) * $dailyTarget;
+        $todayCompleted = max($totalCompleted - $priorRequired, 0);
+        $todayRemaining = max($dailyTarget - $todayCompleted, 0);
+        $todayPercentage = $dailyTarget > 0 ? min(round(($todayCompleted / $dailyTarget) * 100, 1), 100) : 100;
+
         if ($totalRequired > 0) {
             $percentage = min(round(($totalCompleted / $totalRequired) * 100, 1), 100);
         } else {
@@ -134,6 +140,10 @@ class ZikrService
             'arabic_text' => $tasbeeh->arabic_text,
             'urdu_meaning' => $tasbeeh->urdu_meaning,
             'daily_target' => $dailyTarget,
+            'today_completed' => $todayCompleted,
+            'today_target' => $dailyTarget,
+            'today_remaining' => $todayRemaining,
+            'today_percentage' => $todayPercentage,
             'tracking_start_date' => $startDateCarbon->format('Y-m-d'),
             'formatted_start_date' => $startDateCarbon->format('d M, Y'),
             'active_days' => $activeDays,
@@ -162,6 +172,7 @@ class ZikrService
 
         $tasbeehStats = [];
         $overallTodayRequired = 0;
+        $overallTodayCompleted = 0;
         $overallTotalRequired = 0;
         $overallTotalCompleted = 0;
         $overallBacklog = 0;
@@ -173,11 +184,16 @@ class ZikrService
             $tasbeehStats[] = $stats;
 
             $overallTodayRequired += $stats['daily_target'];
+            $overallTodayCompleted += $stats['today_completed'];
             $overallTotalRequired += $stats['total_required'];
             $overallTotalCompleted += $stats['total_completed'];
             $overallBacklog += $stats['remaining'];
             $overallExtra += $stats['extra'];
         }
+
+        $overallTodayPercentage = $overallTodayRequired > 0
+            ? min(round(($overallTodayCompleted / $overallTodayRequired) * 100, 1), 100)
+            : 100;
 
         $overallPercentage = $overallTotalRequired > 0
             ? min(round(($overallTotalCompleted / $overallTotalRequired) * 100, 1), 100)
@@ -191,6 +207,8 @@ class ZikrService
             'lifetime_last_zikr' => $lifetimeRecord->last_zikr_at ? Carbon::parse($lifetimeRecord->last_zikr_at, $this->getTimezone())->diffForHumans() : null,
             'total_active_tasbeehs' => $activeTasbeehs->count(),
             'overall_today_required' => $overallTodayRequired,
+            'overall_today_completed' => $overallTodayCompleted,
+            'overall_today_percentage' => $overallTodayPercentage,
             'overall_total_required' => $overallTotalRequired,
             'overall_total_completed' => $overallTotalCompleted,
             'overall_backlog' => $overallBacklog,

@@ -100,6 +100,7 @@ class ZikrTrackingTest extends TestCase
         $response->assertOk();
         $response->assertSee('Daily Zikr Tracking');
         $response->assertSee('Tasbeeh-e-Fatima');
+        $response->assertSee('Read Today');
     }
 
     public function test_non_muslim_user_is_forbidden_from_zikr(): void
@@ -138,6 +139,7 @@ class ZikrTrackingTest extends TestCase
         $this->assertSame(700, $stats['total_completed']);
         $this->assertSame(300, $stats['remaining']); // 1000 - 700 = 300
         $this->assertSame(0, $stats['extra']);
+        $this->assertSame(0, $stats['today_completed']);
         $this->assertEquals(70, $stats['percentage']);
     }
 
