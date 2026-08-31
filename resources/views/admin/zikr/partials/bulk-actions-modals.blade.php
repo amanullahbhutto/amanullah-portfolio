@@ -93,13 +93,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!tasbeehId || !completeUrl) return;
 
+        const card = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
+        let currentCompleted = parseInt(card?.querySelector('.badge-completed strong')?.textContent.replace(/,/g, '') || '0', 10);
+        let badgeText = card?.querySelector('.badge-completed')?.textContent || '';
+        let match = badgeText.match(/\/\s*([0-9,]+)/);
+        let targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
+        let remaining = Math.max(targetReq - currentCompleted, 0);
+
+        // If already completed or in extra, do not add more count
+        if (remaining <= 0) {
+            if (typeof window.showFlashToast === 'function') {
+                window.showFlashToast(`'${title}' is already completed for today!`, 'warning');
+            }
+            return;
+        }
+
+        // Add 1 day's target (e.g. +100), capped by remaining backlog
+        let dailyTarget = parseInt(card?.dataset?.dailyTarget || '100', 10);
+        let countToAdd = Math.min(dailyTarget, remaining);
+
         // Instant visual update on card (0ms delay)
         if (typeof window.updateZikrCardDom === 'function') {
-            const card = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
-            const badgeText = card?.querySelector('.badge-completed')?.textContent || '';
-            const match = badgeText.match(/\/\s*([0-9,]+)/);
-            const targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
-            window.updateZikrCardDom(tasbeehId, targetReq, true);
+            window.updateZikrCardDom(tasbeehId, countToAdd, false);
         }
 
         // Visual click feedback
@@ -112,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 await window.PwaSync.completeTasbeehToday(tasbeehId);
             }
             if (typeof window.showFlashToast === 'function') {
-                window.showFlashToast(`'${title}' marked as completed for today (saved offline)!`, 'info');
+                window.showFlashToast(`+${countToAdd} completed for '${title}' (saved offline)!`, 'info');
             }
             return;
         }
@@ -131,7 +146,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const data = await response.json();
             if (data.success) {
                 if (typeof window.showFlashToast === 'function') {
-                    window.showFlashToast(data.message || `'${title}' marked as completed for today!`, 'success');
+                    window.showFlashToast(data.message || `+${countToAdd} completed for '${title}'!`, 'success');
+                }
+            } else if (data.already_completed) {
+                if (typeof window.showFlashToast === 'function') {
+                    window.showFlashToast(data.message || `'${title}' is already completed for today!`, 'warning');
                 }
             } else {
                 if (typeof window.showFlashToast === 'function') {
@@ -143,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
                 await window.PwaSync.completeTasbeehToday(tasbeehId);
                 if (typeof window.showFlashToast === 'function') {
-                    window.showFlashToast(`'${title}' marked as completed for today (saved offline)!`, 'info');
+                    window.showFlashToast(`+${countToAdd} completed for '${title}' (saved offline)!`, 'info');
                 }
             }
         }
@@ -162,17 +181,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (typeof window.updateZikrCardDom === 'function') {
                     document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
                         const tId = card.id.replace('tasbeeh-card-', '');
-                        const badgeText = card.querySelector('.badge-completed')?.textContent || '';
-                        const match = badgeText.match(/\/\s*([0-9,]+)/);
-                        const targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
-                        window.updateZikrCardDom(tId, targetReq, true);
+                        let currentCompleted = parseInt(card?.querySelector('.badge-completed strong')?.textContent.replace(/,/g, '') || '0', 10);
+                        let badgeText = card?.querySelector('.badge-completed')?.textContent || '';
+                        let match = badgeText.match(/\/\s*([0-9,]+)/);
+                        let targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
+                        let remaining = Math.max(targetReq - currentCompleted, 0);
+                        if (remaining > 0) {
+                            let dailyTarget = parseInt(card?.dataset?.dailyTarget || '100', 10);
+                            let countToAdd = Math.min(dailyTarget, remaining);
+                            window.updateZikrCardDom(tId, countToAdd, false);
+                        }
                     });
                 }
                 const modalEl = document.getElementById('completeAllTasbeehsModal');
                 const modalInstance = bootstrap.Modal.getInstance(modalEl);
                 if (modalInstance) modalInstance.hide();
                 if (window.App && typeof window.App.showToast === 'function') {
-                    window.App.showToast('info', 'Saved offline. All tasbeehs marked completed on screen!');
+                    window.App.showToast('info', 'Saved offline. Pending tasbeehs updated on screen!');
                 }
                 completeBtn.disabled = false;
                 if (spinner) spinner.classList.add('d-none');
@@ -195,10 +220,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (typeof window.updateZikrCardDom === 'function') {
                         document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
                             const tId = card.id.replace('tasbeeh-card-', '');
-                            const badgeText = card.querySelector('.badge-completed')?.textContent || '';
-                            const match = badgeText.match(/\/\s*([0-9,]+)/);
-                            const targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
-                            window.updateZikrCardDom(tId, targetReq, true);
+                            let currentCompleted = parseInt(card?.querySelector('.badge-completed strong')?.textContent.replace(/,/g, '') || '0', 10);
+                            let badgeText = card?.querySelector('.badge-completed')?.textContent || '';
+                            let match = badgeText.match(/\/\s*([0-9,]+)/);
+                            let targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
+                            let remaining = Math.max(targetReq - currentCompleted, 0);
+                            if (remaining > 0) {
+                                let dailyTarget = parseInt(card?.dataset?.dailyTarget || '100', 10);
+                                let countToAdd = Math.min(dailyTarget, remaining);
+                                window.updateZikrCardDom(tId, countToAdd, false);
+                            }
                         });
                     }
 
@@ -207,7 +238,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (modalInstance) modalInstance.hide();
 
                     if (window.App && typeof window.App.showToast === 'function') {
-                        window.App.showToast('success', data.message || 'All tasbeehs marked as completed for today!');
+                        window.App.showToast('success', data.message || 'Today\'s quota completed across pending tasbeehs!');
+                    }
+                } else if (data.already_completed) {
+                    const modalEl = document.getElementById('completeAllTasbeehsModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+
+                    if (window.App && typeof window.App.showToast === 'function') {
+                        window.App.showToast('warning', data.message || 'All tasbeehs are already completed for today!');
                     }
                 } else {
                     alert(data.message || 'Failed to complete tasbeehs.');
@@ -219,17 +258,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (typeof window.updateZikrCardDom === 'function') {
                         document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
                             const tId = card.id.replace('tasbeeh-card-', '');
-                            const badgeText = card.querySelector('.badge-completed')?.textContent || '';
-                            const match = badgeText.match(/\/\s*([0-9,]+)/);
-                            const targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
-                            window.updateZikrCardDom(tId, targetReq, true);
+                            let currentCompleted = parseInt(card?.querySelector('.badge-completed strong')?.textContent.replace(/,/g, '') || '0', 10);
+                            let badgeText = card?.querySelector('.badge-completed')?.textContent || '';
+                            let match = badgeText.match(/\/\s*([0-9,]+)/);
+                            let targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
+                            let remaining = Math.max(targetReq - currentCompleted, 0);
+                            if (remaining > 0) {
+                                let dailyTarget = parseInt(card?.dataset?.dailyTarget || '100', 10);
+                                let countToAdd = Math.min(dailyTarget, remaining);
+                                window.updateZikrCardDom(tId, countToAdd, false);
+                            }
                         });
                     }
                     const modalEl = document.getElementById('completeAllTasbeehsModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalEl);
                     if (modalInstance) modalInstance.hide();
                     if (window.App && typeof window.App.showToast === 'function') {
-                        window.App.showToast('info', 'Saved offline. All tasbeehs marked completed locally.');
+                        window.App.showToast('info', 'Saved offline. Pending tasbeehs updated locally.');
                     }
                 } else {
                     alert('An unexpected error occurred while completing tasbeehs.');
