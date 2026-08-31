@@ -1533,11 +1533,21 @@
             totalRequired = parseInt(matchReq[1].replace(/,/g, ''), 10) || 0;
         }
 
+        let deltaAdded = isAbsolute ? (countDelta - currentCompleted) : countDelta;
         let newCompleted = isAbsolute ? countDelta : currentCompleted + countDelta;
         if (newCompleted < 0) newCompleted = 0;
 
         if (completedEl) {
             completedEl.textContent = newCompleted.toLocaleString();
+        }
+
+        // Live Real-Time Lifetime Total Counter Update
+        if (deltaAdded > 0) {
+            let lifetimeEl = document.getElementById('top-stat-lifetime-total');
+            if (lifetimeEl) {
+                let currentLifetime = parseInt(lifetimeEl.textContent.replace(/,/g, ''), 10) || 0;
+                lifetimeEl.textContent = (currentLifetime + deltaAdded).toLocaleString();
+            }
         }
 
         if (totalRequired > 0) {
