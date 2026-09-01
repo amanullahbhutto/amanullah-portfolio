@@ -402,48 +402,32 @@ class ZikrService
     }
 
     /**
-     * Marks a single Tasbeeh as completed for today for the user.
-     * Completes day-by-day (1 daily target at a time) up to the required amount.
-     * If already completed, returns a notice without adding unwanted extra counts.
+     * Marks a single Tasbeeh as completed for today for the user by adding its Daily Target.
      */
     public function completeSingleForToday(User $user, Tasbeeh $tasbeeh): array
     {
         $progress = $this->getOrCreateProgress($user, $tasbeeh);
-        $stats = $this->calculateTasbeehStats($user, $tasbeeh, $progress);
+        $countToAdd = max((int) $tasbeeh->daily_target, 1);
 
-        if ($stats['remaining'] <= 0) {
-            return [
-                'success' => false,
-                'already_completed' => true,
-                'message' => "'{$tasbeeh->title}' is already completed for today!",
-                'stats' => $stats,
-            ];
-        }
+        DB::transaction(function () use ($user, $progress, $tasbeeh, $countToAdd) {
+            $progress->increment('total_completed', $countToAdd);
+            $progress->update(['last_zikr_at' => $this->now()]);
 
-        // Add 1 daily target at a time (e.g. +100), capped by remaining backlog
-        $countToAdd = min((int) $tasbeeh->daily_target, (int) $stats['remaining']);
+            $lifetime = $this->getOrCreateLifetimeRecord($user);
+            if ($lifetime->exists) {
+                $lifetime->increment('lifetime_count', $countToAdd);
+                $lifetime->update(['last_zikr_at' => $this->now()]);
+            }
 
-        if ($countToAdd > 0) {
-            DB::transaction(function () use ($user, $progress, $tasbeeh, $countToAdd) {
-                $progress->increment('total_completed', $countToAdd);
-                $progress->update(['last_zikr_at' => $this->now()]);
-
-                $lifetime = $this->getOrCreateLifetimeRecord($user);
-                if ($lifetime->exists) {
-                    $lifetime->increment('lifetime_count', $countToAdd);
-                    $lifetime->update(['last_zikr_at' => $this->now()]);
-                }
-
-                if (Schema::hasTable('user_daily_zikrs')) {
-                    $today = $this->now()->format('Y-m-d');
-                    $daily = UserDailyZikr::firstOrCreate(
-                        ['user_id' => $user->id, 'tasbeeh_id' => $tasbeeh->id, 'date' => $today],
-                        ['count' => 0]
-                    );
-                    $daily->increment('count', $countToAdd);
-                }
-            });
-        }
+            if (Schema::hasTable('user_daily_zikrs')) {
+                $today = $this->now()->format('Y-m-d');
+                $daily = UserDailyZikr::firstOrCreate(
+                    ['user_id' => $user->id, 'tasbeeh_id' => $tasbeeh->id, 'date' => $today],
+                    ['count' => 0]
+                );
+                $daily->increment('count', $countToAdd);
+            }
+        });
 
         $updatedStats = $this->calculateTasbeehStats($user, $tasbeeh, $progress->fresh());
 
@@ -456,8 +440,7 @@ class ZikrService
     }
 
     /**
-     * Marks all active Tasbeehs as completed for today for the user.
-     * Advances each pending tasbeeh by 1 daily target (capped by remaining).
+     * Marks all active Tasbeehs as completed for today for the user by adding each tasbeeh's Daily Target.
      */
     public function completeAllForToday(User $user): array
     {
@@ -471,29 +454,26 @@ class ZikrService
 
             foreach ($activeTasbeehs as $tasbeeh) {
                 $progress = $this->getOrCreateProgress($user, $tasbeeh);
-                $stats = $this->calculateTasbeehStats($user, $tasbeeh, $progress);
+                $countToAdd = max((int) $tasbeeh->daily_target, 1);
 
-                if ($stats['remaining'] > 0) {
-                    $countToAdd = min((int) $tasbeeh->daily_target, (int) $stats['remaining']);
-                    $progress->increment('total_completed', $countToAdd);
-                    $progress->update(['last_zikr_at' => $this->now()]);
+                $progress->increment('total_completed', $countToAdd);
+                $progress->update(['last_zikr_at' => $this->now()]);
 
-                    if ($lifetime->exists) {
-                        $lifetime->increment('lifetime_count', $countToAdd);
-                        $lifetime->update(['last_zikr_at' => $this->now()]);
-                    }
-
-                    if (Schema::hasTable('user_daily_zikrs')) {
-                        $daily = UserDailyZikr::firstOrCreate(
-                            ['user_id' => $user->id, 'tasbeeh_id' => $tasbeeh->id, 'date' => $today],
-                            ['count' => 0]
-                        );
-                        $daily->increment('count', $countToAdd);
-                    }
-
-                    $totalAdded += $countToAdd;
-                    $completedCount++;
+                if ($lifetime->exists) {
+                    $lifetime->increment('lifetime_count', $countToAdd);
+                    $lifetime->update(['last_zikr_at' => $this->now()]);
                 }
+
+                if (Schema::hasTable('user_daily_zikrs')) {
+                    $daily = UserDailyZikr::firstOrCreate(
+                        ['user_id' => $user->id, 'tasbeeh_id' => $tasbeeh->id, 'date' => $today],
+                        ['count' => 0]
+                    );
+                    $daily->increment('count', $countToAdd);
+                }
+
+                $totalAdded += $countToAdd;
+                $completedCount++;
             }
         });
 
@@ -501,13 +481,13 @@ class ZikrService
             return [
                 'success' => false,
                 'already_completed' => true,
-                'message' => 'All tasbeehs are already completed for today!',
+                'message' => 'No active tasbeehs found.',
             ];
         }
 
         return [
             'success' => true,
-            'message' => "Today's quota completed across {$completedCount} pending tasbeeh(s) (+{$totalAdded} total)!",
+            'message' => "Today's daily quota added across {$completedCount} active tasbeeh(s) (+{$totalAdded} total)!",
         ];
     }
 

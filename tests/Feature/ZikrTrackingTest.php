@@ -437,12 +437,12 @@ class ZikrTrackingTest extends TestCase
         $this->assertNotNull($lifetime);
         $this->assertSame(100, (int) $lifetime->lifetime_count);
 
-        // Clicking complete-today again when already completed does NOT add extra count
+        // Clicking complete-today again adds another daily target (+100)
         $secondResponse = $this->postJson(route('admin.zikr.counter.complete-today', $t1), [
             'user_id' => $user->id,
         ]);
-        $secondResponse->assertOk()->assertJson(['already_completed' => true]);
-        $this->assertSame(100, (int) $p1->fresh()->total_completed);
+        $secondResponse->assertOk()->assertJson(['success' => true, 'added_count' => 100]);
+        $this->assertSame(200, (int) $p1->fresh()->total_completed);
     }
 
     public function test_complete_today_advances_day_by_day_when_backlog_exists(): void
@@ -481,10 +481,10 @@ class ZikrTrackingTest extends TestCase
         $res3->assertOk()->assertJson(['success' => true, 'added_count' => 100]);
         $this->assertSame(300, (int) $progress->fresh()->total_completed);
 
-        // 4th Click: Already completed -> No count added
+        // 4th Click: Adds daily target (+100) -> completed = 400
         $res4 = $this->postJson(route('admin.zikr.counter.complete-today', $t), ['user_id' => $user->id]);
-        $res4->assertOk()->assertJson(['already_completed' => true]);
-        $this->assertSame(300, (int) $progress->fresh()->total_completed);
+        $res4->assertOk()->assertJson(['success' => true, 'added_count' => 100]);
+        $this->assertSame(400, (int) $progress->fresh()->total_completed);
     }
 
     public function test_read_today_24_hour_log_resets_to_zero_on_new_day(): void

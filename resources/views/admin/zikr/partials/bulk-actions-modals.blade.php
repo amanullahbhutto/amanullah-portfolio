@@ -97,20 +97,9 @@ document.addEventListener('DOMContentLoaded', function () {
         let currentCompleted = parseInt(card?.querySelector('.badge-completed strong')?.textContent.replace(/,/g, '') || '0', 10);
         let badgeText = card?.querySelector('.badge-completed')?.textContent || '';
         let match = badgeText.match(/\/\s*([0-9,]+)/);
-        let targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
-        let remaining = Math.max(targetReq - currentCompleted, 0);
-
-        // If already completed or in extra, do not add more count
-        if (remaining <= 0) {
-            if (typeof window.showFlashToast === 'function') {
-                window.showFlashToast(`'${title}' is already completed for today!`, 'warning');
-            }
-            return;
-        }
-
-        // Add 1 day's target (e.g. +100), capped by remaining backlog
-        let dailyTarget = parseInt(card?.dataset?.dailyTarget || '100', 10);
-        let countToAdd = Math.min(dailyTarget, remaining);
+        // Always add 1 full daily target count (e.g. +100 / +33)
+        let countToAdd = parseInt(card?.dataset?.dailyTarget || '100', 10);
+        if (countToAdd <= 0) countToAdd = 100;
 
         // Instant visual update on card (0ms delay)
         if (typeof window.updateZikrCardDom === 'function') {
@@ -148,10 +137,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (typeof window.showFlashToast === 'function') {
                     window.showFlashToast(data.message || `+${countToAdd} completed for '${title}'!`, 'success');
                 }
-            } else if (data.already_completed) {
-                if (typeof window.showFlashToast === 'function') {
-                    window.showFlashToast(data.message || `'${title}' is already completed for today!`, 'warning');
-                }
             } else {
                 if (typeof window.showFlashToast === 'function') {
                     window.showFlashToast(data.message || 'Failed to complete tasbeeh.', 'danger');
@@ -181,23 +166,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (typeof window.updateZikrCardDom === 'function') {
                     document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
                         const tId = card.id.replace('tasbeeh-card-', '');
-                        let currentCompleted = parseInt(card?.querySelector('.badge-completed strong')?.textContent.replace(/,/g, '') || '0', 10);
-                        let badgeText = card?.querySelector('.badge-completed')?.textContent || '';
-                        let match = badgeText.match(/\/\s*([0-9,]+)/);
-                        let targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
-                        let remaining = Math.max(targetReq - currentCompleted, 0);
-                        if (remaining > 0) {
-                            let dailyTarget = parseInt(card?.dataset?.dailyTarget || '100', 10);
-                            let countToAdd = Math.min(dailyTarget, remaining);
-                            window.updateZikrCardDom(tId, countToAdd, false);
-                        }
+                        let dailyTarget = parseInt(card?.dataset?.dailyTarget || '100', 10);
+                        if (dailyTarget <= 0) dailyTarget = 100;
+                        window.updateZikrCardDom(tId, dailyTarget, false);
                     });
                 }
                 const modalEl = document.getElementById('completeAllTasbeehsModal');
                 const modalInstance = bootstrap.Modal.getInstance(modalEl);
                 if (modalInstance) modalInstance.hide();
                 if (window.App && typeof window.App.showToast === 'function') {
-                    window.App.showToast('info', 'Saved offline. Pending tasbeehs updated on screen!');
+                    window.App.showToast('info', 'Saved offline. All tasbeehs updated on screen!');
                 }
                 completeBtn.disabled = false;
                 if (spinner) spinner.classList.add('d-none');
@@ -220,16 +198,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (typeof window.updateZikrCardDom === 'function') {
                         document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
                             const tId = card.id.replace('tasbeeh-card-', '');
-                            let currentCompleted = parseInt(card?.querySelector('.badge-completed strong')?.textContent.replace(/,/g, '') || '0', 10);
-                            let badgeText = card?.querySelector('.badge-completed')?.textContent || '';
-                            let match = badgeText.match(/\/\s*([0-9,]+)/);
-                            let targetReq = match ? parseInt(match[1].replace(/,/g, ''), 10) || 100 : 100;
-                            let remaining = Math.max(targetReq - currentCompleted, 0);
-                            if (remaining > 0) {
-                                let dailyTarget = parseInt(card?.dataset?.dailyTarget || '100', 10);
-                                let countToAdd = Math.min(dailyTarget, remaining);
-                                window.updateZikrCardDom(tId, countToAdd, false);
-                            }
+                            let dailyTarget = parseInt(card?.dataset?.dailyTarget || '100', 10);
+                            if (dailyTarget <= 0) dailyTarget = 100;
+                            window.updateZikrCardDom(tId, dailyTarget, false);
                         });
                     }
 
@@ -238,15 +209,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (modalInstance) modalInstance.hide();
 
                     if (window.App && typeof window.App.showToast === 'function') {
-                        window.App.showToast('success', data.message || 'Today\'s quota completed across pending tasbeehs!');
-                    }
-                } else if (data.already_completed) {
-                    const modalEl = document.getElementById('completeAllTasbeehsModal');
-                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
-                    if (modalInstance) modalInstance.hide();
-
-                    if (window.App && typeof window.App.showToast === 'function') {
-                        window.App.showToast('warning', data.message || 'All tasbeehs are already completed for today!');
+                        window.App.showToast('success', data.message || 'Today\'s quota completed across all tasbeehs!');
                     }
                 } else {
                     alert(data.message || 'Failed to complete tasbeehs.');
