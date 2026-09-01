@@ -486,5 +486,49 @@ class ZikrTrackingTest extends TestCase
         $res4->assertOk()->assertJson(['already_completed' => true]);
         $this->assertSame(300, (int) $progress->fresh()->total_completed);
     }
+
+    public function test_read_today_24_hour_log_resets_to_zero_on_new_day(): void
+    {
+        $user = $this->muslimUser;
+        $this->actingAs($user);
+        $service = app(ZikrService::class);
+
+        $t = Tasbeeh::create([
+            'title' => '24-Hour Daily Log Tasbeeh',
+            'arabic_text' => 'سُبْحَانَ اللَّهِ',
+            'daily_target' => 100,
+            'is_active' => true,
+        ]);
+
+        // Day 1: User reads 75 today
+        $this->postJson(route('admin.zikr.counter.increment', $t), ['count' => 75])->assertOk();
+
+        $statsDay1 = $service->calculateTasbeehStats($user, $t);
+        $this->assertSame(75, $statsDay1['today_completed']);
+        $this->assertSame(25, $statsDay1['today_remaining']);
+
+        $summaryDay1 = $service->getDashboardSummary($user);
+        $this->assertSame(75, $summaryDay1['overall_today_completed']);
+
+        // Day 2 (Tomorrow): Date advances to tomorrow
+        Carbon::setTestNow(Carbon::now($service->getTimezone())->addDay());
+
+        $statsDay2 = $service->calculateTasbeehStats($user, $t);
+        // Total completed remains 75 in cycle, but Read Today resets cleanly to 0!
+        $this->assertSame(0, $statsDay2['today_completed']);
+        $this->assertSame(100, $statsDay2['today_remaining']);
+
+        $summaryDay2 = $service->getDashboardSummary($user);
+        $this->assertSame(0, $summaryDay2['overall_today_completed']);
+
+        // User reads 50 on Day 2
+        $this->postJson(route('admin.zikr.counter.increment', $t), ['count' => 50])->assertOk();
+
+        $statsDay2Updated = $service->calculateTasbeehStats($user, $t);
+        $this->assertSame(50, $statsDay2Updated['today_completed']);
+        $this->assertSame(125, $statsDay2Updated['total_completed']); // 75 + 50 = 125 lifetime/cycle
+
+        Carbon::setTestNow(); // Clear mocked time
+    }
 }
 

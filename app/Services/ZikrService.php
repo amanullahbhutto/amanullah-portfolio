@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Tasbeeh;
 use App\Models\User;
+use App\Models\UserDailyZikr;
 use App\Models\UserLifetimeZikr;
 use App\Models\UserTasbeehProgress;
 use Carbon\Carbon;
@@ -79,7 +80,8 @@ class ZikrService
     public function calculateTasbeehStats(
         User $user,
         Tasbeeh $tasbeeh,
-        ?UserTasbeehProgress $progress = null
+        ?UserTasbeehProgress $progress = null,
+        ?int $todayCompletedOverride = null
     ): array {
         $tz = $this->getTimezone();
         $now = $this->now();
@@ -108,9 +110,21 @@ class ZikrService
         $remaining = max($totalRequired - $totalCompleted, 0);
         $extra = max($totalCompleted - $totalRequired, 0);
 
-        // Calculate completed portion for today's quota
-        $priorRequired = max($activeDays - 1, 0) * $dailyTarget;
-        $todayCompleted = max($totalCompleted - $priorRequired, 0);
+        // Calculate 24-hour daily count for today's calendar date
+        if ($todayCompletedOverride !== null) {
+            $todayCompleted = $todayCompletedOverride;
+        } elseif (Schema::hasTable('user_daily_zikrs')) {
+            $todayDate = $today->format('Y-m-d');
+            $dailyRecord = UserDailyZikr::where('user_id', $user->id)
+                ->where('tasbeeh_id', $tasbeeh->id)
+                ->where('date', $todayDate)
+                ->first();
+            $todayCompleted = $dailyRecord ? (int) $dailyRecord->count : 0;
+        } else {
+            $todayCompleted = 0;
+        }
+
+        $todayExtra = max($todayCompleted - $dailyTarget, 0);
         $todayRemaining = max($dailyTarget - $todayCompleted, 0);
         $todayPercentage = $dailyTarget > 0 ? min(round(($todayCompleted / $dailyTarget) * 100, 1), 100) : 100;
 
@@ -143,6 +157,7 @@ class ZikrService
             'today_completed' => $todayCompleted,
             'today_target' => $dailyTarget,
             'today_remaining' => $todayRemaining,
+            'today_extra' => $todayExtra,
             'today_percentage' => $todayPercentage,
             'tracking_start_date' => $startDateCarbon->format('Y-m-d'),
             'formatted_start_date' => $startDateCarbon->format('d M, Y'),
@@ -170,6 +185,22 @@ class ZikrService
         $activeTasbeehs = Tasbeeh::query()->active()->ordered()->get();
         $progressMap = UserTasbeehProgress::where('user_id', $user->id)->get()->keyBy('tasbeeh_id');
 
+        $todayDate = $this->now()->format('Y-m-d');
+        $yesterdayDate = $this->now()->copy()->subDay()->format('Y-m-d');
+
+        $hasDailyTable = Schema::hasTable('user_daily_zikrs');
+        $todayDailyMap = $hasDailyTable
+            ? UserDailyZikr::where('user_id', $user->id)
+                ->where('date', $todayDate)
+                ->pluck('count', 'tasbeeh_id')
+            : collect();
+
+        $yesterdayDailyMap = $hasDailyTable
+            ? UserDailyZikr::where('user_id', $user->id)
+                ->where('date', $yesterdayDate)
+                ->pluck('count', 'tasbeeh_id')
+            : collect();
+
         $tasbeehStats = [];
         $overallTodayRequired = 0;
         $overallTodayCompleted = 0;
@@ -180,7 +211,8 @@ class ZikrService
 
         foreach ($activeTasbeehs as $tasbeeh) {
             $progress = $progressMap->get($tasbeeh->id);
-            $stats = $this->calculateTasbeehStats($user, $tasbeeh, $progress);
+            $todayCount = (int) ($todayDailyMap->get($tasbeeh->id) ?? 0);
+            $stats = $this->calculateTasbeehStats($user, $tasbeeh, $progress, $todayCount);
             $tasbeehStats[] = $stats;
 
             $overallTodayRequired += $stats['daily_target'];
@@ -194,6 +226,13 @@ class ZikrService
         $overallTodayPercentage = $overallTodayRequired > 0
             ? min(round(($overallTodayCompleted / $overallTodayRequired) * 100, 1), 100)
             : 100;
+
+        $overallTodayExtra = max($overallTodayCompleted - $overallTodayRequired, 0);
+        $overallTodayRemaining = max($overallTodayRequired - $overallTodayCompleted, 0);
+
+        $overallYesterdayCompleted = $yesterdayDailyMap->sum() > 0
+            ? (int) $yesterdayDailyMap->sum()
+            : max($overallTotalCompleted - $overallTodayCompleted, 0);
 
         $overallPercentage = $overallTotalRequired > 0
             ? min(round(($overallTotalCompleted / $overallTotalRequired) * 100, 1), 100)
@@ -209,6 +248,9 @@ class ZikrService
             'overall_today_required' => $overallTodayRequired,
             'overall_today_completed' => $overallTodayCompleted,
             'overall_today_percentage' => $overallTodayPercentage,
+            'overall_today_extra' => $overallTodayExtra,
+            'overall_today_remaining' => $overallTodayRemaining,
+            'overall_yesterday_completed' => $overallYesterdayCompleted,
             'overall_total_required' => $overallTotalRequired,
             'overall_total_completed' => $overallTotalCompleted,
             'overall_backlog' => $overallBacklog,
@@ -220,7 +262,7 @@ class ZikrService
 
     /**
      * Atomically adds or adjusts count to a user's single active Tasbeeh progress record.
-     * Also seamlessly updates the persistent lifetime/all-time counter.
+     * Also seamlessly updates the persistent lifetime/all-time counter and 24-hour daily log.
      */
     public function addCount(User $user, Tasbeeh $tasbeeh, int $count, string $source = 'live'): array
     {
@@ -231,15 +273,24 @@ class ZikrService
         $progress = DB::transaction(function () use ($user, $tasbeeh, $count) {
             $record = $this->getOrCreateProgress($user, $tasbeeh);
             $lifetime = $this->getOrCreateLifetimeRecord($user);
+            $today = $this->now()->format('Y-m-d');
 
             if ($count > 0) {
-                // Atomic database increment for both active cycle and lifetime
+                // Atomic database increment for active cycle, lifetime and 24-hour daily log
                 $record->increment('total_completed', $count);
                 $record->update(['last_zikr_at' => $this->now()]);
 
                 if ($lifetime->exists) {
                     $lifetime->increment('lifetime_count', $count);
                     $lifetime->update(['last_zikr_at' => $this->now()]);
+                }
+
+                if (Schema::hasTable('user_daily_zikrs')) {
+                    $daily = UserDailyZikr::firstOrCreate(
+                        ['user_id' => $user->id, 'tasbeeh_id' => $tasbeeh->id, 'date' => $today],
+                        ['count' => 0]
+                    );
+                    $daily->increment('count', $count);
                 }
             } else {
                 // Subtraction / adjustment (ensure total does not drop below 0)
@@ -255,6 +306,17 @@ class ZikrService
                         'lifetime_count' => $newLifetime,
                         'last_zikr_at' => $this->now(),
                     ]);
+                }
+
+                if (Schema::hasTable('user_daily_zikrs')) {
+                    $daily = UserDailyZikr::where('user_id', $user->id)
+                        ->where('tasbeeh_id', $tasbeeh->id)
+                        ->where('date', $today)
+                        ->first();
+                    if ($daily) {
+                        $newDaily = max(((int) $daily->count) + $count, 0);
+                        $daily->update(['count' => $newDaily]);
+                    }
                 }
             }
 
@@ -292,6 +354,13 @@ class ZikrService
                 'tracking_start_date' => $today,
                 'last_zikr_at' => null,
             ]);
+
+            if (Schema::hasTable('user_daily_zikrs')) {
+                UserDailyZikr::where('user_id', $user->id)
+                    ->where('tasbeeh_id', $tasbeeh->id)
+                    ->where('date', $today)
+                    ->delete();
+            }
 
             return $record->fresh();
         });
@@ -355,7 +424,7 @@ class ZikrService
         $countToAdd = min((int) $tasbeeh->daily_target, (int) $stats['remaining']);
 
         if ($countToAdd > 0) {
-            DB::transaction(function () use ($user, $progress, $countToAdd) {
+            DB::transaction(function () use ($user, $progress, $tasbeeh, $countToAdd) {
                 $progress->increment('total_completed', $countToAdd);
                 $progress->update(['last_zikr_at' => $this->now()]);
 
@@ -363,6 +432,15 @@ class ZikrService
                 if ($lifetime->exists) {
                     $lifetime->increment('lifetime_count', $countToAdd);
                     $lifetime->update(['last_zikr_at' => $this->now()]);
+                }
+
+                if (Schema::hasTable('user_daily_zikrs')) {
+                    $today = $this->now()->format('Y-m-d');
+                    $daily = UserDailyZikr::firstOrCreate(
+                        ['user_id' => $user->id, 'tasbeeh_id' => $tasbeeh->id, 'date' => $today],
+                        ['count' => 0]
+                    );
+                    $daily->increment('count', $countToAdd);
                 }
             });
         }
@@ -389,6 +467,7 @@ class ZikrService
 
         DB::transaction(function () use ($user, $activeTasbeehs, &$totalAdded, &$completedCount) {
             $lifetime = $this->getOrCreateLifetimeRecord($user);
+            $today = $this->now()->format('Y-m-d');
 
             foreach ($activeTasbeehs as $tasbeeh) {
                 $progress = $this->getOrCreateProgress($user, $tasbeeh);
@@ -402,6 +481,14 @@ class ZikrService
                     if ($lifetime->exists) {
                         $lifetime->increment('lifetime_count', $countToAdd);
                         $lifetime->update(['last_zikr_at' => $this->now()]);
+                    }
+
+                    if (Schema::hasTable('user_daily_zikrs')) {
+                        $daily = UserDailyZikr::firstOrCreate(
+                            ['user_id' => $user->id, 'tasbeeh_id' => $tasbeeh->id, 'date' => $today],
+                            ['count' => 0]
+                        );
+                        $daily->increment('count', $countToAdd);
                     }
 
                     $totalAdded += $countToAdd;
@@ -441,6 +528,12 @@ class ZikrService
                     'tracking_start_date' => $today,
                     'last_zikr_at' => null,
                 ]);
+            }
+
+            if (Schema::hasTable('user_daily_zikrs')) {
+                UserDailyZikr::where('user_id', $user->id)
+                    ->where('date', $today)
+                    ->delete();
             }
         });
 

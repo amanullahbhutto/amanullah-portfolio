@@ -1457,13 +1457,18 @@
 
             let completed = completedEl ? (parseInt(completedEl.textContent.replace(/,/g, ''), 10) || 0) : 0;
             let required = matchReq ? (parseInt(matchReq[1].replace(/,/g, ''), 10) || 0) : 0;
-
             let dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10);
-            let activeDays = parseInt(card.dataset.activeDays || '1', 10);
-            let priorRequired = Math.max(activeDays - 1, 0) * dailyTarget;
-            let todayCompleted = Math.max(completed - priorRequired, 0);
+            let todayCompletedFromCard = parseInt(card.dataset.todayCompleted || '0', 10) || 0;
 
-            overallTodayCompleted += todayCompleted;
+            if (todayCompletedFromCard > 0 || (card.dataset.todayCompleted !== undefined && card.dataset.todayCompleted !== '')) {
+                overallTodayCompleted += todayCompletedFromCard;
+            } else {
+                let activeDays = parseInt(card.dataset.activeDays || '1', 10);
+                let priorRequired = Math.max(activeDays - 1, 0) * dailyTarget;
+                let inferredTodayCompleted = Math.max(completed - priorRequired, 0);
+                overallTodayCompleted += inferredTodayCompleted;
+            }
+
             overallTodayRequired += dailyTarget;
             overallTotalCompleted += completed;
             overallTotalRequired += required;
@@ -1539,6 +1544,12 @@
 
         if (completedEl) {
             completedEl.textContent = newCompleted.toLocaleString();
+        }
+
+        if (cardCol.dataset) {
+            const currentTodayCompleted = parseInt(cardCol.dataset.todayCompleted || '0', 10) || 0;
+            const nextTodayCompleted = Math.max(currentTodayCompleted + (isAbsolute ? 0 : deltaAdded), 0);
+            cardCol.dataset.todayCompleted = String(nextTodayCompleted);
         }
 
         // Live Real-Time Lifetime Total Counter Update
