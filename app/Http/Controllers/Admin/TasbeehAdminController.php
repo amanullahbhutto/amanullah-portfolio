@@ -36,9 +36,12 @@ class TasbeehAdminController extends Controller
             return $tasbeeh;
         });
 
+        $summary = $this->zikrService->getDashboardSummary($user);
+
         return view('admin.zikr.tasbeehs.index', [
             'tasbeehs' => $tasbeehsWithStats,
             'user' => $user,
+            'summary' => $summary,
         ]);
     }
 

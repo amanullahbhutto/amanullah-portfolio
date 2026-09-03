@@ -392,8 +392,8 @@ class ZikrTrackingTest extends TestCase
         // Lifetime count STILL persists after Tasbeeh deletion!
         $this->assertSame(75, (int) $lifetime->fresh()->lifetime_count);
 
-        // Explicit reset of lifetime counter
-        $this->postJson(route('admin.zikr.reset-lifetime'), ['user_id' => $user->id])->assertOk();
+        // Explicit reset of lifetime counter (requires password verification)
+        $this->postJson(route('admin.zikr.reset-lifetime'), ['user_id' => $user->id, 'password' => 'password'])->assertOk();
         $this->assertSame(0, (int) $lifetime->fresh()->lifetime_count);
     }
 
@@ -529,6 +529,94 @@ class ZikrTrackingTest extends TestCase
         $this->assertSame(125, $statsDay2Updated['total_completed']); // 75 + 50 = 125 lifetime/cycle
 
         Carbon::setTestNow(); // Clear mocked time
+    }
+
+    public function test_lifetime_reset_requires_valid_password(): void
+    {
+        $user = $this->muslimUser;
+        $this->actingAs($user);
+        $service = app(ZikrService::class);
+
+        $t = Tasbeeh::create([
+            'title' => 'Lifetime Test Tasbeeh',
+            'arabic_text' => 'سُبْحَانَ اللَّهِ',
+            'daily_target' => 100,
+            'is_active' => true,
+        ]);
+
+        $this->postJson(route('admin.zikr.counter.increment', $t), ['count' => 100])->assertOk();
+        $this->assertSame(100, (int) \App\Models\UserLifetimeZikr::where('user_id', $user->id)->value('lifetime_count'));
+
+        // Attempt reset with invalid password -> 422
+        $resWrong = $this->postJson(route('admin.zikr.reset-lifetime'), [
+            'user_id' => $user->id,
+            'password' => 'wrong-password',
+        ]);
+        $resWrong->assertStatus(422)->assertJson(['success' => false]);
+        $this->assertSame(100, (int) \App\Models\UserLifetimeZikr::where('user_id', $user->id)->value('lifetime_count'));
+
+        // Attempt reset with correct password -> 200 & resets to 0
+        $resCorrect = $this->postJson(route('admin.zikr.reset-lifetime'), [
+            'user_id' => $user->id,
+            'password' => 'password',
+        ]);
+        $resCorrect->assertOk()->assertJson(['success' => true]);
+        $this->assertSame(0, (int) \App\Models\UserLifetimeZikr::where('user_id', $user->id)->value('lifetime_count'));
+    }
+
+    public function test_lifetime_duration_and_journey_date_tracks_and_resets(): void
+    {
+        $user = $this->muslimUser;
+        $this->actingAs($user);
+        $service = app(ZikrService::class);
+
+        // Create a tasbeeh with progress started 60 days ago
+        $t = Tasbeeh::create([
+            'title' => 'Oldest Journey Tasbeeh',
+            'arabic_text' => 'سُبْحَانَ اللَّهِ',
+            'daily_target' => 100,
+            'is_active' => true,
+        ]);
+        $sixtyDaysAgo = Carbon::now($service->getTimezone())->subDays(60);
+        UserTasbeehProgress::create([
+            'user_id' => $user->id,
+            'tasbeeh_id' => $t->id,
+            'total_completed' => 500,
+            'tracking_start_date' => $sixtyDaysAgo,
+        ]);
+
+        // Mock lifetime start date 45 days ago
+        $fortyFiveDaysAgo = Carbon::now($service->getTimezone())->subDays(45);
+        $lifetime = $service->getOrCreateLifetimeRecord($user);
+        $lifetime->update([
+            'lifetime_count' => 500,
+            'started_at' => $fortyFiveDaysAgo,
+        ]);
+
+        $summary = $service->getDashboardSummary($user);
+        // Overall Zikr Journey tracks the oldest tasbeeh progress (61 days inclusive)
+        $this->assertNotNull($summary['journey_duration']);
+        $this->assertSame(61, $summary['journey_duration']['total_days']);
+
+        // Lifetime duration tracks lifetime record started_at (46 days inclusive)
+        $this->assertNotNull($summary['lifetime_duration']);
+        $this->assertSame(46, $summary['lifetime_duration']['total_days']);
+        $this->assertStringContainsString('Month', $summary['lifetime_duration']['formatted_full']);
+
+        // Reset lifetime with password
+        $this->postJson(route('admin.zikr.reset-lifetime'), [
+            'user_id' => $user->id,
+            'password' => 'password',
+        ])->assertOk();
+
+        // After reset: Lifetime duration resets to 1 Day, BUT Zikr Journey still remains 61 Days!
+        $summaryAfter = $service->getDashboardSummary($user);
+        $this->assertSame(1, $summaryAfter['lifetime_duration']['total_days']);
+        $this->assertSame('1 Day', $summaryAfter['lifetime_duration']['formatted_full']);
+        $this->assertSame(0, $summaryAfter['lifetime_total']);
+
+        // Overall journey preserved from oldest tasbeeh!
+        $this->assertSame(61, $summaryAfter['journey_duration']['total_days']);
     }
 }
 

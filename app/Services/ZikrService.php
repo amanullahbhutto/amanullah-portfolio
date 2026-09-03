@@ -52,15 +52,121 @@ class ZikrService
     }
 
     /**
+     * Resolves the earliest overall Zikr Journey start date across all Tasbeeh progress records.
+     */
+    public function resolveOverallJourneyStartDate(User $user): Carbon
+    {
+        $tz = $this->getTimezone();
+
+        if (Schema::hasTable('user_tasbeeh_progress')) {
+            $earliestProgress = UserTasbeehProgress::where('user_id', $user->id)
+                ->whereNotNull('tracking_start_date')
+                ->orderBy('tracking_start_date', 'asc')
+                ->value('tracking_start_date');
+
+            if ($earliestProgress) {
+                return Carbon::parse($earliestProgress, $tz)->startOfDay();
+            }
+        }
+
+        return $user->created_at
+            ? Carbon::parse($user->created_at, $tz)->startOfDay()
+            : $this->now()->startOfDay();
+    }
+
+    /**
+     * Resolves the independent start date for the Lifetime Total Zikr counter.
+     */
+    public function resolveLifetimeStartDate(User $user, ?UserLifetimeZikr $lifetimeRecord = null): Carbon
+    {
+        $tz = $this->getTimezone();
+
+        if ($lifetimeRecord && $lifetimeRecord->started_at) {
+            return Carbon::parse($lifetimeRecord->started_at, $tz)->startOfDay();
+        }
+
+        if (Schema::hasTable('user_lifetime_zikrs')) {
+            $record = UserLifetimeZikr::where('user_id', $user->id)->first();
+            if ($record && $record->started_at) {
+                return Carbon::parse($record->started_at, $tz)->startOfDay();
+            }
+        }
+
+        return $this->resolveOverallJourneyStartDate($user);
+    }
+
+    /**
+     * Formats duration into Days, Months, and Years.
+     */
+    public function formatDurationParts(Carbon $startDate, Carbon $endDate): array
+    {
+        $start = $startDate->copy()->startOfDay();
+        $end = $endDate->copy()->startOfDay();
+
+        if ($start->gt($end)) {
+            return [
+                'total_days' => 1,
+                'years' => 0,
+                'months' => 0,
+                'days' => 1,
+                'formatted_short' => '1D',
+                'formatted_full' => '1 Day',
+                'formatted_badge' => 'Day 1',
+                'start_date_formatted' => $start->format('d M, Y'),
+                'start_date_iso' => $start->format('Y-m-d'),
+            ];
+        }
+
+        $totalDays = (int) $start->diffInDays($end) + 1;
+
+        // Calculate diff with 1 day added so day 1 shows 1 day
+        $diff = $start->diff($end->copy()->addDay());
+        $years = (int) $diff->y;
+        $months = (int) $diff->m;
+        $days = (int) $diff->d;
+
+        $parts = [];
+        if ($years > 0) {
+            $parts[] = $years . ' ' . ($years === 1 ? 'Year' : 'Years');
+        }
+        if ($months > 0) {
+            $parts[] = $months . ' ' . ($months === 1 ? 'Month' : 'Months');
+        }
+        if ($days > 0 || empty($parts)) {
+            $parts[] = $days . ' ' . ($days === 1 ? 'Day' : 'Days');
+        }
+
+        $shortParts = [];
+        if ($years > 0) $shortParts[] = "{$years}Y";
+        if ($months > 0) $shortParts[] = "{$months}M";
+        if ($days > 0 || empty($shortParts)) $shortParts[] = "{$days}D";
+
+        return [
+            'total_days' => $totalDays,
+            'years' => $years,
+            'months' => $months,
+            'days' => $days,
+            'formatted_short' => implode(' ', $shortParts),
+            'formatted_full' => implode(', ', $parts),
+            'formatted_badge' => $totalDays === 1 ? 'Day 1' : "{$totalDays} Days",
+            'start_date_formatted' => $start->format('d M, Y'),
+            'start_date_iso' => $start->format('Y-m-d'),
+        ];
+    }
+
+    /**
      * Gets or initializes the persistent lifetime/all-time Zikr record for a user.
      * This record is completely independent and never reset by standard cycle resets or tasbeeh deletions.
      */
     public function getOrCreateLifetimeRecord(User $user): UserLifetimeZikr
     {
+        $defaultStart = $this->resolveLifetimeStartDate($user);
+
         if (!Schema::hasTable('user_lifetime_zikrs')) {
             $dummy = new UserLifetimeZikr();
             $dummy->user_id = $user->id;
             $dummy->lifetime_count = 0;
+            $dummy->started_at = $defaultStart;
             $dummy->last_zikr_at = null;
             return $dummy;
         }
@@ -69,6 +175,7 @@ class ZikrService
             ['user_id' => $user->id],
             [
                 'lifetime_count' => 0,
+                'started_at' => $defaultStart,
                 'last_zikr_at' => null,
             ]
         );
@@ -240,9 +347,21 @@ class ZikrService
 
         $lifetimeRecord = $this->getOrCreateLifetimeRecord($user);
 
+        // 1. Overall Zikr Journey (From oldest tasbeeh progress tracking date across all tables)
+        $journeyStartDate = $this->resolveOverallJourneyStartDate($user);
+        $journeyDuration = $this->formatDurationParts($journeyStartDate, $this->now());
+
+        // 2. Lifetime Total (Independent start date, resets on password deletion)
+        $lifetimeStartDate = $this->resolveLifetimeStartDate($user, $lifetimeRecord);
+        $lifetimeDuration = $this->formatDurationParts($lifetimeStartDate, $this->now());
+
         return [
             'user' => $user,
+            'journey_start_date' => $journeyStartDate->format('Y-m-d'),
+            'journey_duration' => $journeyDuration,
             'lifetime_total' => (int) $lifetimeRecord->lifetime_count,
+            'lifetime_started_at' => $lifetimeStartDate->format('Y-m-d'),
+            'lifetime_duration' => $lifetimeDuration,
             'lifetime_last_zikr' => $lifetimeRecord->last_zikr_at ? Carbon::parse($lifetimeRecord->last_zikr_at, $this->getTimezone())->diffForHumans() : null,
             'total_active_tasbeehs' => $activeTasbeehs->count(),
             'overall_today_required' => $overallTodayRequired,
@@ -524,21 +643,27 @@ class ZikrService
     }
 
     /**
-     * Dedicated reset for the Lifetime Total Zikr counter only.
+     * Dedicated reset for the Lifetime Total Zikr counter and duration only.
      */
     public function resetLifetimeZikr(User $user): array
     {
         $lifetime = $this->getOrCreateLifetimeRecord($user);
+        $now = $this->now();
         if ($lifetime->exists) {
             $lifetime->update([
                 'lifetime_count' => 0,
+                'started_at' => $now,
                 'last_zikr_at' => null,
             ]);
         }
 
+        $duration = $this->formatDurationParts($now, $now);
+
         return [
             'success' => true,
-            'message' => 'Lifetime Total Zikr counter has been reset to 0.',
+            'message' => 'Lifetime Total Zikr counter and tracking duration have been reset to 0.',
+            'lifetime_count' => 0,
+            'lifetime_duration' => $duration,
         ];
     }
 }

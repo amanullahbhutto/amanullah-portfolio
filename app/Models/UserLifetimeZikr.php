@@ -15,6 +15,7 @@ class UserLifetimeZikr extends Model
     protected $fillable = [
         'user_id',
         'lifetime_count',
+        'started_at',
         'last_zikr_at',
     ];
 
@@ -22,6 +23,7 @@ class UserLifetimeZikr extends Model
     {
         return [
             'lifetime_count' => 'integer',
+            'started_at' => 'datetime',
             'last_zikr_at' => 'datetime',
         ];
     }

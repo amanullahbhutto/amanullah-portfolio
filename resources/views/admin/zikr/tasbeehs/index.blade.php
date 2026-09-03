@@ -3,31 +3,61 @@
 @section('page_title', 'Tasbeeh')
 
 @section('content')
-<div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-end gap-2 mb-4">
-    {{-- Reset All Tasbeehs Trigger (Icon 1) --}}
-    <button class="action-btn-top danger" type="button" data-bs-toggle="modal" data-bs-target="#resetAllTasbeehsModal" title="Reset All Tasbeehs to 0 (Start Date Today)">
-        <i class="bi bi-arrow-counterclockwise"></i>
-    </button>
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    {{-- Left Side: Active Zikr Journey / Duration Tracker (Days, Months, Years) --}}
+    <div class="d-flex align-items-center">
+        @if(isset($summary['journey_duration']))
+            <div class="zikr-journey-pill d-inline-flex align-items-center px-3 py-2 rounded-4 border" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(8, 17, 30, 0.95) 100%); border-color: rgba(6, 182, 212, 0.35); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+                <div class="d-flex align-items-center justify-content-center me-2 rounded-circle flex-shrink-0" style="width: 32px; height: 32px; background: rgba(6, 182, 212, 0.2); color: #06b6d4; font-size: 1rem;">
+                    <i class="bi bi-calendar2-range"></i>
+                </div>
+                <div class="d-flex flex-column justify-content-center" style="line-height: 1.25;">
+                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                        <span class="small fw-bold text-uppercase" style="color: #38bdf8; font-size: 0.68rem; letter-spacing: 0.5px;">
+                            Zikr Journey:
+                        </span>
+                        <strong class="text-white font-monospace" style="font-size: 0.85rem;" id="top-journey-duration-text">
+                            {{ $summary['journey_duration']['formatted_full'] }}
+                        </strong>
+                        <span class="badge rounded-pill text-info font-monospace ms-1" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); font-size: 0.65rem; padding: 2px 7px;" id="top-journey-total-days-badge">
+                            {{ $summary['journey_duration']['total_days'] }} {{ $summary['journey_duration']['total_days'] === 1 ? 'Day' : 'Days' }} Total
+                        </span>
+                    </div>
+                    <small class="text-muted-custom" style="font-size: 0.68rem;" id="top-journey-start-text">
+                        Started: <span style="color: #cbd5e1;">{{ $summary['journey_duration']['start_date_formatted'] }}</span>
+                    </small>
+                </div>
+            </div>
+        @endif
+    </div>
 
-    {{-- Mark All Complete for Today Trigger (Icon 2) --}}
-    <button class="action-btn-top green" type="button" data-bs-toggle="modal" data-bs-target="#completeAllTasbeehsModal" title="Mark All Tasbeehs Complete for Today">
-        <i class="bi bi-check2-all"></i>
-    </button>
+    {{-- Right Side: Top Action Buttons --}}
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        {{-- Reset All Tasbeehs Trigger (Icon 1) --}}
+        <button class="action-btn-top danger" type="button" data-bs-toggle="modal" data-bs-target="#resetAllTasbeehsModal" title="Reset All Tasbeehs to 0 (Start Date Today)">
+            <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
 
-    {{-- Display Settings Modal Trigger --}}
-    <button class="action-btn-top" type="button" data-bs-toggle="modal" data-bs-target="#zikrSettingsModal" title="Display Settings (Font Size & Visibility)">
-        <i class="bi bi-gear-fill"></i>
-    </button>
+        {{-- Mark All Complete for Today Trigger (Icon 2) --}}
+        <button class="action-btn-top green" type="button" data-bs-toggle="modal" data-bs-target="#completeAllTasbeehsModal" title="Mark All Tasbeehs Complete for Today">
+            <i class="bi bi-check2-all"></i>
+        </button>
 
-    {{-- Zikr Dashboard Shortcut --}}
-    <a class="action-btn-top cyan" href="{{ route('admin.zikr.index') }}" title="Zikr Dashboard">
-        <i class="bi bi-speedometer2"></i>
-    </a>
+        {{-- Display Settings Modal Trigger --}}
+        <button class="action-btn-top" type="button" data-bs-toggle="modal" data-bs-target="#zikrSettingsModal" title="Display Settings (Font Size & Visibility)">
+            <i class="bi bi-gear-fill"></i>
+        </button>
 
-    {{-- Add New Tasbeeh Trigger --}}
-    <button class="action-btn-top accent" type="button" data-bs-toggle="modal" data-bs-target="#createTasbeehModal" title="Add New Tasbeeh">
-        <i class="bi bi-plus-lg"></i>
-    </button>
+        {{-- Zikr Dashboard Shortcut --}}
+        <a class="action-btn-top cyan" href="{{ route('admin.zikr.index') }}" title="Zikr Dashboard">
+            <i class="bi bi-speedometer2"></i>
+        </a>
+
+        {{-- Add New Tasbeeh Trigger --}}
+        <button class="action-btn-top accent" type="button" data-bs-toggle="modal" data-bs-target="#createTasbeehModal" title="Add New Tasbeeh">
+            <i class="bi bi-plus-lg"></i>
+        </button>
+    </div>
 </div>
 
 <section data-ajax-crud data-refresh-target="#tasbeehs-grid-container">
