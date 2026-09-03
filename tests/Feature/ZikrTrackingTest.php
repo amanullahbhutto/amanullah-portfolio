@@ -349,9 +349,16 @@ class ZikrTrackingTest extends TestCase
         // Add some count first
         $this->postJson(route('admin.zikr.counter.increment', $t1), ['count' => 50])->assertOk();
 
-        // Reset all
+        // Reject with invalid password
+        $this->postJson(route('admin.zikr.reset-all'), [
+            'user_id' => $user->id,
+            'password' => 'wrongpassword',
+        ])->assertStatus(422);
+
+        // Reset all with correct password
         $response = $this->postJson(route('admin.zikr.reset-all'), [
             'user_id' => $user->id,
+            'password' => 'password',
         ]);
 
         $response->assertOk()->assertJson(['success' => true]);
@@ -378,10 +385,8 @@ class ZikrTrackingTest extends TestCase
 
         $lifetime = \App\Models\UserLifetimeZikr::where('user_id', $user->id)->first();
         $this->assertNotNull($lifetime);
-        $this->assertSame(75, (int) $lifetime->lifetime_count);
-
-        // Reset all active tracking
-        $this->postJson(route('admin.zikr.reset-all'), ['user_id' => $user->id])->assertOk();
+        // Reset all active tracking (requires password verification)
+        $this->postJson(route('admin.zikr.reset-all'), ['user_id' => $user->id, 'password' => 'password'])->assertOk();
 
         // Active cycle progress is 0, but Lifetime count is STILL 75!
         $this->assertSame(75, (int) $lifetime->fresh()->lifetime_count);

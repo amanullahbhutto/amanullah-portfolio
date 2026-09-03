@@ -145,6 +145,18 @@ class ZikrCounterController extends Controller
 
     public function resetAll(Request $request): JsonResponse
     {
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        $authenticatedUser = $request->user();
+        if (! Hash::check($request->input('password'), $authenticatedUser->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Incorrect password! Please enter your correct login password to reset all tasbeehs.',
+            ], 422);
+        }
+
         $targetUser = null;
         if ($request->filled('user_id')) {
             $targetUser = User::find($request->input('user_id'));

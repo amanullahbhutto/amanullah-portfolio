@@ -3,16 +3,16 @@
 @section('page_title', 'Daily Zikr Tracking')
 
 @section('content')
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    {{-- Left Side: Active Zikr Journey / Duration Tracker (Days, Months, Years) --}}
-    <div class="d-flex align-items-center">
+<div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between gap-3 mb-4">
+    {{-- Active Zikr Journey / Duration Tracker (Days, Months, Years) --}}
+    <div class="d-flex align-items-center justify-content-center">
         @if($selectedUser && isset($summary['journey_duration']))
-            <div class="zikr-journey-pill d-inline-flex align-items-center px-3 py-2 rounded-4 border" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(8, 17, 30, 0.95) 100%); border-color: rgba(6, 182, 212, 0.35); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+            <div class="zikr-journey-pill d-inline-flex align-items-center px-3 py-2 rounded-4 border mx-auto mx-md-0" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(8, 17, 30, 0.95) 100%); border-color: rgba(6, 182, 212, 0.35); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
                 <div class="d-flex align-items-center justify-content-center me-2 rounded-circle flex-shrink-0" style="width: 32px; height: 32px; background: rgba(6, 182, 212, 0.2); color: #06b6d4; font-size: 1rem;">
                     <i class="bi bi-calendar2-range"></i>
                 </div>
                 <div class="d-flex flex-column justify-content-center" style="line-height: 1.25;">
-                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                    <div class="d-flex align-items-center gap-1 flex-wrap justify-content-center justify-content-sm-start">
                         <span class="small fw-bold text-uppercase" style="color: #38bdf8; font-size: 0.68rem; letter-spacing: 0.5px;">
                             Zikr Journey:
                         </span>
@@ -31,8 +31,8 @@
         @endif
     </div>
 
-    {{-- Right Side: Top Action Buttons --}}
-    <div class="d-flex flex-wrap align-items-center gap-2">
+    {{-- Top Action Buttons --}}
+    <div class="d-flex flex-wrap align-items-center justify-content-center gap-2">
         {{-- Reset All Tasbeehs Trigger (Icon 1) --}}
         <button class="action-btn-top danger" type="button" data-bs-toggle="modal" data-bs-target="#resetAllTasbeehsModal" title="Reset All Tasbeehs to 0 (Start Date Today)">
             <i class="bi bi-arrow-counterclockwise"></i>
