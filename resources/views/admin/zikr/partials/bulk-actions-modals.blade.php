@@ -47,46 +47,22 @@
 </div>
 
 {{-- Reset Lifetime Total 2-Step Modal (Step 1: Confirmation -> Step 2: Password Verification) --}}
-<div class="modal fade" id="resetLifetimeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 390px;">
         <div class="modal-content text-white" style="background: #08111e; border: 1px solid rgba(249, 115, 22, 0.4); border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.95);">
             
             {{-- Step 1: Initial Warning & Confirmation Alert --}}
-            <div class="modal-body p-4 text-center" id="lifetimeResetStep1">
-                <div class="mb-3 d-inline-flex align-items-center justify-content-center" style="width: 58px; height: 58px; border-radius: 50%; background: rgba(249, 115, 22, 0.15); border: 1px solid rgba(249, 115, 22, 0.4); color: #f97316;">
-                    <i class="bi bi-trash3 fs-2"></i>
-                </div>
-                <h5 class="fw-bold mb-2 text-white">Reset Lifetime Total?</h5>
-                <p class="text-muted-custom small mb-4" style="line-height: 1.6; font-size: 0.82rem;">
-                    Kia aap waqai apna <strong>Lifetime Permanent Total Zikr</strong> counter aur <strong>Tracking Duration</strong> zero (0) par reset karna chahte hain?
-                </p>
-                <div class="d-flex gap-2 justify-content-center">
-                    <button type="button" class="btn btn-outline-theme btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-accent btn-sm px-4 fw-bold" id="btnLifetimeToStep2" style="background: #f97316; border-color: #f97316;">
-                        Yes, Continue <i class="bi bi-arrow-right ms-1"></i>
-                    </button>
-                </div>
-            </div>
-
-            {{-- Step 2: Password Verification Prompt (Opens when user clicks Yes on Step 1) --}}
-            <div class="modal-body p-4 text-center d-none" id="lifetimeResetStep2">
-                <div class="mb-3 d-inline-flex align-items-center justify-content-center" style="width: 58px; height: 58px; border-radius: 50%; background: rgba(249, 115, 22, 0.15); border: 1px solid rgba(249, 115, 22, 0.4); color: #f97316;">
-                    <i class="bi bi-shield-lock fs-2"></i>
                 </div>
                 <h5 class="fw-bold mb-1 text-white">Security Verification</h5>
                 <p class="text-muted-custom small mb-3" style="line-height: 1.5; font-size: 0.78rem;">
                     Tasdeeq ke liye apna <strong>Login Password</strong> enter karein:
-                </p>
 
                 {{-- Password Input Box --}}
-                <div class="mb-3 text-start">
                     <label for="resetLifetimePasswordInput" class="form-label small fw-semibold text-muted-custom mb-1" style="font-size: 0.75rem;">
                         Login Password:
                     </label>
                     <div class="input-group">
                         <span class="input-group-text border-secondary border-opacity-25" style="background: #0f172a; color: #94a3b8;">
                             <i class="bi bi-key"></i>
-                        </span>
                         <input 
                             type="password" 
                             class="form-control border-secondary border-opacity-25 text-white" 
@@ -110,16 +86,12 @@
                     <button type="button" class="btn btn-accent btn-sm px-3 fw-bold" id="btnConfirmResetLifetime" style="background: #f97316; border-color: #f97316;">
                         <span class="spinner-border spinner-border-sm me-1 d-none" role="status" aria-hidden="true"></span>
                         Verify & Reset
-                    </button>
-                </div>
-            </div>
 
         </div>
     </div>
 </div>
 
 @push('scripts')
-<script>
 document.addEventListener('DOMContentLoaded', function () {
     const completeBtn = document.getElementById('btnConfirmCompleteAll');
     const resetBtn = document.getElementById('btnConfirmResetAll');
@@ -387,53 +359,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnBackToStep1 = document.getElementById('btnLifetimeBackToStep1');
     const togglePasswordBtn = document.getElementById('toggleResetLifetimePassword');
     const passwordInput = document.getElementById('resetLifetimePasswordInput');
-    const passwordError = document.getElementById('resetLifetimePasswordError');
-    const passwordIcon = document.getElementById('toggleResetLifetimePasswordIcon');
-    const resetLifetimeModalEl = document.getElementById('resetLifetimeModal');
-
-    if (resetLifetimeModalEl) {
         resetLifetimeModalEl.addEventListener('show.bs.modal', function () {
             if (step1El) step1El.classList.remove('d-none');
             if (step2El) step2El.classList.add('d-none');
             if (passwordInput) {
                 passwordInput.value = '';
-                passwordInput.type = 'password';
-                passwordInput.classList.remove('is-invalid');
-            }
-            if (passwordIcon) passwordIcon.className = 'bi bi-eye';
-            if (passwordError) {
-                passwordError.textContent = '';
-                passwordError.classList.add('d-none');
-            }
-        });
-    }
-
-    if (btnToStep2) {
-        btnToStep2.addEventListener('click', function () {
-            if (step1El) step1El.classList.add('d-none');
-            if (step2El) step2El.classList.remove('d-none');
-            if (passwordInput) {
-                passwordInput.value = '';
-                setTimeout(() => passwordInput.focus(), 100);
-            }
-        });
-    }
-
-    if (btnBackToStep1) {
-        btnBackToStep1.addEventListener('click', function () {
-            if (step2El) step2El.classList.add('d-none');
-            if (step1El) step1El.classList.remove('d-none');
-            if (passwordError) passwordError.classList.add('d-none');
-            if (passwordInput) passwordInput.classList.remove('is-invalid');
-        });
-    }
-
-    if (togglePasswordBtn && passwordInput && passwordIcon) {
-        togglePasswordBtn.addEventListener('click', function () {
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                passwordIcon.className = 'bi bi-eye-slash';
-            } else {
                 passwordInput.type = 'password';
                 passwordIcon.className = 'bi bi-eye';
             }
@@ -456,11 +386,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (passwordError) {
                     passwordError.textContent = 'Baraye meharbani apna login password enter karein!';
                     passwordError.classList.remove('d-none');
-                }
-                if (passwordInput) {
-                    passwordInput.classList.add('is-invalid');
-                    passwordInput.focus();
-                }
                 return;
             }
 
