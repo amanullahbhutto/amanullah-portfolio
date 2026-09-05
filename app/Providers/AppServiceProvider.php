@@ -18,6 +18,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (request()->isSecure() || request()->header('X-Forwarded-Proto') === 'https' || app()->environment('production')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
             return ($user->hasRole('Super Admin') || $user->hasRole('admin') || $user->hasRole('super-admin')) ? true : null;
         });
