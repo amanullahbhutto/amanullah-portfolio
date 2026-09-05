@@ -7,30 +7,32 @@
     <div class="admin-card-head">
         <div>
             <h2>Program Income</h2>
-            <p class="text-muted-custom small mb-0 mt-1">Record and track all program income, donations, and incoming funds by contributor and city.</p>
         </div>
-        <button class="btn btn-accent btn-sm" data-crud-open data-modal="#contributionModal" data-store-url="{{ route('admin.program-contributions.store') }}">
-            <i class="bi bi-plus-lg me-1"></i>Add Income
-        </button>
-    </div>
 
-    <div class="admin-list-toolbar">
-        <form class="admin-search financial-filter wide-filter" method="GET" action="{{ route('admin.program-contributions.index') }}" data-live-search data-live-search-target="#admin-list-results">
-            <div class="search-field">
-                <i class="bi bi-search"></i>
-                <input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="Search by donor name, father name, or city...">
-                <button class="search-clear {{ blank(request('q')) ? 'd-none' : '' }}" type="button" data-live-search-clear>
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-            <select class="form-select filter-select program-filter-select" name="program_id">
-                <option value="">All programs</option>
-                @foreach($programs as $p)
-                    <option value="{{ $p->id }}" @selected($programId === $p->id)>{{ $p->name }}</option>
-                @endforeach
-            </select>
-        </form>
-        <div class="finance-badge" data-finance-total>Total Income: <strong>Rs. {{ number_format($total, 2) }}</strong></div>
+        <div class="head-search-wrap flex-grow-1">
+            <form class="admin-search financial-filter wide-filter" method="GET" action="{{ route('admin.program-contributions.index') }}" data-live-search data-live-search-target="#admin-list-results">
+                <div class="search-field flex-grow-1">
+                    <i class="bi bi-search"></i>
+                    <input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="Search by donor name, father name, or city...">
+                    <button class="search-clear {{ blank(request('q')) ? 'd-none' : '' }}" type="button" data-live-search-clear>
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <select class="form-select filter-select program-filter-select" name="program_id">
+                    <option value="">All programs</option>
+                    @foreach($programs as $p)
+                        <option value="{{ $p->id }}" @selected($programId === $p->id)>{{ $p->name }}</option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
+
+        <div class="responsive-actions d-flex align-items-center gap-2">
+            <div class="finance-badge" data-finance-total>Total Income: <strong>Rs. {{ number_format($total, 2) }}</strong></div>
+            <button class="btn btn-accent btn-sm" data-crud-open data-modal="#contributionModal" data-store-url="{{ route('admin.program-contributions.store') }}">
+                <i class="bi bi-plus-lg me-1"></i>Add Income
+            </button>
+        </div>
     </div>
 
     <div id="admin-list-results">

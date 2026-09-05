@@ -7,28 +7,30 @@
     <div class="admin-card-head">
         <div>
             <h2>Programs</h2>
-            <p class="text-muted-custom small mb-0 mt-1">Each program keeps its own income, expenses and balance.</p>
         </div>
-        <button class="btn btn-accent btn-sm" data-crud-open data-modal="#programModal" data-store-url="{{ route('admin.programs.store') }}">
-            <i class="bi bi-plus-lg me-1"></i>Add Program
-        </button>
-    </div>
 
-    <div class="admin-list-toolbar">
-        <form class="admin-search financial-filter" method="GET" action="{{ route('admin.programs.index') }}" data-live-search data-live-search-target="#admin-list-results">
-            <div class="search-field">
-                <i class="bi bi-search"></i>
-                <input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="Search program, location, city...">
-                <button class="search-clear {{ blank(request('q')) ? 'd-none' : '' }}" type="button" data-live-search-clear>
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-            <select class="form-select filter-select" name="status">
-                <option value="">All status</option>
-                <option value="active" @selected($status === 'active')>Active</option>
-                <option value="inactive" @selected($status === 'inactive')>Inactive</option>
-            </select>
-        </form>
+        <div class="head-search-wrap flex-grow-1">
+            <form class="admin-search financial-filter" method="GET" action="{{ route('admin.programs.index') }}" data-live-search data-live-search-target="#admin-list-results">
+                <div class="search-field flex-grow-1">
+                    <i class="bi bi-search"></i>
+                    <input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="Search program, location, city...">
+                    <button class="search-clear {{ blank(request('q')) ? 'd-none' : '' }}" type="button" data-live-search-clear>
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <select class="form-select filter-select" name="status">
+                    <option value="">All status</option>
+                    <option value="active" @selected($status === 'active')>Active</option>
+                    <option value="inactive" @selected($status === 'inactive')>Inactive</option>
+                </select>
+            </form>
+        </div>
+
+        <div class="responsive-actions">
+            <button class="btn btn-accent btn-sm" data-crud-open data-modal="#programModal" data-store-url="{{ route('admin.programs.store') }}">
+                <i class="bi bi-plus-lg me-1"></i>Add Program
+            </button>
+        </div>
     </div>
 
     <div id="admin-list-results">

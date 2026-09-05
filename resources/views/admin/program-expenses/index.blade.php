@@ -5,18 +5,8 @@
 @section('content')
 <section class="admin-card" data-ajax-crud data-refresh-target="#admin-list-results">
     <div class="admin-card-head">
-        <div>
-            <h2>Program Expenses</h2>
-            <p class="text-muted-custom small mb-0 mt-1">Track and manage all program-related expenditures and costs.</p>
-        </div>
-        <button class="btn btn-accent btn-sm" data-crud-open data-modal="#expenseModal" data-store-url="{{ route('admin.program-expenses.store') }}">
-            <i class="bi bi-plus-lg me-1"></i>Add Expense
-        </button>
-    </div>
-
-    <div class="admin-list-toolbar">
-        <form class="admin-search financial-filter wide-filter" method="GET" action="{{ route('admin.program-expenses.index') }}" data-live-search data-live-search-target="#admin-list-results">
-            <div class="search-field">
+        <form class="admin-search financial-filter wide-filter flex-grow-1" method="GET" action="{{ route('admin.program-expenses.index') }}" data-live-search data-live-search-target="#admin-list-results">
+            <div class="search-field flex-grow-1">
                 <i class="bi bi-search"></i>
                 <input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="Search details or category...">
                 <button class="search-clear {{ blank(request('q')) ? 'd-none' : '' }}" type="button" data-live-search-clear>
@@ -36,7 +26,13 @@
                 @endforeach
             </select>
         </form>
-        <div class="finance-badge" data-finance-total>Total Expenses: <strong>Rs. {{ number_format($total, 2) }}</strong></div>
+
+        <div class="responsive-actions d-flex align-items-center gap-2">
+            <div class="finance-badge" data-finance-total>Total Expenses: <strong>Rs. {{ number_format($total, 2) }}</strong></div>
+            <button class="btn btn-accent btn-sm" data-crud-open data-modal="#expenseModal" data-store-url="{{ route('admin.program-expenses.store') }}">
+                <i class="bi bi-plus-lg me-1"></i>Add Expense
+            </button>
+        </div>
     </div>
 
     <div id="admin-list-results">

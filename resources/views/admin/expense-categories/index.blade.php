@@ -2,6 +2,34 @@
 @section('title','Expense Categories')
 @section('page_title','Expense Categories')
 @section('content')
-<section class="admin-card" data-ajax-crud data-refresh-target="#admin-list-results"><div class="admin-card-head"><div><h2>Dynamic Expense Categories</h2><p class="text-muted-custom small mb-0 mt-1">Categories are database-driven, not hardcoded.</p></div><button class="btn btn-accent btn-sm" data-crud-open data-modal="#categoryModal" data-store-url="{{ route('admin.expense-categories.store') }}"><i class="bi bi-plus-lg me-1"></i>Add Expense Category</button></div><div class="admin-list-toolbar"><form class="admin-search financial-filter" method="GET" action="{{ route('admin.expense-categories.index') }}" data-live-search data-live-search-target="#admin-list-results"><div class="search-field"><i class="bi bi-search"></i><input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="Search categories..."><button class="search-clear {{ blank(request('q'))?'d-none':'' }}" type="button" data-live-search-clear><i class="bi bi-x-lg"></i></button></div><select class="form-select filter-select" name="status"><option value="">All status</option><option value="active" @selected($status==='active')>Active</option><option value="inactive" @selected($status==='inactive')>Inactive</option></select></form></div><div id="admin-list-results"><div class="table-responsive"><table class="table table-hover"><thead><tr><th>Category</th><th>Description</th><th>Status</th><th>Total Expenses</th><th>Created</th><th class="text-end">Actions</th></tr></thead><tbody>@forelse($categories as $row)<tr><td><strong>{{ $row->name }}</strong></td><td>{{ Str::limit($row->description,50) ?: '-' }}</td><td><span class="status-badge {{ $row->status==='active'?'live':'draft' }}">{{ ucfirst($row->status) }}</span></td><td>Rs. {{ number_format((float)($row->total_expenses_sum??0),2) }}</td><td>{{ $row->created_at->format('M d, Y') }}</td><td><div class="action-buttons"><button class="btn-icon" data-crud-edit data-modal="#categoryModal" data-action="{{ route('admin.expense-categories.update',$row) }}" data-record="{{ json_encode(['name'=>$row->name,'description'=>$row->description,'status'=>$row->status]) }}"><i class="bi bi-pencil"></i></button><form method="POST" action="{{ route('admin.expense-categories.destroy',$row) }}" data-ajax-delete data-confirm="Delete this category? Used categories cannot be deleted.">@csrf @method('DELETE')<button class="btn-icon danger"><i class="bi bi-trash3"></i></button></form></div></td></tr>@empty<tr><td colspan="6" class="text-center py-5 text-muted-custom">No categories found.</td></tr>@endforelse</tbody></table></div><div class="admin-pagination">@include('admin.partials.pagination',['paginator'=>$categories])</div></div></section>
+<section class="admin-card" data-ajax-crud data-refresh-target="#admin-list-results">
+    <div class="admin-card-head">
+        <div>
+            <h2>Expense Categories</h2>
+        </div>
+
+        <div class="head-search-wrap flex-grow-1">
+            <form class="admin-search financial-filter" method="GET" action="{{ route('admin.expense-categories.index') }}" data-live-search data-live-search-target="#admin-list-results">
+                <div class="search-field flex-grow-1">
+                    <i class="bi bi-search"></i>
+                    <input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="Search categories...">
+                    <button class="search-clear {{ blank(request('q')) ? 'd-none' : '' }}" type="button" data-live-search-clear>
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <select class="form-select filter-select" name="status">
+                    <option value="">All status</option>
+                    <option value="active" @selected($status === 'active')>Active</option>
+                    <option value="inactive" @selected($status === 'inactive')>Inactive</option>
+                </select>
+            </form>
+        </div>
+
+        <div class="responsive-actions">
+            <button class="btn btn-accent btn-sm" data-crud-open data-modal="#categoryModal" data-store-url="{{ route('admin.expense-categories.store') }}">
+                <i class="bi bi-plus-lg me-1"></i>Add Expense Category
+            </button>
+        </div>
+    </div><div id="admin-list-results"><div class="table-responsive"><table class="table table-hover"><thead><tr><th>Category</th><th>Description</th><th>Status</th><th>Total Expenses</th><th>Created</th><th class="text-end">Actions</th></tr></thead><tbody>@forelse($categories as $row)<tr><td><strong>{{ $row->name }}</strong></td><td>{{ Str::limit($row->description,50) ?: '-' }}</td><td><span class="status-badge {{ $row->status==='active'?'live':'draft' }}">{{ ucfirst($row->status) }}</span></td><td>Rs. {{ number_format((float)($row->total_expenses_sum??0),2) }}</td><td>{{ $row->created_at->format('M d, Y') }}</td><td><div class="action-buttons"><button class="btn-icon" data-crud-edit data-modal="#categoryModal" data-action="{{ route('admin.expense-categories.update',$row) }}" data-record="{{ json_encode(['name'=>$row->name,'description'=>$row->description,'status'=>$row->status]) }}"><i class="bi bi-pencil"></i></button><form method="POST" action="{{ route('admin.expense-categories.destroy',$row) }}" data-ajax-delete data-confirm="Delete this category? Used categories cannot be deleted.">@csrf @method('DELETE')<button class="btn-icon danger"><i class="bi bi-trash3"></i></button></form></div></td></tr>@empty<tr><td colspan="6" class="text-center py-5 text-muted-custom">No categories found.</td></tr>@endforelse</tbody></table></div><div class="admin-pagination">@include('admin.partials.pagination',['paginator'=>$categories])</div></div></section>
 <div class="modal fade finance-modal" id="categoryModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><form data-ajax-form><input type="hidden" name="_method" value="PUT" data-method disabled><div class="modal-header"><h5 class="modal-title" data-modal-title>Add Expense Category</h5><button class="btn-close" type="button" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-12"><label class="form-label">Category Name</label><input class="form-control" name="name" required><div class="invalid-feedback" data-error-for="name"></div></div><div class="col-12"><label class="form-label">Description</label><textarea class="form-control" name="description"></textarea></div><div class="col-12"><label class="form-label">Status</label><select class="form-select" name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div></div></div><div class="modal-footer"><button class="btn btn-outline-theme" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-accent" type="submit" data-submit><span data-submit-label>Save Category</span></button></div></form></div></div></div>
 @endsection

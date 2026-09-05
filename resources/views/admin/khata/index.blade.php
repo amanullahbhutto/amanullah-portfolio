@@ -55,30 +55,32 @@
     <div class="admin-card-head">
         <div>
             <h2>Customers Khata</h2>
-            <p class="text-muted-custom small mb-0 mt-1">Manage customers, view individual khata ledgers, and record cash in / cash out.</p>
         </div>
-        @can('create khata customer')
-            <button class="btn btn-accent btn-sm" data-crud-open data-modal="#customerModal" data-store-url="{{ route('admin.khata.customers.store') }}">
-                <i class="bi bi-person-plus me-1"></i>Add Customer
-            </button>
-        @endcan
-    </div>
 
-    <div class="admin-list-toolbar">
-        <form class="admin-search financial-filter" method="GET" action="{{ route('admin.khata.index') }}" data-live-search data-live-search-target="#admin-list-results">
-            <div class="search-field">
-                <i class="bi bi-search"></i>
-                <input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="Search by customer name, phone, address...">
-                <button class="search-clear {{ blank(request('q')) ? 'd-none' : '' }}" type="button" data-live-search-clear>
-                    <i class="bi bi-x-lg"></i>
+        <div class="head-search-wrap flex-grow-1">
+            <form class="admin-search financial-filter" method="GET" action="{{ route('admin.khata.index') }}" data-live-search data-live-search-target="#admin-list-results">
+                <div class="search-field flex-grow-1">
+                    <i class="bi bi-search"></i>
+                    <input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="Search by customer name, phone, address...">
+                    <button class="search-clear {{ blank(request('q')) ? 'd-none' : '' }}" type="button" data-live-search-clear>
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <select class="form-select filter-select" name="status">
+                    <option value="">All Status</option>
+                    <option value="active" @selected(request('status') === 'active')>Active</option>
+                    <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
+                </select>
+            </form>
+        </div>
+
+        <div class="responsive-actions">
+            @can('create khata customer')
+                <button class="btn btn-accent btn-sm" data-crud-open data-modal="#customerModal" data-store-url="{{ route('admin.khata.customers.store') }}">
+                    <i class="bi bi-person-plus me-1"></i>Add Customer
                 </button>
-            </div>
-            <select class="form-select filter-select" name="status">
-                <option value="">All Status</option>
-                <option value="active" @selected(request('status') === 'active')>Active</option>
-                <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
-            </select>
-        </form>
+            @endcan
+        </div>
     </div>
 
     <div id="admin-list-results" class="admin-list-results">
