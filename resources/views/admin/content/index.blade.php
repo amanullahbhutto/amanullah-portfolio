@@ -5,9 +5,17 @@
 <section class="admin-card">
     <div class="admin-card-head">
         <div>
-            <h2>Manage {{ strtolower($config['label']) }}</h2>
-            <p class="text-muted-custom small mb-0 mt-1">Create, update, publish, or remove portfolio content.</p>
+            <h2>{{ $config['label'] }} list</h2>
         </div>
+
+        <div class="head-search-wrap flex-grow-1">
+            @include('admin.partials.live-search', [
+                'action' => route('admin.content.index', $type),
+                'searchId' => 'content-search',
+                'placeholder' => 'Search '.strtolower($config['label']).'...',
+            ])
+        </div>
+
         <div class="responsive-actions">
             @if($type === 'experiences' && $experienceProfile)
                 @can('update profile')
@@ -41,23 +49,7 @@
         </div>
     </div>
 
-    <div class="admin-list-toolbar">
-        @include('admin.partials.live-search', [
-            'action' => route('admin.content.index', $type),
-            'searchId' => 'content-search',
-            'placeholder' => 'Search '.strtolower($config['label']).'...',
-        ])
-    </div>
-
     <div id="admin-list-results" class="admin-list-results" aria-live="polite">
-        <div class="admin-list-summary">
-            @if(request('q'))
-                Search results for "{{ request('q') }}"
-            @else
-                {{ $config['label'] }} list
-            @endif
-        </div>
-
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>

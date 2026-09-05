@@ -281,6 +281,82 @@
         });
     });
 
+    document.querySelectorAll('[data-searchable-select]').forEach((wrapper) => {
+        const toggle = wrapper.querySelector('.searchable-select-toggle');
+        const selectedText = wrapper.querySelector('.selected-text');
+        const searchInput = wrapper.querySelector('.searchable-select-input');
+        const options = Array.from(wrapper.querySelectorAll('.searchable-option-item'));
+        const noResults = wrapper.querySelector('.searchable-no-results');
+        const clearBtn = wrapper.querySelector('[data-clear-selection]');
+        const hiddenSelect = wrapper.querySelector('select');
+
+        const filterOptions = (term) => {
+            const query = (term || '').toLowerCase().trim();
+            let visibleCount = 0;
+
+            options.forEach((opt) => {
+                const text = (opt.textContent || '').toLowerCase();
+                const matches = query === '' || text.includes(query);
+                opt.classList.toggle('d-none', !matches);
+                if (matches) visibleCount++;
+            });
+
+            if (noResults) {
+                noResults.classList.toggle('d-none', visibleCount > 0);
+            }
+        };
+
+        wrapper.addEventListener('shown.bs.dropdown', () => {
+            if (searchInput) {
+                searchInput.value = '';
+                filterOptions('');
+                searchInput.focus();
+            }
+        });
+
+        searchInput?.addEventListener('input', (e) => {
+            filterOptions(e.target.value);
+        });
+
+        const selectValue = (value, labelText) => {
+            if (hiddenSelect) {
+                hiddenSelect.value = value;
+                hiddenSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            options.forEach((opt) => {
+                const isActive = opt.dataset.value === value;
+                opt.classList.toggle('active', isActive);
+            });
+
+            if (selectedText) {
+                selectedText.textContent = value ? `Father: ${labelText || value}` : 'All Fathers';
+            }
+
+            if (clearBtn) {
+                clearBtn.classList.toggle('d-none', !value);
+            }
+
+            const bsDropdown = window.bootstrap?.Dropdown?.getInstance(toggle);
+            bsDropdown?.hide();
+        };
+
+        options.forEach((opt) => {
+            opt.addEventListener('click', (e) => {
+                e.preventDefault();
+                const value = opt.dataset.value || '';
+                const labelText = opt.dataset.label || opt.textContent.trim();
+                selectValue(value, labelText);
+            });
+        });
+
+        clearBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            selectValue('', 'All Fathers');
+        });
+    });
+
     document.querySelectorAll('[data-date-mask]').forEach((input) => {
         input.addEventListener('input', () => {
             const value = input.value.replace(/[^\d/]/g, '').replace(/\/{2,}/g, '/');

@@ -6,8 +6,16 @@
     <div class="admin-card-head">
         <div>
             <h2>Spatie permissions</h2>
-            <p class="text-muted-custom small mb-0 mt-1">Manage permission names used by role middleware.</p>
         </div>
+
+        <div class="head-search-wrap flex-grow-1">
+            @include('admin.partials.live-search', [
+                'action' => route('admin.permissions.index'),
+                'searchId' => 'permission-search',
+                'placeholder' => 'Search permissions...',
+            ])
+        </div>
+
         <div class="responsive-actions">
             @can('create permission')
                 <a class="btn btn-accent btn-sm" href="{{ route('admin.permissions.create') }}">
@@ -17,23 +25,7 @@
         </div>
     </div>
 
-    <div class="admin-list-toolbar">
-        @include('admin.partials.live-search', [
-            'action' => route('admin.permissions.index'),
-            'searchId' => 'permission-search',
-            'placeholder' => 'Search permissions...',
-        ])
-    </div>
-
     <div id="admin-list-results" class="admin-list-results" aria-live="polite">
-        <div class="admin-list-summary">
-            @if(request('q'))
-                Search results for "{{ request('q') }}"
-            @else
-                Permission list
-            @endif
-        </div>
-
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>

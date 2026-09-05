@@ -6,8 +6,17 @@
     <div class="admin-card-head">
         <div>
             <h2>Inbox</h2>
-            <p class="text-muted-custom small mb-0 mt-1">Opening a new message marks it as read and updates the notification count.</p>
         </div>
+
+        <div class="head-search-wrap flex-grow-1">
+            @include('admin.partials.live-search', [
+                'action' => route('admin.messages.index'),
+                'searchId' => 'message-search',
+                'placeholder' => 'Search messages...',
+                'hiddenInputs' => ['filter' => request('filter')],
+            ])
+        </div>
+
         <div class="responsive-actions">
             <a class="btn btn-outline-theme btn-sm" href="{{ route('admin.messages.index', array_filter(['filter' => request('filter') === 'unread' ? null : 'unread', 'q' => request('q')], fn ($value) => filled($value))) }}">
                 {{ request('filter') === 'unread' ? 'Show all' : 'Unread only' }}
@@ -22,26 +31,7 @@
         </div>
     </div>
 
-    <div class="admin-list-toolbar">
-        @include('admin.partials.live-search', [
-            'action' => route('admin.messages.index'),
-            'searchId' => 'message-search',
-            'placeholder' => 'Search messages...',
-            'hiddenInputs' => ['filter' => request('filter')],
-        ])
-    </div>
-
     <div id="admin-list-results" class="admin-list-results" aria-live="polite">
-        <div class="admin-list-summary">
-            @if(request('q'))
-                Search results for "{{ request('q') }}"
-            @elseif(request('filter') === 'unread')
-                Unread messages
-            @else
-                All messages
-            @endif
-        </div>
-
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>

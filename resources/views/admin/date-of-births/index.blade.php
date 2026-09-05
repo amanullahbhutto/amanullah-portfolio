@@ -15,34 +15,9 @@
     data-dob-store-url="{{ route('admin.date-of-births.store') }}"
 >
 
-    <div class="admin-card-head">
-        <div>
-            <h2>Date of Birth Records</h2>
-
-            <p class="text-muted-custom small mb-0 mt-1">
-                Nearest upcoming birthdays are shown first automatically.
-            </p>
-        </div>
-
-        <div class="responsive-actions">
-            @can('create date of birth')
-                <a
-                    class="btn btn-accent btn-sm"
-                    href="{{ route('admin.date-of-births.create') }}"
-                    data-dob-open
-                >
-                    <i class="bi bi-plus-lg me-1"></i>
-                    Add Record
-                </a>
-            @endcan
-        </div>
-    </div>
-
-
-    <div class="admin-list-toolbar">
-
+    <div class="admin-card-head d-flex align-items-center justify-content-between gap-3 p-3">
         <form
-            class="admin-search dob-filter-form"
+            class="admin-search dob-filter-form flex-grow-1"
             method="GET"
             action="{{ route('admin.date-of-births.index') }}"
             data-live-search
@@ -66,14 +41,42 @@
             </div>
 
             <label class="visually-hidden" for="father-name-filter">Filter by father name</label>
-            <select class="form-select dob-father-filter" id="father-name-filter" name="father_name" aria-label="Filter by father name">
-                <option value="">All</option>
-                @foreach($fatherNames as $fatherName)
-                    <option value="{{ $fatherName }}" @selected($selectedFatherName === $fatherName)>
-                        {{ $fatherName }}
-                    </option>
-                @endforeach
-            </select>
+            <div class="searchable-select-wrapper dob-father-filter-wrapper" data-searchable-select>
+                <button type="button" class="searchable-select-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Filter or search by father name">
+                    <span class="selected-text text-truncate">{{ $selectedFatherName ? 'Father: '.$selectedFatherName : 'All Fathers' }}</span>
+                    <span class="btn-clear-selection ms-auto {{ empty($selectedFatherName) ? 'd-none' : '' }}" data-clear-selection title="Clear father filter"><i class="bi bi-x-lg"></i></span>
+                </button>
+                
+                <div class="dropdown-menu searchable-select-menu shadow">
+                    <div class="search-box mb-2 position-relative">
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted-custom" style="display: inline-block !important; font-size: 0.8rem; pointer-events: none;"></i>
+                        <input type="text" class="form-control form-control-sm searchable-select-input" placeholder="Search father name..." autocomplete="off">
+                    </div>
+                    <div class="searchable-select-options custom-scrollbar" style="max-height: 220px; overflow-y: auto;">
+                        <div class="searchable-option-item {{ empty($selectedFatherName) ? 'active' : '' }}" data-value="" data-label="All Fathers">
+                            <i class="bi bi-people me-2"></i>All Fathers
+                        </div>
+                        @foreach($fatherNames as $fatherName)
+                            <div class="searchable-option-item {{ $selectedFatherName === $fatherName ? 'active' : '' }}" data-value="{{ $fatherName }}" data-label="{{ $fatherName }}">
+                                <i class="bi bi-person me-2"></i>{{ $fatherName }}
+                            </div>
+                        @endforeach
+                        <div class="searchable-no-results text-muted-custom small text-center py-2 d-none">
+                            No matching father name
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Native select for form submit, live-search and tests --}}
+                <select class="d-none" id="father-name-filter" name="father_name" aria-label="Filter by father name">
+                    <option value="">All</option>
+                    @foreach($fatherNames as $fatherName)
+                        <option value="{{ $fatherName }}" @selected($selectedFatherName === $fatherName)>
+                            {{ $fatherName }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
 
             <label class="visually-hidden" for="date-of-birth-per-page">Records per page</label>
             <select class="form-select dob-page-size" id="date-of-birth-per-page" name="per_page" aria-label="Records per page">
@@ -85,6 +88,20 @@
             </select>
         </form>
 
+        <div class="responsive-actions flex-shrink-0">
+            @can('create date of birth')
+                <a
+                    class="btn btn-accent btn-sm d-inline-flex align-items-center justify-content-center"
+                    style="min-width: 44px; height: 44px; padding: 0 14px; font-size: 1.15rem; border-radius: 12px;"
+                    href="{{ route('admin.date-of-births.create') }}"
+                    data-dob-open
+                    title="Add Record"
+                    aria-label="Add Record"
+                >
+                    <i class="bi bi-plus-lg"></i>
+                </a>
+            @endcan
+        </div>
     </div>
 
 
@@ -94,27 +111,18 @@
         aria-live="polite"
     >
 
-        <div class="admin-list-summary">
-
-            @if(request('q') || $selectedFatherName)
-
+        @if(request('q') || $selectedFatherName)
+            <div class="admin-list-summary">
                 @if(request('q'))
                     Search results for "{{ request('q') }}"
                 @else
                     Filtered records
                 @endif
-
                 @if($selectedFatherName)
                     <span class="ms-2">Father: {{ $selectedFatherName }}</span>
                 @endif
-
-            @else
-
-                Date of birth records by next birthday
-
-            @endif
-
-        </div>
+            </div>
+        @endif
 
 
         <div class="table-responsive">
