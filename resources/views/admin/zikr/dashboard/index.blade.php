@@ -149,9 +149,24 @@
             <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $item['tasbeeh_id'] }}" data-daily-target="{{ $item['daily_target'] }}" data-active-days="{{ $item['active_days'] }}" data-today-completed="{{ $item['today_completed'] }}">
                 <div class="zikr-item-card w-100 d-flex flex-column justify-content-between position-relative">
                     <div>
-                        {{-- Top Header with Title and Target Info --}}
-                        <div class="d-flex justify-content-between align-items-start mb-2">
+                        {{-- Top Header with Title and Today's Count Badge --}}
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
                             <h3 class="fs-5 fw-bold text-white mb-0 text-truncate me-2">{{ $item['title'] }}</h3>
+                            
+                            {{-- Small Compact Today Count Badge --}}
+                            @if($item['today_completed'] >= $item['daily_target'] && $item['daily_target'] > 0)
+                                <span class="badge today-status-badge rounded-pill d-inline-flex align-items-center px-2 py-0.5" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; font-size: 0.72rem; font-weight: 600;">
+                                    <i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace">{{ number_format($item['today_completed']) }}</strong>
+                                </span>
+                            @elseif($item['today_completed'] > 0)
+                                <span class="badge today-status-badge rounded-pill d-inline-flex align-items-center px-2 py-0.5" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: #38bdf8; font-size: 0.72rem; font-weight: 600;">
+                                    Today: <strong class="ms-1 font-monospace">{{ number_format($item['today_completed']) }}</strong>
+                                </span>
+                            @else
+                                <span class="badge today-status-badge rounded-pill d-inline-flex align-items-center px-2 py-0.5" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-size: 0.72rem; font-weight: 600;">
+                                    Today: <strong class="ms-1 font-monospace">0</strong>
+                                </span>
+                            @endif
                         </div>
 
                         {{-- Target & Started Meta --}}

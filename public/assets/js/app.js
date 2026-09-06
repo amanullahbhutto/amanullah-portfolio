@@ -1622,10 +1622,39 @@
             completedEl.textContent = newCompleted.toLocaleString();
         }
 
+        let todayStatusBadgeEl = cardCol.querySelector('.today-status-badge');
+        let todayMetaEl = cardCol.querySelector('.today-meta-count');
+        let dailyTarget = parseInt(cardCol.dataset.dailyTarget || '100', 10);
+        let nextTodayCompleted = 0;
+
         if (cardCol.dataset) {
             const currentTodayCompleted = parseInt(cardCol.dataset.todayCompleted || '0', 10) || 0;
-            const nextTodayCompleted = Math.max(currentTodayCompleted + (isAbsolute ? 0 : deltaAdded), 0);
+            nextTodayCompleted = Math.max(currentTodayCompleted + (isAbsolute ? 0 : deltaAdded), 0);
             cardCol.dataset.todayCompleted = String(nextTodayCompleted);
+        }
+
+        if (todayMetaEl) {
+            todayMetaEl.textContent = nextTodayCompleted.toLocaleString();
+            todayMetaEl.className = `today-meta-count font-monospace ${nextTodayCompleted >= dailyTarget ? 'text-success' : (nextTodayCompleted > 0 ? 'text-info' : 'text-danger')}`;
+        }
+
+        if (todayStatusBadgeEl) {
+            if (nextTodayCompleted >= dailyTarget && dailyTarget > 0) {
+                todayStatusBadgeEl.style.background = 'rgba(16, 185, 129, 0.15)';
+                todayStatusBadgeEl.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                todayStatusBadgeEl.style.color = '#34d399';
+                todayStatusBadgeEl.innerHTML = `<i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace">${nextTodayCompleted.toLocaleString()}</strong>`;
+            } else if (nextTodayCompleted > 0) {
+                todayStatusBadgeEl.style.background = 'rgba(6, 182, 212, 0.15)';
+                todayStatusBadgeEl.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+                todayStatusBadgeEl.style.color = '#38bdf8';
+                todayStatusBadgeEl.innerHTML = `Today: <strong class="ms-1 font-monospace">${nextTodayCompleted.toLocaleString()}</strong>`;
+            } else {
+                todayStatusBadgeEl.style.background = 'rgba(239, 68, 68, 0.12)';
+                todayStatusBadgeEl.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                todayStatusBadgeEl.style.color = '#f87171';
+                todayStatusBadgeEl.innerHTML = `Today: <strong class="ms-1 font-monospace">0</strong>`;
+            }
         }
 
         // Live Real-Time Lifetime Total Counter Update

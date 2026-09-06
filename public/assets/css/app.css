@@ -864,12 +864,21 @@ textarea.form-control { min-height: 140px; }
     .admin-topbar { padding: 10px 14px; min-height: 62px; gap: 10px; position: sticky !important; top: 0 !important; z-index: 1030 !important; background: rgba(11, 12, 15, 0.96) !important; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
     .topbar-title { font-size: 1.05rem !important; }
     .admin-content { padding: 16px 12px; }
-    .topbar-profile strong, .topbar-actions > a:first-child { display: none !important; }
-    .admin-card-head { align-items: flex-start; flex-direction: column; }
+    .admin-card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; padding: 14px 16px; }
+    .admin-card-head > div:first-child:not(.head-search-wrap):not(.responsive-actions) { flex: 1 1 auto; min-width: 0; margin: 0; }
+    .admin-card-head > div:first-child:not(.head-search-wrap):not(.responsive-actions) h2 { font-size: 1.05rem; margin: 0; line-height: 1.25; }
+    .admin-card-head .responsive-actions { order: 2; flex: 0 0 auto; margin-left: auto; width: auto; display: inline-flex; align-items: center; gap: 8px; }
+    .admin-card-head .responsive-actions .btn { flex: 0 0 auto; width: auto; padding: 7px 14px; font-size: 0.82rem; white-space: nowrap; }
+    .admin-card-head .responsive-actions .finance-badge { font-size: 0.72rem; padding: 5px 9px; }
+    .admin-card-head .head-search-wrap, .admin-card-head > form.admin-search { order: 3; flex: 1 1 100%; width: 100%; max-width: 100%; margin: 0; }
     .admin-list-toolbar { align-items: stretch; flex-direction: column; padding: 14px; }
-    .admin-search { flex-basis: auto; max-width: none; width: 100%; }
-    .dob-filter-form { align-items: stretch; flex-direction: column; }
-    .dob-filter-form .search-field, .dob-father-filter, .dob-page-size { flex-basis: auto; min-width: 0; width: 100%; }
+    .admin-search { flex-basis: auto; max-width: none; width: 100%; margin: 0; }
+    .admin-search .search-field { width: 100%; flex: 1 1 100%; min-width: 0; }
+    .financial-filter { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+    .financial-filter .search-field { width: 100%; flex: 1 1 100%; min-width: 0; }
+    .financial-filter .filter-select, .financial-filter .form-select, .financial-filter .filter-date { width: 100% !important; flex: 1 1 100% !important; max-width: 100% !important; min-width: 0 !important; }
+    .dob-filter-form { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+    .dob-filter-form .search-field, .dob-filter-form .dob-father-filter, .dob-filter-form .searchable-select-wrapper, .dob-filter-form .dob-page-size { width: 100% !important; flex: 1 1 100% !important; max-width: 100% !important; min-width: 0 !important; }
     .admin-pagination { padding: 16px 14px; }
     .admin-pagination-bar { align-items: stretch; flex-direction: column; }
     .pagination-meta { justify-content: space-between; }
@@ -877,11 +886,9 @@ textarea.form-control { min-height: 140px; }
     .admin-page-links { justify-content: center; width: 100%; }
     .permission-grid { grid-template-columns: 1fr; }
     .permission-panel legend { align-items: flex-start; flex-direction: column; }
-    .responsive-actions { width: 100%; display: flex; gap: 8px; }
     .responsive-actions .experience-source-form { flex: 1 1 100%; }
     .responsive-actions .experience-source-toggle { width: 100%; justify-content: space-between; }
     .responsive-actions .experience-source-copy small { white-space: normal; }
-    .responsive-actions .btn { flex: 1; }
     .stat-card { padding: 14px 12px; gap: 10px; min-height: 84px; }
     .stat-icon { width: 40px; height: 40px; border-radius: 10px; font-size: 1.1rem; flex-shrink: 0; }
     .stat-card strong { font-size: 1.28rem; }
