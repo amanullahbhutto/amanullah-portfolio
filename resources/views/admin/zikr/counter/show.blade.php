@@ -73,7 +73,7 @@
             {{-- Bottom Stats Row Inside Arch --}}
             <div class="bottom-stats-row">
                 <div class="stat-col">
-                    <small>Target</small>
+                    <small>Target (Day {{ $stats['active_days'] }})</small>
                     <strong class="text-white" id="reqVal">{{ number_format($stats['total_required']) }}</strong>
                 </div>
                 <div class="stat-col">

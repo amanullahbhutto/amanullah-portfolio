@@ -41,12 +41,18 @@
     <div class="admin-shell">
         <aside class="admin-sidebar" id="adminSidebar">
             <div class="sidebar-head">
-                <a class="brand-mark" href="{{ route('admin.dashboard') }}"><span class="brand-symbol">A</span><span>AMANULLAH<span class="brand-dot">.</span></span></a>
+                <a class="brand-mark" href="{{ route('admin.dashboard') }}">
+                    <span class="brand-symbol">A</span>
+                    <div class="brand-info">
+                        <span class="brand-name">AMANULLAH<span class="brand-dot">.</span></span>
+                        <span class="brand-subtext">Personal Workspace</span>
+                    </div>
+                </a>
                 <button class="sidebar-close d-lg-none" type="button" data-sidebar-close aria-label="Close sidebar"><i class="bi bi-x-lg"></i></button>
             </div>
             <nav class="sidebar-nav" aria-label="Admin navigation">
                 <span class="sidebar-label">Workspace</span>
-                <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><i class="bi bi-grid-1x2"></i><span>Dashboard</span></a>
+                <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><i class="bi bi-grid"></i><span>Dashboard</span></a>
                 
                 @php
                     $canSeeNamaz = auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->canAny(['view namaz attendance', 'namaz_attendance.view', 'view namaz dashboard', 'namaz_dashboard.view', 'view namaz settings', 'namaz_settings.view']);
