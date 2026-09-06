@@ -3,7 +3,7 @@
 @section('page_title', 'Live Zikr Counter')
 
 @section('content')
-<div class="live-counter-page-wrapper">
+<div class="live-counter-page-wrapper" id="liveCounterPage" style="cursor: pointer; min-height: 80vh; width: 100%;">
     {{-- Main Tasbeeh Card with Tap Anywhere Detection --}}
     <div
         class="tasbeeh-card"
@@ -12,7 +12,8 @@
         data-user-id="{{ $user->id }}"
         data-total-required="{{ $stats['total_required'] }}"
         data-total-completed="{{ $stats['total_completed'] }}"
-        onclick="handleLiveCardTap(event)"
+        data-today-completed="{{ $stats['today_completed'] }}"
+        data-daily-target="{{ $stats['daily_target'] }}"
     >
         {{-- Card Top Header Bar --}}
         <div class="card-top-bar">
@@ -22,9 +23,24 @@
                 </a>
                 <span class="fw-semibold text-white text-truncate" style="font-size: 0.9rem;">{{ $tasbeeh->title }}</span>
             </div>
-            <button class="btn-menu-dots flex-shrink-0" type="button" onclick="event.stopPropagation()" data-bs-toggle="modal" data-bs-target="#controlsModal" title="Controls & Quick Add">
-                <i class="bi bi-three-dots-vertical fs-5"></i>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+                @if($stats['today_completed'] >= $stats['daily_target'] && $stats['daily_target'] > 0)
+                    <span class="badge rounded-pill px-2 py-0.5" id="liveTodayBadge" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; font-size: 0.72rem; font-weight: 600;">
+                        <i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace" id="liveTodayVal">{{ number_format($stats['today_completed']) }}</strong>
+                    </span>
+                @elseif($stats['today_completed'] > 0)
+                    <span class="badge rounded-pill px-2 py-0.5" id="liveTodayBadge" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: #38bdf8; font-size: 0.72rem; font-weight: 600;">
+                        Today: <strong class="ms-1 font-monospace" id="liveTodayVal">{{ number_format($stats['today_completed']) }}</strong>
+                    </span>
+                @else
+                    <span class="badge rounded-pill px-2 py-0.5" id="liveTodayBadge" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-size: 0.72rem; font-weight: 600;">
+                        Today: <strong class="ms-1 font-monospace" id="liveTodayVal">0</strong>
+                    </span>
+                @endif
+                <button class="btn-menu-dots flex-shrink-0" type="button" onclick="event.stopPropagation()" data-bs-toggle="modal" data-bs-target="#controlsModal" title="Controls & Quick Add">
+                    <i class="bi bi-three-dots-vertical fs-5"></i>
+                </button>
+            </div>
         </div>
 
         {{-- Dua Section - Arabic & Urdu --}}
@@ -236,6 +252,40 @@
             }
         }
 
+        const initialCompleted = totalCompleted;
+        let todayCompleted = parseInt(container.dataset.todayCompleted || '0', 10) || 0;
+        const dailyTarget = parseInt(container.dataset.dailyTarget || '100', 10) || 100;
+        const liveTodayValEl = document.getElementById('liveTodayVal');
+        const liveTodayBadgeEl = document.getElementById('liveTodayBadge');
+
+        function updateTodayDisplay() {
+            const delta = totalCompleted - initialCompleted;
+            const currentToday = Math.max(todayCompleted + delta, 0);
+
+            if (liveTodayValEl) {
+                liveTodayValEl.innerText = currentToday.toLocaleString();
+            }
+
+            if (liveTodayBadgeEl) {
+                if (currentToday >= dailyTarget && dailyTarget > 0) {
+                    liveTodayBadgeEl.style.background = 'rgba(16, 185, 129, 0.15)';
+                    liveTodayBadgeEl.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                    liveTodayBadgeEl.style.color = '#34d399';
+                    liveTodayBadgeEl.innerHTML = `<i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace" id="liveTodayVal">${currentToday.toLocaleString()}</strong>`;
+                } else if (currentToday > 0) {
+                    liveTodayBadgeEl.style.background = 'rgba(6, 182, 212, 0.15)';
+                    liveTodayBadgeEl.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+                    liveTodayBadgeEl.style.color = '#38bdf8';
+                    liveTodayBadgeEl.innerHTML = `Today: <strong class="ms-1 font-monospace" id="liveTodayVal">${currentToday.toLocaleString()}</strong>`;
+                } else {
+                    liveTodayBadgeEl.style.background = 'rgba(239, 68, 68, 0.12)';
+                    liveTodayBadgeEl.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                    liveTodayBadgeEl.style.color = '#f87171';
+                    liveTodayBadgeEl.innerHTML = `Today: <strong class="ms-1 font-monospace" id="liveTodayVal">0</strong>`;
+                }
+            }
+        }
+
         // Update Screen Elements
         function updateDisplay() {
             if (totalCompleted < 0) totalCompleted = 0;
@@ -283,6 +333,7 @@
             }
 
             renderBeads(beadStep);
+            updateTodayDisplay();
         }
 
         // Batch AJAX Sync to backend
@@ -329,6 +380,9 @@
                     if (payload.stats) {
                         // Reconcile totalCompleted with any new user taps during in-flight network request
                         totalCompleted = Number(payload.stats.total_completed) + pendingBatch;
+                        if (payload.stats.today_completed !== undefined) {
+                            todayCompleted = Number(payload.stats.today_completed);
+                        }
                         updateDisplay();
                     }
                     inFlightBatch = 0;
@@ -349,10 +403,12 @@
                 });
         }
 
-        // Tap Handler for Card
-        window.handleLiveCardTap = function (e) {
-            // Ignore clicks on buttons/links/inputs/modals
-            if (e.target.closest('button, a, input, select, textarea, .modal')) return;
+        // Tap Anywhere Handler for the Entire Screen
+        function handleScreenTap(e) {
+            // Ignore clicks on buttons/links/inputs/modals/controls
+            if (e.target.closest('button, a, input, select, textarea, .modal, .modal-backdrop, [data-bs-toggle], .btn-menu-dots, .btn-close, .dropdown-menu, label')) {
+                return;
+            }
 
             totalCompleted += 1;
             pendingBatch += 1;
@@ -360,7 +416,10 @@
 
             clearTimeout(batchTimer);
             batchTimer = setTimeout(flushBatch, 350);
-        };
+        }
+
+        document.addEventListener('click', handleScreenTap);
+        window.handleLiveCardTap = handleScreenTap;
 
         // Quick Preset amount handler
         window.applyQuickAmount = function (amount) {
