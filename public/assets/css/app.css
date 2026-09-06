@@ -1987,6 +1987,29 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     }
 }
 
+/* Sequence Number Badge (Circle / Capsule as per user reference) */
+.zikr-card-seq-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #042623;
+    border: 1.5px solid #2dd4bf;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    user-select: none;
+    line-height: 1;
+}
+.zikr-card-seq-badge .seq-number {
+    font-family: var(--font-monospace, monospace);
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1;
+}
+
 /* Badges Group (Centered) */
 .badge-info-group {
     display: flex;
@@ -3491,6 +3514,14 @@ body.is-standalone-pwa .admin-main {
     border-color: rgba(255, 255, 255, 0.08) !important;
 }
 /* Light Mode Badges & Action Buttons (Vibrant High-Contrast Styling) */
+[data-theme="light"] .zikr-card-seq-badge {
+    background: #042623 !important;
+    border: 1.5px solid #2dd4bf !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25) !important;
+}
+[data-theme="light"] .zikr-card-seq-badge .seq-number {
+    color: #ffffff !important;
+}
 [data-theme="light"] .badge-remaining {
     background: rgba(245, 158, 11, 0.18) !important;
     color: #fde047 !important;

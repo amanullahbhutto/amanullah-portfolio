@@ -149,9 +149,11 @@
             <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $item['tasbeeh_id'] }}" data-daily-target="{{ $item['daily_target'] }}" data-active-days="{{ $item['active_days'] }}" data-today-completed="{{ $item['today_completed'] }}">
                 <div class="zikr-item-card w-100 d-flex flex-column justify-content-between position-relative">
                     <div>
-                        {{-- Top Header with Title and Today's Count Badge --}}
+                        {{-- Top Header with Sort Number Circle Badge and Today's Count Badge --}}
                         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                            <h3 class="fs-5 fw-bold text-white mb-0 text-truncate me-2">{{ $item['title'] }}</h3>
+                            <div class="zikr-card-seq-badge" title="Tasbeeh {{ ($item['sort_order'] ?? 0) > 0 ? $item['sort_order'] : $loop->iteration }}">
+                                <span class="seq-number">{{ ($item['sort_order'] ?? 0) > 0 ? $item['sort_order'] : $loop->iteration }}</span>
+                            </div>
                             
                             {{-- Small Compact Today Count Badge --}}
                             @if($item['today_completed'] >= $item['daily_target'] && $item['daily_target'] > 0)

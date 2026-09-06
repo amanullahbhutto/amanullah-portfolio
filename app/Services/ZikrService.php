@@ -258,6 +258,7 @@ class ZikrService
         return [
             'tasbeeh_id' => $tasbeeh->id,
             'title' => $tasbeeh->title,
+            'sort_order' => $tasbeeh->sort_order,
             'arabic_text' => $tasbeeh->arabic_text,
             'urdu_meaning' => $tasbeeh->urdu_meaning,
             'daily_target' => $dailyTarget,
