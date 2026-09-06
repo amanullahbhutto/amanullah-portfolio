@@ -169,11 +169,9 @@
                             @endif
                         </div>
 
-                        {{-- Target, Day & Started Meta --}}
+                        {{-- Target & Started Meta --}}
                         <div class="d-flex align-items-center flex-wrap gap-1 mb-2 text-muted-custom small" style="font-size: 0.8rem;">
                             <span>Target: <strong class="text-info font-monospace">{{ number_format($item['daily_target']) }}</strong>/day</span>
-                            <span class="mx-1 opacity-50">•</span>
-                            <span>Day: <strong class="text-warning font-monospace">{{ $item['active_days'] }}</strong></span>
                             <span class="mx-1 opacity-50">•</span>
                             <span>Started: <strong class="text-info">{{ $item['formatted_start_date'] }}</strong></span>
                         </div>

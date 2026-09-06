@@ -3,7 +3,7 @@
 
     const root = document.documentElement;
     const storedTheme = localStorage.getItem('portfolio-theme');
-    if (storedTheme === 'dark' || storedTheme === 'light') root.dataset.theme = storedTheme;
+    root.dataset.theme = storedTheme === 'light' ? 'light' : 'dark';
 
     document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
         button.addEventListener('click', () => {
