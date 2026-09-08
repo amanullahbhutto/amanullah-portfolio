@@ -68,7 +68,7 @@
             {{-- Bottom Stats Row Inside Arch --}}
             <div class="bottom-stats-row">
                 <div class="stat-col">
-                    <small>Target (Day {{ $stats['active_days'] }})</small>
+                    <small>Target</small>
                     <strong class="text-white" id="reqVal">{{ $stats['total_required'] }}</strong>
                 </div>
                 <div class="stat-col">
@@ -255,7 +255,7 @@
         }
 
         // Update Screen Elements
-        function updateDisplay() {
+        function updateDisplay(shouldAnimate = false) {
             if (totalCompleted < 0) totalCompleted = 0;
 
             const formattedNum = String(totalCompleted);
@@ -275,9 +275,11 @@
                     mainCountEl.style.fontSize = 'clamp(0.95rem, 2.4vh, 1.25rem)';
                 }
 
-                mainCountEl.classList.remove('number-bump');
-                void mainCountEl.offsetWidth;
-                mainCountEl.classList.add('number-bump');
+                if (shouldAnimate) {
+                    mainCountEl.classList.remove('number-bump');
+                    void mainCountEl.offsetWidth;
+                    mainCountEl.classList.add('number-bump');
+                }
             }
 
             if (completedValEl) completedValEl.innerText = String(totalCompleted);
@@ -353,7 +355,7 @@
                         }
                         totalCompleted = baseTotalCompleted + pendingBatch;
                         todayCompleted = baseTodayCompleted + pendingBatch;
-                        updateDisplay();
+                        updateDisplay(false);
                     }
                     inFlightBatch = 0;
                 })
@@ -369,7 +371,7 @@
                     isSyncing = false;
                     if (pendingBatch > 0) {
                         clearTimeout(batchTimer);
-                        batchTimer = setTimeout(() => flushBatch(), 350);
+                        batchTimer = setTimeout(() => flushBatch(), 400);
                     }
                 });
         }
@@ -383,7 +385,7 @@
             }
 
             const now = Date.now();
-            if (now - lastTapTimestamp < 50) {
+            if (now - lastTapTimestamp < 100) {
                 return;
             }
             lastTapTimestamp = now;
@@ -391,7 +393,7 @@
             totalCompleted += 1;
             todayCompleted += 1;
             pendingBatch += 1;
-            updateDisplay();
+            updateDisplay(true);
 
             // Broadcast real-time tap to other tabs/pages immediately
             if (window.PwaSync && typeof window.PwaSync.broadcastZikrCountUpdate === 'function') {
@@ -399,7 +401,7 @@
             }
 
             clearTimeout(batchTimer);
-            batchTimer = setTimeout(() => flushBatch(), 350);
+            batchTimer = setTimeout(() => flushBatch(), 400);
         }
 
         document.addEventListener('click', handleScreenTap);
