@@ -211,7 +211,10 @@
         const container = document.getElementById('tasbeehContainer');
         if (!container) return;
 
-        let totalCompleted = parseInt(container.dataset.totalCompleted, 10) || 0;
+        let baseTotalCompleted = parseInt(container.dataset.totalCompleted, 10) || 0;
+        let baseTodayCompleted = parseInt(container.dataset.todayCompleted || '0', 10) || 0;
+        let totalCompleted = baseTotalCompleted;
+        let todayCompleted = baseTodayCompleted;
         const totalRequired = parseInt(container.dataset.totalRequired, 10) || 0;
         const maxBeads = 33;
         let pendingBatch = 0;
@@ -252,7 +255,6 @@
             }
         }
 
-        let todayCompleted = parseInt(container.dataset.todayCompleted || '0', 10) || 0;
         const dailyTarget = parseInt(container.dataset.dailyTarget || '100', 10) || 100;
         const liveTodayValEl = document.getElementById('liveTodayVal');
         const liveTodayBadgeEl = document.getElementById('liveTodayBadge');
@@ -381,11 +383,12 @@
                 })
                 .then((payload) => {
                     if (payload.stats) {
-                        // Reconcile totalCompleted and todayCompleted with any new user taps during in-flight network request
-                        totalCompleted = Number(payload.stats.total_completed) + pendingBatch;
+                        baseTotalCompleted = Number(payload.stats.total_completed);
                         if (payload.stats.today_completed !== undefined) {
-                            todayCompleted = Number(payload.stats.today_completed) + pendingBatch;
+                            baseTodayCompleted = Number(payload.stats.today_completed);
                         }
+                        totalCompleted = baseTotalCompleted + pendingBatch;
+                        todayCompleted = baseTodayCompleted + pendingBatch;
                         updateDisplay();
                     }
                     inFlightBatch = 0;
@@ -407,7 +410,7 @@
                 });
         }
 
-        // Ultra-responsive Tap Anywhere Handler for Mobile & Desktop
+        // Ultra-responsive Tap Anywhere Handler for Mobile & Desktop (No Vibration)
         let lastTapTimestamp = 0;
         function handleScreenTap(e) {
             // Ignore clicks on buttons/links/inputs/modals/controls/forms
@@ -420,11 +423,6 @@
                 return;
             }
             lastTapTimestamp = now;
-
-            // Instant physical haptic feedback on mobile devices
-            if (window.navigator && typeof window.navigator.vibrate === 'function') {
-                try { window.navigator.vibrate(15); } catch (err) {}
-            }
 
             totalCompleted += 1;
             todayCompleted += 1;
@@ -563,23 +561,27 @@
         // Initial bead render & display update
         updateDisplay();
 
-        // Reconcile pending offline counts stored for this tasbeeh
+        // Reconcile pending offline counts stored for this tasbeeh accurately
         const reconcilePending = () => {
             if (window.PwaDB && typeof window.PwaDB.getPendingOutbox === 'function') {
                 window.PwaDB.getPendingOutbox().then(items => {
                     const pendingForThis = (items || [])
                         .filter(i => (i.entity === 'tasbeeh_count' || i.entity === 'zikr_count') && String(i.payload?.tasbeeh_id) === '{{ $tasbeeh->id }}')
                         .reduce((sum, i) => sum + (parseInt(i.payload?.count, 10) || 0), 0);
-                    if (pendingForThis > 0) {
-                        totalCompleted += pendingForThis;
-                        todayCompleted += pendingForThis;
-                        updateDisplay();
-                    }
+                    
+                    totalCompleted = baseTotalCompleted + pendingForThis + pendingBatch;
+                    todayCompleted = baseTodayCompleted + pendingForThis + pendingBatch;
+                    updateDisplay();
                 }).catch(() => {});
             }
         };
 
         reconcilePending();
+        window.addEventListener('load', reconcilePending);
+        window.addEventListener('pageshow', reconcilePending);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') reconcilePending();
+        });
         window.addEventListener('pwa:sync-completed', reconcilePending);
 
         // Cache this counter page dynamically into Service Worker Cache
