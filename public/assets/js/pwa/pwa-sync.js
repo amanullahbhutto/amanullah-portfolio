@@ -107,8 +107,9 @@ class PwaSync {
                 '/admin',
                 '/admin/zikr',
                 '/admin/tasbeehs',
-                '/admin/namaz/attendance',
-                '/admin/namaz/dashboard',
+                '/admin/namaz-attendance',
+                '/admin/namaz-attendance/dashboard',
+                '/admin/namaz-settings',
                 '/admin/date-of-births',
                 '/pwa/offline'
             ];
@@ -320,6 +321,15 @@ class PwaSync {
                     if (pullResult.data.zikr_summary) {
                         await window.PwaDB.setMeta('zikr_summary', pullResult.data.zikr_summary);
                     }
+                    if (pullResult.data.namaz_stats) {
+                        await window.PwaDB.setMeta('namaz_stats', pullResult.data.namaz_stats);
+                    }
+                    if (pullResult.data.namaz_ledger) {
+                        await window.PwaDB.setMeta('namaz_ledger', pullResult.data.namaz_ledger);
+                    }
+                    if (pullResult.data.muslim_users) {
+                        await window.PwaDB.setMeta('muslim_users', pullResult.data.muslim_users);
+                    }
                     await window.PwaDB.setMeta('last_synced_at', pullResult.server_time || new Date().toISOString());
                 }
             }
@@ -342,7 +352,7 @@ class PwaSync {
             }
 
             window.dispatchEvent(new CustomEvent('pwa:sync-completed', {
-                detail: { syncedCount, hasTasbeehSync, hasNamazSync }
+                detail: { syncedCount, hasTasbeehSync, hasNamazSync, data: (pullResult && pullResult.data) ? pullResult.data : null }
             }));
         } catch (err) {
             console.error('PwaSync error:', err);
@@ -400,44 +410,107 @@ class PwaSync {
     // High-level offline action helpers
     async saveZikrCount(tasbeehId, count, date = null) {
         const todayStr = date || (new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0'));
-        return this.enqueueAction('zikr_count', 'create', {
+        const actionItem = await this.enqueueAction('zikr_count', 'create', {
             tasbeeh_id: parseInt(tasbeehId, 10),
             count: parseInt(count, 10),
             date: todayStr,
         });
+        this.broadcastZikrCountUpdate(tasbeehId, count);
+        return actionItem;
     }
 
     async completeTasbeehToday(tasbeehId) {
-        return this.enqueueAction('tasbeeh_complete_today', 'update', {
+        const actionItem = await this.enqueueAction('tasbeeh_complete_today', 'update', {
             tasbeeh_id: parseInt(tasbeehId, 10)
         });
+        this.broadcastEvent('ZIKR_COMPLETE_TODAY', { tasbeehId: String(tasbeehId) });
+        return actionItem;
     }
 
     async completeAllTasbeehsToday() {
-        return this.enqueueAction('zikr_complete_all', 'update', {});
+        const actionItem = await this.enqueueAction('zikr_complete_all', 'update', {});
+        this.broadcastEvent('ZIKR_COMPLETE_ALL', {});
+        return actionItem;
     }
 
     async resetTasbeeh(tasbeehId) {
-        return this.enqueueAction('tasbeeh_reset_single', 'update', {
+        const actionItem = await this.enqueueAction('tasbeeh_reset_single', 'update', {
             tasbeeh_id: parseInt(tasbeehId, 10)
         });
+        this.broadcastEvent('ZIKR_RESET_SINGLE', { tasbeehId: String(tasbeehId) });
+        return actionItem;
     }
 
     async resetAllTasbeehs() {
-        return this.enqueueAction('zikr_reset_all', 'update', {});
+        const actionItem = await this.enqueueAction('zikr_reset_all', 'update', {});
+        this.broadcastEvent('ZIKR_RESET_ALL', {});
+        return actionItem;
     }
 
     async resetLifetime() {
-        return this.enqueueAction('lifetime_reset', 'update', {});
+        const actionItem = await this.enqueueAction('lifetime_reset', 'update', {});
+        this.broadcastEvent('ZIKR_LIFETIME_RESET', {});
+        return actionItem;
     }
 
     async updateNamazStatus(userId, date, prayer, status) {
-        return this.enqueueAction('namaz_attendance_status', 'update', {
+        const actionItem = await this.enqueueAction('namaz_attendance_status', 'update', {
             user_id: parseInt(userId, 10),
             attendance_date: date,
             prayer: prayer,
             status: status || ''
         });
+        this.broadcastEvent('NAMAZ_STATUS_UPDATE', {
+            userId: parseInt(userId, 10),
+            date: date,
+            prayer: prayer,
+            status: status || ''
+        });
+        return actionItem;
+    }
+
+    async updateNamazDay(userId, date, statuses) {
+        const actionItem = await this.enqueueAction('namaz_attendance_day', 'update', {
+            user_id: parseInt(userId, 10),
+            attendance_date: date,
+            fajr_status: statuses.fajr || '',
+            zuhr_status: statuses.zuhr || '',
+            asr_status: statuses.asr || '',
+            maghrib_status: statuses.maghrib || '',
+            isha_status: statuses.isha || '',
+        });
+        this.broadcastEvent('NAMAZ_DAY_UPDATE', {
+            userId: parseInt(userId, 10),
+            date: date,
+            statuses: statuses
+        });
+        return actionItem;
+    }
+
+    async updateNamazStartDate(userId, startDate) {
+        const actionItem = await this.enqueueAction('namaz_start_date', 'update', {
+            user_id: parseInt(userId, 10),
+            namaz_start_date: startDate
+        });
+        this.broadcastEvent('NAMAZ_START_DATE_UPDATE', {
+            userId: parseInt(userId, 10),
+            startDate: startDate
+        });
+        return actionItem;
+    }
+
+    async deleteNamazAttendance(attendanceId, userId, date) {
+        const actionItem = await this.enqueueAction('namaz_attendance_delete', 'delete', {
+            attendance_id: attendanceId ? parseInt(attendanceId, 10) : null,
+            user_id: parseInt(userId, 10),
+            attendance_date: date || null
+        });
+        this.broadcastEvent('NAMAZ_ATTENDANCE_DELETE', {
+            attendanceId: attendanceId,
+            userId: parseInt(userId, 10),
+            date: date || null
+        });
+        return actionItem;
     }
 
     async saveDateOfBirth(data) {
@@ -448,26 +521,28 @@ class PwaSync {
         return this.enqueueAction('date_of_birth', 'update', { id: parseInt(id, 10), ...data });
     }
 
-    broadcastZikrCountUpdate(tasbeehId, delta) {
+    broadcastEvent(eventType, data = {}) {
         try {
+            const payload = {
+                type: eventType,
+                ...data,
+                timestamp: Date.now()
+            };
             if ('BroadcastChannel' in window) {
                 if (!this.zikrBroadcastChannel) {
                     this.zikrBroadcastChannel = new BroadcastChannel('portfolio_zikr_channel');
                 }
-                this.zikrBroadcastChannel.postMessage({
-                    type: 'ZIKR_COUNT_INCREMENT',
-                    tasbeehId: String(tasbeehId),
-                    delta: parseInt(delta, 10) || 0,
-                    timestamp: Date.now()
-                });
+                this.zikrBroadcastChannel.postMessage(payload);
             }
-            const storagePayload = JSON.stringify({
-                tasbeehId: String(tasbeehId),
-                delta: parseInt(delta, 10) || 0,
-                timestamp: Date.now()
-            });
-            localStorage.setItem('pwa_zikr_live_broadcast', storagePayload);
+            localStorage.setItem('pwa_zikr_live_broadcast', JSON.stringify(payload));
         } catch (e) {}
+    }
+
+    broadcastZikrCountUpdate(tasbeehId, delta) {
+        this.broadcastEvent('ZIKR_COUNT_INCREMENT', {
+            tasbeehId: String(tasbeehId),
+            delta: parseInt(delta, 10) || 0
+        });
     }
 }
 

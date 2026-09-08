@@ -184,7 +184,7 @@
     {{-- Tasbeeh Items Grid --}}
     <div class="row g-3 g-md-4" id="tasbeeh-list-container">
         @forelse($summary['tasbeehs'] as $item)
-            <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $item['tasbeeh_id'] }}" data-daily-target="{{ $item['daily_target'] }}" data-active-days="{{ $item['active_days'] }}" data-today-completed="{{ $item['today_completed'] }}">
+            <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $item['tasbeeh_id'] }}" data-daily-target="{{ $item['daily_target'] }}" data-active-days="{{ $item['active_days'] }}" data-today-completed="{{ $item['today_completed'] }}" data-total-completed="{{ $item['total_completed'] }}" data-total-required="{{ $item['total_required'] }}">
                 <div class="zikr-item-card w-100 d-flex flex-column justify-content-between position-relative">
                     <div>
                         {{-- Top Header with Sort Number Circle Badge and Today's Count Badge --}}

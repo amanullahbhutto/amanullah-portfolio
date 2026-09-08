@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DateOfBirth;
+use App\Models\NamazAttendance;
 use App\Models\PwaSetting;
 use App\Models\PwaSyncLog;
 use App\Models\Tasbeeh;
@@ -263,6 +264,42 @@ class PwaService
                             }
                             break;
 
+                        case 'namaz_start_date':
+                            $targetUserId = (int) ($payload['user_id'] ?? $user->id);
+                            if ($targetUserId !== $user->id && !($user->can('update namaz attendance') || $user->hasAnyRole(['Super Admin', 'Admin', 'admin']))) {
+                                $targetUserId = $user->id;
+                            }
+                            $targetUser = User::find($targetUserId) ?? $user;
+                            $startDate = $payload['namaz_start_date'] ?? null;
+                            if ($startDate) {
+                                $targetUser->update(['namaz_start_date' => $startDate]);
+                                $serverId = $targetUser->id;
+                            } else {
+                                $status = 'failed';
+                                $errorMessage = 'Missing start date for namaz.';
+                            }
+                            break;
+
+                        case 'namaz_attendance_delete':
+                            $targetUserId = (int) ($payload['user_id'] ?? $user->id);
+                            if ($targetUserId !== $user->id && !($user->can('delete namaz attendance') || $user->hasAnyRole(['Super Admin', 'Admin', 'admin']))) {
+                                $targetUserId = $user->id;
+                            }
+                            $targetUser = User::find($targetUserId) ?? $user;
+                            $attendanceId = $payload['attendance_id'] ?? null;
+                            $date = $payload['attendance_date'] ?? null;
+                            if ($attendanceId) {
+                                NamazAttendance::where('id', $attendanceId)->delete();
+                                $serverId = $attendanceId;
+                            } elseif ($date) {
+                                NamazAttendance::where('user_id', $targetUser->id)->where('attendance_date', $date)->delete();
+                                $serverId = $targetUser->id;
+                            } else {
+                                $status = 'failed';
+                                $errorMessage = 'Missing attendance ID or date for namaz attendance deletion.';
+                            }
+                            break;
+
                         case 'date_of_birth':
                             $recordId = $payload['id'] ?? null;
                             $name = $payload['name'] ?? null;
@@ -425,6 +462,26 @@ class PwaService
                 'updated_at',
             ]);
 
+        // 3. Muslim Users list
+        $muslimUsers = User::query()->muslim()->orderBy('name')->get(['id', 'name', 'email', 'namaz_start_date']);
+
+        // 4. Namaz Dashboard Statistics and Ledger
+        $namazStats = null;
+        $namazLedger = [];
+        try {
+            $namazService = app(\App\Services\NamazAttendanceService::class);
+            $tz = $namazService->getTimezone();
+            $now = $namazService->now();
+            $startOfMonth = $now->copy()->startOfMonth();
+            $endOfDay = $now->copy()->endOfDay();
+            $namazStats = $namazService->calculateDashboardStatistics($user, $startOfMonth, $endOfDay);
+            if ($user->namaz_start_date) {
+                $namazLedger = $namazService->generateAttendanceLedger($user, $startOfMonth, $endOfDay);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('PWA Pull Namaz data error: ' . $e->getMessage());
+        }
+
         return [
             'success' => true,
             'app_active' => true,
@@ -436,10 +493,14 @@ class PwaService
                 'email' => $user->email,
                 'roles' => $user->roles->pluck('name'),
                 'is_muslim' => $user->isMuslim(),
+                'namaz_start_date' => $user->namaz_start_date?->format('Y-m-d'),
             ],
             'data' => [
                 'tasbeehs' => $tasbeehs,
                 'zikr_summary' => $zikrSummary,
+                'muslim_users' => $muslimUsers,
+                'namaz_stats' => $namazStats,
+                'namaz_ledger' => $namazLedger,
             ],
         ];
     }

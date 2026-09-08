@@ -95,12 +95,12 @@
         @endif
 
         {{-- Overall Summary Stat Cards --}}
-        <div class="row g-3 mb-4">
+        <div class="row g-3 mb-4" id="namaz-top-stat-cards">
             <div class="col-sm-6 col-xl-2 col-lg-4">
                 <article class="admin-card stat-card h-100">
                     <div class="stat-icon purple"><i class="bi bi-moon-stars"></i></div>
                     <div>
-                        <strong>{{ number_format($stats['overall']['total_namaz']) }}</strong>
+                        <strong id="namaz-stat-total" data-base-val="{{ $stats['overall']['total_namaz'] }}">{{ number_format($stats['overall']['total_namaz']) }}</strong>
                         <span>Total Namaz</span>
                     </div>
                 </article>
@@ -109,8 +109,8 @@
                 <article class="admin-card stat-card h-100">
                     <div class="stat-icon green"><i class="bi bi-check-circle-fill"></i></div>
                     <div>
-                        <strong class="text-success">{{ number_format($stats['overall']['jamat']) }}</strong>
-                        <span>Total Jamat ({{ $stats['overall']['jamat_percentage'] }}%)</span>
+                        <strong class="text-success" id="namaz-stat-jamat" data-base-val="{{ $stats['overall']['jamat'] }}">{{ number_format($stats['overall']['jamat']) }}</strong>
+                        <span id="namaz-stat-jamat-label">Total Jamat ({{ $stats['overall']['jamat_percentage'] }}%)</span>
                     </div>
                 </article>
             </div>
@@ -118,7 +118,7 @@
                 <article class="admin-card stat-card h-100">
                     <div class="stat-icon blue"><i class="bi bi-person-fill"></i></div>
                     <div>
-                        <strong class="text-info">{{ number_format($stats['overall']['without_jamat']) }}</strong>
+                        <strong class="text-info" id="namaz-stat-without-jamat" data-base-val="{{ $stats['overall']['without_jamat'] }}">{{ number_format($stats['overall']['without_jamat']) }}</strong>
                         <span>Without Jamat</span>
                     </div>
                 </article>
@@ -127,7 +127,7 @@
                 <article class="admin-card stat-card h-100">
                     <div class="stat-icon orange"><i class="bi bi-clock-history"></i></div>
                     <div>
-                        <strong class="text-warning">{{ number_format($stats['overall']['kaza']) }}</strong>
+                        <strong class="text-warning" id="namaz-stat-kaza" data-base-val="{{ $stats['overall']['kaza'] }}">{{ number_format($stats['overall']['kaza']) }}</strong>
                         <span>Total Kaza</span>
                     </div>
                 </article>
@@ -136,7 +136,7 @@
                 <article class="admin-card stat-card h-100">
                     <div class="stat-icon red"><i class="bi bi-x-circle-fill"></i></div>
                     <div>
-                        <strong class="text-danger">{{ number_format($stats['overall']['absent']) }}</strong>
+                        <strong class="text-danger" id="namaz-stat-absent" data-base-val="{{ $stats['overall']['absent'] }}">{{ number_format($stats['overall']['absent']) }}</strong>
                         <span>Total Absent</span>
                     </div>
                 </article>
@@ -145,7 +145,7 @@
                 <article class="admin-card stat-card h-100">
                     <div class="stat-icon" style="background: rgba(140,150,170,.14); color: var(--muted);"><i class="bi bi-hourglass-split"></i></div>
                     <div>
-                        <strong>{{ number_format($stats['overall']['pending']) }}</strong>
+                        <strong id="namaz-stat-pending" data-base-val="{{ $stats['overall']['pending'] }}">{{ number_format($stats['overall']['pending']) }}</strong>
                         <span>Pending (Future)</span>
                     </div>
                 </article>

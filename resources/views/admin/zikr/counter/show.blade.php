@@ -463,11 +463,16 @@
                     })
                     .then((payload) => {
                         if (payload.stats) {
-                            totalCompleted = Number(payload.stats.total_completed);
+                            baseTotalCompleted = Number(payload.stats.total_completed);
                             if (payload.stats.today_completed !== undefined) {
-                                todayCompleted = Number(payload.stats.today_completed);
+                                baseTodayCompleted = Number(payload.stats.today_completed);
                             }
+                            totalCompleted = baseTotalCompleted;
+                            todayCompleted = baseTodayCompleted;
                             updateDisplay();
+                        }
+                        if (window.PwaSync && typeof window.PwaSync.broadcastZikrCountUpdate === 'function') {
+                            window.PwaSync.broadcastZikrCountUpdate('{{ $tasbeeh->id }}', val);
                         }
                         const modalEl = document.getElementById('controlsModal');
                         if (modalEl && typeof bootstrap !== 'undefined') {
@@ -527,28 +532,106 @@
         // Initial bead render & display update
         updateDisplay();
 
-        // Reconcile pending offline counts stored for this tasbeeh accurately
-        const reconcilePending = () => {
-            if (window.PwaDB && typeof window.PwaDB.getPendingOutbox === 'function') {
-                window.PwaDB.getPendingOutbox().then(items => {
-                    const pendingForThis = (items || [])
-                        .filter(i => (i.entity === 'tasbeeh_count' || i.entity === 'zikr_count') && String(i.payload?.tasbeeh_id) === '{{ $tasbeeh->id }}')
-                        .reduce((sum, i) => sum + (parseInt(i.payload?.count, 10) || 0), 0);
-                    
-                    totalCompleted = baseTotalCompleted + pendingForThis + pendingBatch;
-                    todayCompleted = baseTodayCompleted + pendingForThis + pendingBatch;
-                    updateDisplay();
-                }).catch(() => {});
+        // Absolute reconciliation of pending offline counts for this tasbeeh
+        const reconcilePending = async (syncedData = null) => {
+            try {
+                const currentTasbeehId = '{{ $tasbeeh->id }}';
+
+                // 1. If syncedData is provided, update baseline
+                if (syncedData && syncedData.zikr_summary && Array.isArray(syncedData.zikr_summary.tasbeehs)) {
+                    const match = syncedData.zikr_summary.tasbeehs.find(t => String(t.tasbeeh_id) === currentTasbeehId);
+                    if (match) {
+                        baseTotalCompleted = Number(match.total_completed || 0);
+                        baseTodayCompleted = Number(match.today_completed || 0);
+                    }
+                } else if (window.PwaDB && typeof window.PwaDB.getMeta === 'function') {
+                    // Check cached zikr_summary from IndexedDB if available
+                    const cachedSummary = await window.PwaDB.getMeta('zikr_summary');
+                    if (cachedSummary && Array.isArray(cachedSummary.tasbeehs)) {
+                        const match = cachedSummary.tasbeehs.find(t => String(t.tasbeeh_id) === currentTasbeehId);
+                        if (match) {
+                            baseTotalCompleted = Number(match.total_completed || 0);
+                            baseTodayCompleted = Number(match.today_completed || 0);
+                        }
+                    }
+                }
+
+                // 2. Read pending outbox items
+                let items = [];
+                if (window.PwaDB && typeof window.PwaDB.getPendingOutbox === 'function') {
+                    items = await window.PwaDB.getPendingOutbox();
+                }
+
+                let pendingCountForThis = 0;
+                let isCompletedToday = false;
+                let isReset = false;
+
+                (items || []).forEach(item => {
+                    const entity = item.entity || '';
+                    const p = item.payload || {};
+                    const tId = p.tasbeeh_id ? String(p.tasbeeh_id) : null;
+
+                    if ((entity === 'tasbeeh_count' || entity === 'zikr_count') && tId === currentTasbeehId) {
+                        pendingCountForThis += (parseInt(p.count, 10) || 0);
+                    } else if (entity === 'tasbeeh_complete_today' && tId === currentTasbeehId) {
+                        isCompletedToday = true;
+                    } else if (entity === 'zikr_complete_all') {
+                        isCompletedToday = true;
+                    } else if (entity === 'tasbeeh_reset_single' && tId === currentTasbeehId) {
+                        isReset = true;
+                    } else if (entity === 'zikr_reset_all') {
+                        isReset = true;
+                    }
+                });
+
+                if (isReset) {
+                    totalCompleted = 0 + pendingBatch;
+                    todayCompleted = 0 + pendingBatch;
+                } else if (isCompletedToday) {
+                    const neededForToday = Math.max(dailyTarget - baseTodayCompleted, 0);
+                    todayCompleted = Math.max(baseTodayCompleted, dailyTarget) + pendingCountForThis + pendingBatch;
+                    totalCompleted = baseTotalCompleted + neededForToday + pendingCountForThis + pendingBatch;
+                } else {
+                    totalCompleted = baseTotalCompleted + pendingCountForThis + pendingBatch;
+                    todayCompleted = baseTodayCompleted + pendingCountForThis + pendingBatch;
+                }
+
+                if (todayCompleted < 0) todayCompleted = 0;
+                if (totalCompleted < 0) totalCompleted = 0;
+
+                updateDisplay();
+            } catch (e) {
+                console.warn('reconcilePending error:', e);
             }
         };
 
         reconcilePending();
-        window.addEventListener('load', reconcilePending);
-        window.addEventListener('pageshow', reconcilePending);
+        window.addEventListener('load', () => reconcilePending());
+        window.addEventListener('pageshow', () => reconcilePending());
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') reconcilePending();
         });
-        window.addEventListener('pwa:sync-completed', reconcilePending);
+        window.addEventListener('pwa:sync-completed', (e) => reconcilePending(e.detail?.data || null));
+
+        // Listen for BroadcastChannel & storage events
+        if ('BroadcastChannel' in window) {
+            try {
+                const zikrChannel = new BroadcastChannel('portfolio_zikr_channel');
+                zikrChannel.onmessage = (event) => {
+                    if (event.data && event.data.type) {
+                        reconcilePending();
+                    }
+                };
+            } catch (e) {}
+        }
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'pwa_zikr_live_broadcast' && event.newValue) {
+                try {
+                    reconcilePending();
+                } catch (e) {}
+            }
+        });
 
         // Cache this counter page dynamically into Service Worker Cache
         if ('caches' in window) {

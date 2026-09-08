@@ -64,23 +64,51 @@
     <div id="tasbeehs-grid-container" class="admin-list-results">
         <div class="row g-3 g-md-4">
             @forelse($tasbeehs as $t)
-                <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $t->id }}" data-daily-target="{{ $t->daily_target }}" data-active-days="{{ $t->stats['active_days'] ?? 1 }}" data-today-completed="{{ $t->stats['today_completed'] ?? 0 }}">
+                <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $t->id }}" data-daily-target="{{ $t->daily_target }}" data-active-days="{{ $t->stats['active_days'] ?? 1 }}" data-today-completed="{{ $t->stats['today_completed'] ?? 0 }}" data-total-completed="{{ $t->stats['total_completed'] ?? 0 }}" data-total-required="{{ $t->stats['total_required'] ?? $t->daily_target }}">
                     <div class="zikr-item-card w-100 d-flex flex-column justify-content-between">
-                        <!-- Right-Aligned Text Area with Custom Center Divider -->
-                        <div class="text-container">
-                            <!-- Arabic Text -->
-                            <div class="arabic-text">
-                                {{ $t->arabic_text }}
+                        <div>
+                            {{-- Top Header with Sort Number Circle Badge and Today's Count Badge --}}
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                <div class="zikr-card-seq-badge" title="Tasbeeh {{ ($t->sort_order ?? 0) > 0 ? $t->sort_order : $loop->iteration }}">
+                                    <span class="seq-number">{{ ($t->sort_order ?? 0) > 0 ? $t->sort_order : $loop->iteration }}</span>
+                                </div>
+                                
+                                {{-- Small Compact Today Count Badge --}}
+                                @php
+                                    $todayComp = $t->stats['today_completed'] ?? 0;
+                                    $dTarget = $t->daily_target ?? 100;
+                                @endphp
+                                @if($todayComp >= $dTarget && $dTarget > 0)
+                                    <span class="badge today-status-badge rounded-pill d-inline-flex align-items-center px-2 py-0.5" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; font-size: 0.72rem; font-weight: 600;">
+                                        <i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace">{{ number_format($todayComp) }}</strong>
+                                    </span>
+                                @elseif($todayComp > 0)
+                                    <span class="badge today-status-badge rounded-pill d-inline-flex align-items-center px-2 py-0.5" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: #38bdf8; font-size: 0.72rem; font-weight: 600;">
+                                        Today: <strong class="ms-1 font-monospace">{{ number_format($todayComp) }}</strong>
+                                    </span>
+                                @else
+                                    <span class="badge today-status-badge rounded-pill d-inline-flex align-items-center px-2 py-0.5" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-size: 0.72rem; font-weight: 600;">
+                                        Today: <strong class="ms-1 font-monospace">0</strong>
+                                    </span>
+                                @endif
                             </div>
 
-                            <!-- Sleek Glowing Islamic Center Divider -->
-                            <div class="islamic-divider">
-                                <div class="divider-icon">✦ ✧ ✦</div>
-                            </div>
+                            <!-- Right-Aligned Text Area with Custom Center Divider -->
+                            <div class="text-container">
+                                <!-- Arabic Text -->
+                                <div class="arabic-text">
+                                    {{ $t->arabic_text }}
+                                </div>
 
-                            <!-- Urdu Translation -->
-                            <div class="urdu-text">
-                                {{ $t->urdu_meaning ?? '—' }}
+                                <!-- Sleek Glowing Islamic Center Divider -->
+                                <div class="islamic-divider">
+                                    <div class="divider-icon">✦ ✧ ✦</div>
+                                </div>
+
+                                <!-- Urdu Translation -->
+                                <div class="urdu-text">
+                                    {{ $t->urdu_meaning ?? '—' }}
+                                </div>
                             </div>
                         </div>
 
