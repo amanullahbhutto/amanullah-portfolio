@@ -967,6 +967,69 @@
     }
 
     document.addEventListener('click', (event) => {
+        // Direct 1-Click Complete for Individual Tasbeeh (No Modal / No Prompt - Instant 0ms Visual & Offline Enqueue)
+        const completeIconBtn = event.target.closest?.('.btn-complete-icon');
+        if (completeIconBtn) {
+            event.preventDefault();
+            const tasbeehId = completeIconBtn.getAttribute('data-tasbeeh-id');
+            const completeUrl = completeIconBtn.getAttribute('data-complete-url');
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = completeIconBtn.getAttribute('data-user-id') || urlParams.get('user_id') || '';
+            const title = completeIconBtn.getAttribute('data-tasbeeh-title') || 'Tasbeeh';
+
+            if (tasbeehId) {
+                const card = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
+                let countToAdd = parseInt(card?.dataset?.dailyTarget || '100', 10);
+                if (countToAdd <= 0) countToAdd = 100;
+
+                // Micro-interaction bounce feedback
+                completeIconBtn.style.transform = 'scale(1.25)';
+                completeIconBtn.style.transition = 'transform 0.2s ease';
+                setTimeout(() => { completeIconBtn.style.transform = 'scale(1)'; }, 250);
+
+                // Immediate 0ms local visual update
+                if (typeof window.updateZikrCardDom === 'function') {
+                    window.updateZikrCardDom(tasbeehId, countToAdd, false);
+                }
+
+                // Queue offline action & broadcast event across tabs
+                if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
+                    window.PwaSync.completeTasbeehToday(tasbeehId);
+                }
+
+                if (typeof window.reconcileZikrOfflineCounts === 'function') {
+                    window.reconcileZikrOfflineCounts();
+                }
+
+                if (typeof window.showFlashToast === 'function') {
+                    window.showFlashToast(`+${countToAdd.toLocaleString()} completed for '${title}'!`, 'success');
+                } else if (window.App && typeof window.App.showToast === 'function') {
+                    window.App.showToast('success', `+${countToAdd.toLocaleString()} completed for '${title}'!`);
+                }
+
+                if (navigator.onLine && completeUrl) {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    fetch(completeUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken || ''
+                        },
+                        body: JSON.stringify({ user_id: userId })
+                    }).then(res => res.json()).then(data => {
+                        if (data && data.success && data.stats && card) {
+                            card.dataset.baseTodayCompleted = String(data.stats.today_completed ?? data.stats.total_completed ?? 0);
+                            card.dataset.baseTotalCompleted = String(data.stats.total_completed ?? 0);
+                        }
+                    }).catch(err => {
+                        console.warn('Online sync background request:', err);
+                    });
+                }
+            }
+            return;
+        }
+
         const create = event.target.closest?.('[data-crud-open]');
         if (create) {
             event.preventDefault();

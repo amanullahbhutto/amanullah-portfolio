@@ -2090,15 +2090,20 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     background: #08111e;
     border: 1px solid #182c48;
     border-radius: 8px;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
+    font-size: 1rem;
+    transition: all 0.15s ease;
     cursor: pointer;
     text-decoration: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    position: relative;
+    z-index: 2;
 }
 .btn-plus-icon {
     color: #38bdf8;

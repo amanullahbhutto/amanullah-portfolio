@@ -186,72 +186,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const urlParams = new URLSearchParams(window.location.search);
     const defaultUserId = urlParams.get('user_id') || '{{ $selectedUser->id ?? auth()->id() }}';
 
-    // Direct 1-Click Complete for Individual Tasbeeh (No Modal / No Prompt)
-    document.addEventListener('click', async function (e) {
-        const completeIconBtn = e.target.closest('.btn-complete-icon');
-        if (!completeIconBtn) return;
-        e.preventDefault();
 
-        const tasbeehId = completeIconBtn.getAttribute('data-tasbeeh-id');
-        const completeUrl = completeIconBtn.getAttribute('data-complete-url');
-        const userId = completeIconBtn.getAttribute('data-user-id') || defaultUserId;
-        const title = completeIconBtn.getAttribute('data-tasbeeh-title') || 'Tasbeeh';
-
-        if (!tasbeehId) return;
-
-        const card = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
-        let countToAdd = parseInt(card?.dataset?.dailyTarget || '100', 10);
-        if (countToAdd <= 0) countToAdd = 100;
-
-        // Visual click feedback
-        completeIconBtn.style.transform = 'scale(1.25)';
-        completeIconBtn.style.transition = 'transform 0.2s ease';
-        setTimeout(() => { completeIconBtn.style.transform = 'scale(1)'; }, 250);
-
-        // Immediate 0ms local visual update
-        if (typeof window.updateZikrCardDom === 'function') {
-            window.updateZikrCardDom(tasbeehId, countToAdd, false);
-        }
-
-        // Always queue offline action & broadcast
-        if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
-            await window.PwaSync.completeTasbeehToday(tasbeehId);
-        }
-
-        if (typeof window.reconcileZikrOfflineCounts === 'function') {
-            window.reconcileZikrOfflineCounts();
-        }
-
-        if (typeof window.showFlashToast === 'function') {
-            window.showFlashToast(`+${countToAdd} completed for '${title}'!`, 'success');
-        }
-
-        if (!navigator.onLine || !completeUrl) {
-            return;
-        }
-
-        try {
-            const response = await fetch(completeUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify({ user_id: userId })
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                if (data.stats && card) {
-                    card.dataset.baseTodayCompleted = String(data.stats.today_completed ?? data.stats.total_completed ?? 0);
-                    card.dataset.baseTotalCompleted = String(data.stats.total_completed ?? 0);
-                }
-            }
-        } catch (err) {
-            console.warn('Online sync failed, saved offline:', err);
-        }
-    });
 
     if (completeAllBtn) {
         completeAllBtn.addEventListener('click', async function () {
@@ -272,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (window.App && typeof window.App.showToast === 'function') {
                     window.App.showToast('info', 'Saved offline. All tasbeehs updated on screen!');
                 }
-                completeBtn.disabled = false;
+                completeAllBtn.disabled = false;
                 if (spinner) spinner.classList.add('d-none');
                 return;
             }
@@ -324,13 +259,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     alert('An unexpected error occurred while completing tasbeehs.');
                 }
             } finally {
-                completeBtn.disabled = false;
-                if (spinner) spinner.classList.add('d-none');
-            }
-        });
-    }
-            } finally {
-                completeBtn.disabled = false;
+                completeAllBtn.disabled = false;
                 if (spinner) spinner.classList.add('d-none');
             }
         });
