@@ -117,6 +117,8 @@
         toast.style.setProperty('--flash-duration', `${duration}ms`);
 
         let timer = null;
+        let remaining = duration;
+        let startTime = Date.now();
 
         const hideToast = () => {
             if (toast.classList.contains('is-hiding')) return;
@@ -126,13 +128,16 @@
 
         const startTimer = (ms) => {
             clearTimeout(timer);
-            timer = window.setTimeout(hideToast, ms || duration);
+            startTime = Date.now();
+            timer = window.setTimeout(hideToast, ms);
         };
 
-        startTimer(duration);
+        startTimer(remaining);
 
         toast.addEventListener('mouseenter', () => {
             clearTimeout(timer);
+            const elapsed = Date.now() - startTime;
+            remaining = Math.max(remaining - elapsed, 400);
             const progress = toast.querySelector('.flash-toast-progress');
             if (progress) {
                 progress.style.animationPlayState = 'paused';
@@ -142,13 +147,9 @@
         toast.addEventListener('mouseleave', () => {
             const progress = toast.querySelector('.flash-toast-progress');
             if (progress) {
-                // Restart progress bar animation smoothly for 3 seconds
-                progress.style.animation = 'none';
-                void progress.offsetWidth; // trigger reflow
-                progress.style.animation = `toast-progress ${duration}ms linear both`;
                 progress.style.animationPlayState = 'running';
             }
-            startTimer(duration);
+            startTimer(remaining);
         });
 
         toast.querySelector('[data-flash-close]')?.addEventListener('click', hideToast);
