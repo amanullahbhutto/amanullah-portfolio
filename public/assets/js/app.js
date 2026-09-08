@@ -1837,7 +1837,7 @@
                         countByTasbeeh[tId] = (countByTasbeeh[tId] || 0) + (parseInt(p.count, 10) || 0);
                     }
                 } else if (entity === 'tasbeeh_complete_today') {
-                    if (tId) completedTodayByTasbeeh[tId] = true;
+                    if (tId) completedTodayByTasbeeh[tId] = (completedTodayByTasbeeh[tId] || 0) + 1;
                 } else if (entity === 'zikr_complete_all') {
                     hasZikrCompleteAll = true;
                 } else if (entity === 'tasbeeh_reset_single') {
@@ -1851,6 +1851,8 @@
 
             // 3. Update all Tasbeeh Cards using absolute baseline + pending mutations
             const cards = document.querySelectorAll('[id^="tasbeeh-card-"]');
+            let allCompletesTotalCount = 0;
+
             cards.forEach(card => {
                 const tId = card.id.replace('tasbeeh-card-', '');
                 if (!card.dataset.baseTodayCompleted) {
@@ -1879,14 +1881,13 @@
                     finalTotal = 0;
                 } else {
                     const addedCount = countByTasbeeh[tId] || 0;
-                    if (hasZikrCompleteAll || completedTodayByTasbeeh[tId]) {
-                        const neededForToday = Math.max(dailyTarget - baseToday, 0);
-                        finalToday = Math.max(baseToday, dailyTarget) + addedCount;
-                        finalTotal = baseTotal + neededForToday + addedCount;
-                    } else {
-                        finalToday = baseToday + addedCount;
-                        finalTotal = baseTotal + addedCount;
-                    }
+                    const completesCount = (completedTodayByTasbeeh[tId] || 0) + (hasZikrCompleteAll ? 1 : 0);
+                    const completeTodayAdd = completesCount * (dailyTarget > 0 ? dailyTarget : 100);
+
+                    allCompletesTotalCount += completeTodayAdd;
+
+                    finalToday = baseToday + completeTodayAdd + addedCount;
+                    finalTotal = baseTotal + completeTodayAdd + addedCount;
                 }
 
                 if (finalToday < 0) finalToday = 0;
@@ -1969,7 +1970,7 @@
                     lifetimeEl.textContent = '0';
                 } else {
                     let baseLifetime = parseInt(String(lifetimeEl.dataset.baseLifetime || lifetimeEl.dataset.rawVal || lifetimeEl.textContent || '0').replace(/,/g, ''), 10) || 0;
-                    let totalAddedAcrossAll = Object.values(countByTasbeeh).reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0);
+                    let totalAddedAcrossAll = Object.values(countByTasbeeh).reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0) + allCompletesTotalCount;
                     let finalLifetime = baseLifetime + totalAddedAcrossAll;
                     lifetimeEl.dataset.rawVal = finalLifetime.toLocaleString();
                     lifetimeEl.textContent = finalLifetime.toLocaleString();

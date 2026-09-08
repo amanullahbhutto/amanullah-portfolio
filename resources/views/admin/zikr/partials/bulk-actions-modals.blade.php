@@ -179,7 +179,7 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const completeBtn = document.getElementById('btnConfirmCompleteAll');
+    const completeAllBtn = document.getElementById('btnConfirmCompleteAll');
     const resetBtn = document.getElementById('btnConfirmResetAll');
     const resetLifetimeBtn = document.getElementById('btnConfirmResetLifetime');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -188,36 +188,45 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Direct 1-Click Complete for Individual Tasbeeh (No Modal / No Prompt)
     document.addEventListener('click', async function (e) {
-        const completeBtn = e.target.closest('.btn-complete-icon');
-        if (!completeBtn) return;
+        const completeIconBtn = e.target.closest('.btn-complete-icon');
+        if (!completeIconBtn) return;
         e.preventDefault();
 
-        const tasbeehId = completeBtn.getAttribute('data-tasbeeh-id');
-        const completeUrl = completeBtn.getAttribute('data-complete-url');
-        const userId = completeBtn.getAttribute('data-user-id') || defaultUserId;
-        const title = completeBtn.getAttribute('data-tasbeeh-title') || 'Tasbeeh';
+        const tasbeehId = completeIconBtn.getAttribute('data-tasbeeh-id');
+        const completeUrl = completeIconBtn.getAttribute('data-complete-url');
+        const userId = completeIconBtn.getAttribute('data-user-id') || defaultUserId;
+        const title = completeIconBtn.getAttribute('data-tasbeeh-title') || 'Tasbeeh';
 
-        if (!tasbeehId || !completeUrl) return;
+        if (!tasbeehId) return;
 
         const card = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
         let countToAdd = parseInt(card?.dataset?.dailyTarget || '100', 10);
         if (countToAdd <= 0) countToAdd = 100;
 
         // Visual click feedback
-        completeBtn.style.transform = 'scale(1.25)';
-        completeBtn.style.transition = 'transform 0.2s ease';
-        setTimeout(() => { completeBtn.style.transform = 'scale(1)'; }, 250);
+        completeIconBtn.style.transform = 'scale(1.25)';
+        completeIconBtn.style.transition = 'transform 0.2s ease';
+        setTimeout(() => { completeIconBtn.style.transform = 'scale(1)'; }, 250);
 
-        if (!navigator.onLine) {
-            if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
-                await window.PwaSync.completeTasbeehToday(tasbeehId);
-            }
-            if (typeof window.reconcileZikrOfflineCounts === 'function') {
-                window.reconcileZikrOfflineCounts();
-            }
-            if (typeof window.showFlashToast === 'function') {
-                window.showFlashToast(`+${countToAdd} completed for '${title}' (saved offline)!`, 'info');
-            }
+        // Immediate 0ms local visual update
+        if (typeof window.updateZikrCardDom === 'function') {
+            window.updateZikrCardDom(tasbeehId, countToAdd, false);
+        }
+
+        // Always queue offline action & broadcast
+        if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
+            await window.PwaSync.completeTasbeehToday(tasbeehId);
+        }
+
+        if (typeof window.reconcileZikrOfflineCounts === 'function') {
+            window.reconcileZikrOfflineCounts();
+        }
+
+        if (typeof window.showFlashToast === 'function') {
+            window.showFlashToast(`+${countToAdd} completed for '${title}'!`, 'success');
+        }
+
+        if (!navigator.onLine || !completeUrl) {
             return;
         }
 
@@ -238,38 +247,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     card.dataset.baseTodayCompleted = String(data.stats.today_completed ?? data.stats.total_completed ?? 0);
                     card.dataset.baseTotalCompleted = String(data.stats.total_completed ?? 0);
                 }
-                if (window.PwaSync && typeof window.PwaSync.broadcastEvent === 'function') {
-                    window.PwaSync.broadcastEvent('ZIKR_COMPLETE_TODAY', { tasbeehId: String(tasbeehId) });
-                }
-                if (typeof window.reconcileZikrOfflineCounts === 'function') {
-                    window.reconcileZikrOfflineCounts();
-                }
-                if (typeof window.showFlashToast === 'function') {
-                    window.showFlashToast(data.message || `+${countToAdd} completed for '${title}'!`, 'success');
-                }
-            } else {
-                if (typeof window.showFlashToast === 'function') {
-                    window.showFlashToast(data.message || 'Failed to complete tasbeeh.', 'danger');
-                }
             }
         } catch (err) {
-            console.error(err);
-            if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
-                await window.PwaSync.completeTasbeehToday(tasbeehId);
-                if (typeof window.reconcileZikrOfflineCounts === 'function') {
-                    window.reconcileZikrOfflineCounts();
-                }
-                if (typeof window.showFlashToast === 'function') {
-                    window.showFlashToast(`+${countToAdd} completed for '${title}' (saved offline)!`, 'info');
-                }
-            }
+            console.warn('Online sync failed, saved offline:', err);
         }
     });
 
-    if (completeBtn) {
-        completeBtn.addEventListener('click', async function () {
-            const spinner = completeBtn.querySelector('.spinner-border');
-            completeBtn.disabled = true;
+    if (completeAllBtn) {
+        completeAllBtn.addEventListener('click', async function () {
+            const spinner = completeAllBtn.querySelector('.spinner-border');
+            completeAllBtn.disabled = true;
             if (spinner) spinner.classList.remove('d-none');
 
             if (!navigator.onLine) {
