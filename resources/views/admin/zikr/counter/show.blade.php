@@ -26,11 +26,11 @@
             <div class="d-flex align-items-center gap-2">
                 @if($stats['today_completed'] >= $stats['daily_target'] && $stats['daily_target'] > 0)
                     <span class="badge rounded-pill px-2 py-0.5" id="liveTodayBadge" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; font-size: 0.72rem; font-weight: 600;">
-                        <i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace" id="liveTodayVal">{{ number_format($stats['today_completed']) }}</strong>
+                        <i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace" id="liveTodayVal">{{ $stats['today_completed'] }}</strong>
                     </span>
                 @elseif($stats['today_completed'] > 0)
                     <span class="badge rounded-pill px-2 py-0.5" id="liveTodayBadge" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: #38bdf8; font-size: 0.72rem; font-weight: 600;">
-                        Today: <strong class="ms-1 font-monospace" id="liveTodayVal">{{ number_format($stats['today_completed']) }}</strong>
+                        Today: <strong class="ms-1 font-monospace" id="liveTodayVal">{{ $stats['today_completed'] }}</strong>
                     </span>
                 @else
                     <span class="badge rounded-pill px-2 py-0.5" id="liveTodayBadge" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-size: 0.72rem; font-weight: 600;">
@@ -60,30 +60,25 @@
             @endif
         </div>
 
-        {{-- Islamic Mehrab Arch with Dynamic Arc Beads & Main Counter --}}
+        {{-- Islamic Mehrab Arch with Main Counter --}}
         <div class="mehrab-arch" id="mehrabArchBox">
-            <svg class="svg-arc-container" viewBox="0 0 300 115">
-                <path d="M 60,105 A 90,90 0 0,1 240,105" fill="none" stroke="rgba(255, 255, 255, 0.12)" stroke-dasharray="3,3" stroke-width="1.5"/>
-                <g id="beadsGroup"></g>
-            </svg>
-
-            {{-- Main Counter Display Number with #ff6b2c Color --}}
-            <div class="counter-number" id="mainCountDisplay">{{ number_format($stats['total_completed']) }}</div>
+            {{-- Main Counter Display Number without comma --}}
+            <div class="counter-number" id="mainCountDisplay">{{ $stats['total_completed'] }}</div>
 
             {{-- Bottom Stats Row Inside Arch --}}
             <div class="bottom-stats-row">
                 <div class="stat-col">
                     <small>Target (Day {{ $stats['active_days'] }})</small>
-                    <strong class="text-white" id="reqVal">{{ number_format($stats['total_required']) }}</strong>
+                    <strong class="text-white" id="reqVal">{{ $stats['total_required'] }}</strong>
                 </div>
                 <div class="stat-col">
                     <small>Completed</small>
-                    <strong class="text-success" id="completedVal">{{ number_format($stats['total_completed']) }}</strong>
+                    <strong class="text-success" id="completedVal">{{ $stats['total_completed'] }}</strong>
                 </div>
                 <div class="stat-col">
                     <small id="remainingLabel">{{ $stats['extra'] > 0 ? 'Extra' : 'Remaining' }}</small>
                     <strong class="{{ $stats['extra'] > 0 ? 'text-info' : ($stats['remaining'] > 0 ? 'text-warning' : 'text-success') }}" id="remainingVal">
-                        {{ $stats['extra'] > 0 ? '+' . number_format($stats['extra']) : number_format($stats['remaining']) }}
+                        {{ $stats['extra'] > 0 ? ('+' . $stats['extra']) : $stats['remaining'] }}
                     </strong>
                 </div>
             </div>
@@ -228,33 +223,6 @@
         const remainingLabelEl = document.getElementById('remainingLabel');
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
-        // Render 1 to 33 Dynamic Arc Beads
-        function renderBeads(activeCount) {
-            const beadsGroup = document.getElementById('beadsGroup');
-            if (!beadsGroup) return;
-            beadsGroup.innerHTML = '';
-
-            const cx = 150, cy = 105, r = 90;
-
-            for (let i = 1; i <= maxBeads; i++) {
-                const angle = Math.PI - ((i - 1) / (maxBeads - 1)) * Math.PI;
-                const x = cx + r * Math.cos(angle);
-                const y = cy - r * Math.sin(angle);
-
-                const isActive = i <= activeCount;
-
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('cx', x);
-                circle.setAttribute('cy', y);
-                circle.setAttribute('r', isActive ? '6' : '3');
-                circle.setAttribute('fill', isActive ? '#00e5ff' : 'rgba(255, 255, 255, 0.15)');
-                circle.setAttribute('stroke', isActive ? '#ffffff' : 'none');
-                circle.setAttribute('stroke-width', '1.5');
-
-                beadsGroup.appendChild(circle);
-            }
-        }
-
         const dailyTarget = parseInt(container.dataset.dailyTarget || '100', 10) || 100;
         const liveTodayValEl = document.getElementById('liveTodayVal');
         const liveTodayBadgeEl = document.getElementById('liveTodayBadge');
@@ -263,7 +231,7 @@
             if (todayCompleted < 0) todayCompleted = 0;
 
             if (liveTodayValEl) {
-                liveTodayValEl.innerText = todayCompleted.toLocaleString();
+                liveTodayValEl.innerText = String(todayCompleted);
             }
 
             if (liveTodayBadgeEl) {
@@ -271,12 +239,12 @@
                     liveTodayBadgeEl.style.background = 'rgba(16, 185, 129, 0.15)';
                     liveTodayBadgeEl.style.borderColor = 'rgba(16, 185, 129, 0.4)';
                     liveTodayBadgeEl.style.color = '#34d399';
-                    liveTodayBadgeEl.innerHTML = `<i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace" id="liveTodayVal">${todayCompleted.toLocaleString()}</strong>`;
+                    liveTodayBadgeEl.innerHTML = `<i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace" id="liveTodayVal">${todayCompleted}</strong>`;
                 } else if (todayCompleted > 0) {
                     liveTodayBadgeEl.style.background = 'rgba(6, 182, 212, 0.15)';
                     liveTodayBadgeEl.style.borderColor = 'rgba(6, 182, 212, 0.4)';
                     liveTodayBadgeEl.style.color = '#38bdf8';
-                    liveTodayBadgeEl.innerHTML = `Today: <strong class="ms-1 font-monospace" id="liveTodayVal">${todayCompleted.toLocaleString()}</strong>`;
+                    liveTodayBadgeEl.innerHTML = `Today: <strong class="ms-1 font-monospace" id="liveTodayVal">${todayCompleted}</strong>`;
                 } else {
                     liveTodayBadgeEl.style.background = 'rgba(239, 68, 68, 0.12)';
                     liveTodayBadgeEl.style.borderColor = 'rgba(239, 68, 68, 0.3)';
@@ -290,10 +258,7 @@
         function updateDisplay() {
             if (totalCompleted < 0) totalCompleted = 0;
 
-            let beadStep = totalCompleted % maxBeads;
-            if (totalCompleted > 0 && beadStep === 0) beadStep = maxBeads;
-
-            const formattedNum = totalCompleted.toLocaleString();
+            const formattedNum = String(totalCompleted);
 
             if (mainCountEl) {
                 mainCountEl.innerText = formattedNum;
@@ -315,24 +280,23 @@
                 mainCountEl.classList.add('number-bump');
             }
 
-            if (completedValEl) completedValEl.innerText = totalCompleted.toLocaleString();
-            if (reqValEl) reqValEl.innerText = totalRequired.toLocaleString();
+            if (completedValEl) completedValEl.innerText = String(totalCompleted);
+            if (reqValEl) reqValEl.innerText = String(totalRequired);
 
             const diff = totalCompleted - totalRequired;
             if (remainingValEl && remainingLabelEl) {
                 if (diff > 0) {
                     remainingLabelEl.innerText = 'Extra';
-                    remainingValEl.innerText = '+' + diff.toLocaleString();
+                    remainingValEl.innerText = '+' + String(diff);
                     remainingValEl.className = 'text-info';
                 } else {
                     const rem = Math.max(0, totalRequired - totalCompleted);
                     remainingLabelEl.innerText = 'Remaining';
-                    remainingValEl.innerText = rem.toLocaleString();
+                    remainingValEl.innerText = String(rem);
                     remainingValEl.className = rem > 0 ? 'text-warning' : 'text-success';
                 }
             }
 
-            renderBeads(beadStep);
             updateTodayDisplay();
         }
 
