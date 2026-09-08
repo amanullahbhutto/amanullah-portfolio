@@ -337,7 +337,7 @@
         // Batch AJAX Sync to backend
         let inFlightBatch = 0;
 
-        function flushBatch() {
+        function flushBatch(forceOffline = false) {
             if (pendingBatch === 0 || isSyncing) return;
 
             isSyncing = true;
@@ -347,7 +347,7 @@
             const tasbeehId = '{{ $tasbeeh->id }}';
 
             // If offline, save directly to IndexedDB outbox
-            if (!navigator.onLine) {
+            if (!navigator.onLine || forceOffline) {
                 if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
                     window.PwaSync.saveZikrCount(tasbeehId, inFlightBatch);
                 }
@@ -361,6 +361,9 @@
             formData.append('user_id', container.dataset.userId);
             formData.append('_token', csrfToken);
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3500);
+
             fetch(container.dataset.incrementUrl, {
                 method: 'POST',
                 headers: {
@@ -368,8 +371,10 @@
                     'X-Requested-With': 'XMLHttpRequest',
                 },
                 body: formData,
+                signal: controller.signal,
             })
                 .then(async (res) => {
+                    clearTimeout(timeoutId);
                     const payload = await res.json().catch(() => ({}));
                     if (!res.ok) throw Object.assign(new Error('Increment failed'), { payload });
                     return payload;
@@ -386,6 +391,7 @@
                     inFlightBatch = 0;
                 })
                 .catch((err) => {
+                    clearTimeout(timeoutId);
                     console.warn('Increment network sync failed, saving to offline outbox:', err);
                     if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
                         window.PwaSync.saveZikrCount(tasbeehId, inFlightBatch);
@@ -396,7 +402,7 @@
                     isSyncing = false;
                     if (pendingBatch > 0) {
                         clearTimeout(batchTimer);
-                        batchTimer = setTimeout(flushBatch, 350);
+                        batchTimer = setTimeout(() => flushBatch(), 350);
                     }
                 });
         }
@@ -425,8 +431,13 @@
             pendingBatch += 1;
             updateDisplay();
 
+            // Broadcast real-time tap to other tabs/pages immediately
+            if (window.PwaSync && typeof window.PwaSync.broadcastZikrCountUpdate === 'function') {
+                window.PwaSync.broadcastZikrCountUpdate('{{ $tasbeeh->id }}', 1);
+            }
+
             clearTimeout(batchTimer);
-            batchTimer = setTimeout(flushBatch, 350);
+            batchTimer = setTimeout(() => flushBatch(), 350);
         }
 
         document.addEventListener('click', handleScreenTap);
@@ -520,17 +531,33 @@
             });
         }
 
-        // Beforeunload beacon fallback
-        window.addEventListener('beforeunload', () => {
+        // Immediate flush on mobile navigation/pagehide/visibilitychange
+        const flushImmediate = () => {
             if (pendingBatch > 0) {
+                const countToSave = pendingBatch;
+                pendingBatch = 0;
+                if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
+                    window.PwaSync.saveZikrCount('{{ $tasbeeh->id }}', countToSave);
+                }
+            }
+        };
+
+        window.addEventListener('pagehide', flushImmediate);
+        window.addEventListener('beforeunload', () => {
+            flushImmediate();
+            if (navigator.sendBeacon && pendingBatch > 0) {
                 const formData = new FormData();
                 formData.append('count', pendingBatch);
                 formData.append('user_id', container.dataset.userId);
                 formData.append('_token', csrfToken);
-                if (navigator.sendBeacon) {
-                    navigator.sendBeacon(container.dataset.incrementUrl, formData);
-                }
+                navigator.sendBeacon(container.dataset.incrementUrl, formData);
             }
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') flushImmediate();
+        });
+        document.querySelectorAll('a, button[data-bs-dismiss], [data-bs-toggle]').forEach(el => {
+            el.addEventListener('click', flushImmediate);
         });
 
         // Initial bead render & display update

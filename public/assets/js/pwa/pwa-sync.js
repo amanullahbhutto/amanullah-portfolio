@@ -71,6 +71,7 @@ class PwaSync {
         await this.refreshPendingCount();
         if (navigator.onLine) {
             this.syncNow();
+            this.warmOfflineCache();
         } else {
             this.updateBadge('offline');
         }
@@ -87,6 +88,75 @@ class PwaSync {
         }, 20000);
     }
 
+    async warmOfflineCache() {
+        if (!('caches' in window) || !navigator.onLine) return;
+        try {
+            const names = await caches.keys();
+            const pwaCacheName = names.find(n => n.startsWith('portfolio-pwa-v'));
+            if (!pwaCacheName) return;
+
+            const cache = await caches.open(pwaCacheName);
+
+            // 1. Immediately cache current page
+            cache.add(window.location.href).catch(() => {});
+            cache.add(window.location.pathname).catch(() => {});
+
+            // 2. Comprehensive Admin Routes to pre-cache with active user session
+            const routesToWarm = [
+                '/',
+                '/admin',
+                '/admin/zikr',
+                '/admin/tasbeehs',
+                '/admin/namaz/attendance',
+                '/admin/namaz/dashboard',
+                '/admin/date-of-births',
+                '/pwa/offline'
+            ];
+
+            // 3. Scan DOM for all active Tasbeeh counter URLs on page
+            document.querySelectorAll('a[href*="/admin/zikr/tasbeeh/"]').forEach(a => {
+                const href = a.getAttribute('href');
+                if (href && !routesToWarm.includes(href)) {
+                    routesToWarm.push(href);
+                }
+            });
+
+            // Also check IndexedDB for any cached tasbeeh master records
+            try {
+                const cachedTasbeehs = await window.PwaDB.getAllCachedRecords('tasbeehs');
+                if (Array.isArray(cachedTasbeehs)) {
+                    cachedTasbeehs.forEach(t => {
+                        if (t && t.id) {
+                            const url = `/admin/zikr/tasbeeh/${t.id}`;
+                            if (!routesToWarm.includes(url)) routesToWarm.push(url);
+                        }
+                    });
+                }
+            } catch (e) {}
+
+            // 4. Fetch and store each route in parallel
+            await Promise.allSettled(
+                routesToWarm.map(route => {
+                    return fetch(route, { credentials: 'same-origin' })
+                        .then(res => {
+                            if (res && res.ok && res.status === 200) {
+                                cache.put(route, res.clone()).catch(() => {});
+                                try {
+                                    const parsedUrl = new URL(route, window.location.origin);
+                                    if (parsedUrl.pathname !== route) {
+                                        cache.put(parsedUrl.pathname, res.clone()).catch(() => {});
+                                    }
+                                } catch (e) {}
+                            }
+                        })
+                        .catch(() => {});
+                })
+            );
+        } catch (e) {
+            console.warn('PwaSync warmOfflineCache notice:', e);
+        }
+    }
+
     async handleNetworkChange(isOnline) {
         this.appState.isOnline = isOnline;
         if (isOnline) {
@@ -95,6 +165,7 @@ class PwaSync {
                 window.App.showToast('info', 'Internet connection restored. Synchronizing data...');
             }
             await this.syncNow();
+            this.warmOfflineCache();
         } else {
             this.updateBadge('offline');
             if (window.App && typeof window.App.showToast === 'function') {
@@ -377,8 +448,26 @@ class PwaSync {
         return this.enqueueAction('date_of_birth', 'update', { id: parseInt(id, 10), ...data });
     }
 
-    async deleteDateOfBirth(id) {
-        return this.enqueueAction('date_of_birth', 'delete', { id: parseInt(id, 10) });
+    broadcastZikrCountUpdate(tasbeehId, delta) {
+        try {
+            if ('BroadcastChannel' in window) {
+                if (!this.zikrBroadcastChannel) {
+                    this.zikrBroadcastChannel = new BroadcastChannel('portfolio_zikr_channel');
+                }
+                this.zikrBroadcastChannel.postMessage({
+                    type: 'ZIKR_COUNT_INCREMENT',
+                    tasbeehId: String(tasbeehId),
+                    delta: parseInt(delta, 10) || 0,
+                    timestamp: Date.now()
+                });
+            }
+            const storagePayload = JSON.stringify({
+                tasbeehId: String(tasbeehId),
+                delta: parseInt(delta, 10) || 0,
+                timestamp: Date.now()
+            });
+            localStorage.setItem('pwa_zikr_live_broadcast', storagePayload);
+        } catch (e) {}
     }
 }
 

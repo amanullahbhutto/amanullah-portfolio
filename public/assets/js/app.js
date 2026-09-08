@@ -1587,22 +1587,26 @@
 
         if (todayCompletedStatEl) {
             todayCompletedStatEl.dataset.rawVal = overallTodayCompleted.toLocaleString();
+            todayCompletedStatEl.textContent = overallTodayCompleted.toLocaleString();
         }
 
         if (todayPercentStatEl) {
             let todayPercent = overallTodayRequired > 0 ? Math.min(100, Math.round((overallTodayCompleted / overallTodayRequired) * 100)) : 100;
             todayPercentStatEl.dataset.rawSubtext = `${todayPercent}% of daily target`;
             todayPercentStatEl.dataset.maskedSubtext = '•••% of daily target';
+            todayPercentStatEl.textContent = `${todayPercent}% of daily target`;
         }
 
         if (completedStatEl) {
             completedStatEl.dataset.rawVal = overallTotalCompleted.toLocaleString();
+            completedStatEl.textContent = overallTotalCompleted.toLocaleString();
         }
 
         let percentage = overallTotalRequired > 0 ? Math.min(100, Math.round((overallTotalCompleted / overallTotalRequired) * 100)) : 100;
         if (percentStatEl) {
             percentStatEl.dataset.rawSubtext = `${percentage}% Completed`;
             percentStatEl.dataset.maskedSubtext = '•••% Completed';
+            percentStatEl.textContent = `${percentage}% Completed`;
         }
 
         if (backlogContainerEl) {
@@ -1616,11 +1620,13 @@
                 if (valEl) {
                     valEl.className = 'fs-3 fs-md-2 text-info d-block font-monospace my-0 zikr-stat-maskable';
                     valEl.dataset.rawVal = `+${diff.toLocaleString()}`;
+                    valEl.textContent = `+${diff.toLocaleString()}`;
                 }
                 if (subEl) {
                     subEl.className = 'text-info d-block fw-semibold text-truncate zikr-stat-maskable';
                     subEl.dataset.rawSubtext = 'Ahead of schedule';
                     subEl.dataset.maskedSubtext = 'Ahead of schedule';
+                    subEl.textContent = 'Ahead of schedule';
                 }
             } else {
                 let backlog = Math.abs(diff);
@@ -1630,28 +1636,19 @@
                 if (valEl) {
                     valEl.className = `fs-3 fs-md-2 ${colorClass} d-block font-monospace my-0 zikr-stat-maskable`;
                     valEl.dataset.rawVal = backlog.toLocaleString();
+                    valEl.textContent = backlog.toLocaleString();
                 }
                 if (subEl) {
                     subEl.className = `${colorClass} d-block fw-semibold text-truncate zikr-stat-maskable`;
                     subEl.dataset.rawSubtext = label;
                     subEl.dataset.maskedSubtext = label;
+                    subEl.textContent = label;
                 }
             }
         }
 
         if (typeof window.renderZikrStatCards === 'function') {
             window.renderZikrStatCards();
-        } else {
-            if (todayCompletedStatEl) todayCompletedStatEl.textContent = overallTodayCompleted.toLocaleString();
-            if (todayPercentStatEl) {
-                let todayPercent = overallTodayRequired > 0 ? Math.min(100, Math.round((overallTodayCompleted / overallTodayRequired) * 100)) : 100;
-                todayPercentStatEl.textContent = `${todayPercent}% of daily target`;
-            }
-            if (completedStatEl) completedStatEl.textContent = overallTotalCompleted.toLocaleString();
-            if (percentStatEl) {
-                let percentage = overallTotalRequired > 0 ? Math.min(100, Math.round((overallTotalCompleted / overallTotalRequired) * 100)) : 100;
-                percentStatEl.textContent = `${percentage}% Completed`;
-            }
         }
     };
 
@@ -1723,10 +1720,9 @@
             if (lifetimeEl) {
                 let currentLifetime = parseInt((lifetimeEl.dataset.rawVal || lifetimeEl.textContent).replace(/,/g, ''), 10) || 0;
                 lifetimeEl.dataset.rawVal = (currentLifetime + deltaAdded).toLocaleString();
+                lifetimeEl.textContent = (currentLifetime + deltaAdded).toLocaleString();
                 if (typeof window.renderZikrStatCards === 'function') {
                     window.renderZikrStatCards();
-                } else {
-                    lifetimeEl.textContent = (currentLifetime + deltaAdded).toLocaleString();
                 }
             }
         }
@@ -1766,23 +1762,138 @@
         }
     };
 
-    // Reconcile pending offline counts on Zikr dashboard cards
-    if (window.PwaDB && typeof window.PwaDB.getPendingOutbox === 'function') {
-        window.PwaDB.getPendingOutbox().then(items => {
+    // Robust Multi-Event Offline Reconciliation for Dashboard & Counter Cards
+    window.reconcileZikrOfflineCounts = async function () {
+        if (!window.PwaDB || typeof window.PwaDB.getPendingOutbox !== 'function') return;
+
+        try {
+            const items = await window.PwaDB.getPendingOutbox();
+            if (!items || items.length === 0) return;
+
             const countByTasbeeh = {};
-            (items || []).forEach(item => {
+            let hasLifetimeReset = false;
+            let hasZikrResetAll = false;
+            let hasZikrCompleteAll = false;
+
+            items.forEach(item => {
                 if ((item.entity === 'tasbeeh_count' || item.entity === 'zikr_count') && item.payload?.tasbeeh_id) {
-                    const tId = item.payload.tasbeeh_id;
+                    const tId = String(item.payload.tasbeeh_id);
                     countByTasbeeh[tId] = (countByTasbeeh[tId] || 0) + (parseInt(item.payload.count, 10) || 0);
+                } else if (item.entity === 'tasbeeh_complete_today' && item.payload?.tasbeeh_id) {
+                    const tId = String(item.payload.tasbeeh_id);
+                    const card = document.getElementById(`tasbeeh-card-${tId}`) || document.querySelector(`[data-tasbeeh-card="${tId}"]`);
+                    let dailyTarget = parseInt(card?.dataset?.dailyTarget || '100', 10);
+                    countByTasbeeh[tId] = (countByTasbeeh[tId] || 0) + dailyTarget;
+                } else if (item.entity === 'zikr_complete_all') {
+                    hasZikrCompleteAll = true;
+                } else if (item.entity === 'tasbeeh_reset_single' && item.payload?.tasbeeh_id) {
+                    const tId = String(item.payload.tasbeeh_id);
+                    countByTasbeeh[tId] = -999999;
+                } else if (item.entity === 'zikr_reset_all') {
+                    hasZikrResetAll = true;
+                } else if (item.entity === 'lifetime_reset') {
+                    hasLifetimeReset = true;
                 }
             });
+
+            if (hasZikrResetAll) {
+                document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                    const tId = card.id.replace('tasbeeh-card-', '');
+                    window.updateZikrCardDom(tId, 0, true);
+                });
+            } else if (hasZikrCompleteAll) {
+                document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                    const tId = card.id.replace('tasbeeh-card-', '');
+                    let dailyTarget = parseInt(card?.dataset?.dailyTarget || '100', 10);
+                    window.updateZikrCardDom(tId, dailyTarget, false);
+                });
+            }
+
             Object.entries(countByTasbeeh).forEach(([tId, count]) => {
-                if (count > 0 && typeof window.updateZikrCardDom === 'function') {
-                    window.updateZikrCardDom(tId, count);
+                if (count === -999999) {
+                    window.updateZikrCardDom(tId, 0, true);
+                } else if (count > 0 && typeof window.updateZikrCardDom === 'function') {
+                    const cardCol = document.getElementById(`tasbeeh-card-${tId}`) || document.querySelector(`[data-tasbeeh-card="${tId}"]`);
+                    if (cardCol) {
+                        const alreadyReconciled = parseInt(cardCol.dataset.reconciledCount || '0', 10);
+                        const deltaToApply = count - alreadyReconciled;
+                        if (deltaToApply > 0) {
+                            cardCol.dataset.reconciledCount = String(count);
+                            window.updateZikrCardDom(tId, deltaToApply, false);
+                        }
+                    }
                 }
             });
-        }).catch(() => {});
+
+            if (hasLifetimeReset) {
+                let lifetimeEl = document.getElementById('top-stat-lifetime-total');
+                if (lifetimeEl) {
+                    lifetimeEl.dataset.rawVal = '0';
+                    lifetimeEl.textContent = '0';
+                }
+            }
+
+            if (typeof window.recalculateZikrTopStats === 'function') {
+                window.recalculateZikrTopStats();
+            }
+        } catch (e) {
+            console.warn('reconcileZikrOfflineCounts notice:', e);
+        }
+    };
+
+    // Auto-trigger reconciliation on multiple key browser lifecycles
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => window.reconcileZikrOfflineCounts());
+    } else {
+        window.reconcileZikrOfflineCounts();
     }
+    window.addEventListener('load', () => window.reconcileZikrOfflineCounts());
+    window.addEventListener('pageshow', () => window.reconcileZikrOfflineCounts());
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            window.reconcileZikrOfflineCounts();
+        }
+    });
+    window.addEventListener('pwa:sync-completed', () => window.reconcileZikrOfflineCounts());
+
+    // Real-Time Cross-Tab / Counter Broadcast Listener
+    if ('BroadcastChannel' in window) {
+        try {
+            const zikrChannel = new BroadcastChannel('portfolio_zikr_channel');
+            zikrChannel.onmessage = (event) => {
+                if (event.data && event.data.type === 'ZIKR_COUNT_INCREMENT' && event.data.tasbeehId) {
+                    const tId = String(event.data.tasbeehId);
+                    const delta = parseInt(event.data.delta, 10) || 0;
+                    if (delta > 0) {
+                        const cardCol = document.getElementById(`tasbeeh-card-${tId}`) || document.querySelector(`[data-tasbeeh-card="${tId}"]`);
+                        if (cardCol) {
+                            const curReconciled = parseInt(cardCol.dataset.reconciledCount || '0', 10);
+                            cardCol.dataset.reconciledCount = String(curReconciled + delta);
+                        }
+                        window.updateZikrCardDom(tId, delta, false);
+                    }
+                }
+            };
+        } catch (e) {}
+    }
+
+    // Cross-tab fallback via storage event
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'pwa_zikr_live_broadcast' && event.newValue) {
+            try {
+                const data = JSON.parse(event.newValue);
+                if (data && data.tasbeehId && data.delta > 0) {
+                    const tId = String(data.tasbeehId);
+                    const cardCol = document.getElementById(`tasbeeh-card-${tId}`) || document.querySelector(`[data-tasbeeh-card="${tId}"]`);
+                    if (cardCol) {
+                        const curReconciled = parseInt(cardCol.dataset.reconciledCount || '0', 10);
+                        cardCol.dataset.reconciledCount = String(curReconciled + data.delta);
+                    }
+                    window.updateZikrCardDom(tId, data.delta, false);
+                }
+            } catch (e) {}
+        }
+    });
 
     const resetFormHandler = (formId) => {
         const form = document.getElementById(formId);

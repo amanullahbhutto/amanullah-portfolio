@@ -88,7 +88,7 @@
                         </button>
                     </div>
                 </div>
-                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-lifetime-total" data-raw-val="{{ number_format($summary['lifetime_total']) }}" data-stat-card="lifetime" style="color: #f97316 !important; line-height: 1.2;" title="Click to show/hide">••••</strong>
+                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-lifetime-total" data-raw-val="{{ number_format($summary['lifetime_total']) }}" data-stat-card="lifetime" style="color: #f97316 !important; line-height: 1.2;" title="Click to show/hide">{{ number_format($summary['lifetime_total']) }}</strong>
                 <small class="d-block text-truncate zikr-stat-maskable" id="top-stat-lifetime-duration" data-raw-subtext="<i class='bi bi-clock-history me-1'></i>{{ $summary['lifetime_duration']['formatted_full'] ?? 'Day 1' }}" data-masked-subtext="<i class='bi bi-clock-history me-1'></i>••••" data-stat-card="lifetime" style="font-size: 0.72rem; color: #fdba74;" title="Started: {{ $summary['lifetime_duration']['start_date_formatted'] ?? 'Today' }}">
                     <i class="bi bi-clock-history me-1"></i>{{ $summary['lifetime_duration']['formatted_full'] ?? 'Day 1' }}
                 </small>
@@ -104,7 +104,7 @@
                         <i class="bi bi-eye"></i>
                     </button>
                 </div>
-                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-daily-target" data-raw-val="{{ number_format($summary['overall_today_required']) }}" data-stat-card="daily_target" style="line-height: 1.2;" title="Click to show/hide">••••</strong>
+                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-daily-target" data-raw-val="{{ number_format($summary['overall_today_required']) }}" data-stat-card="daily_target" style="line-height: 1.2;" title="Click to show/hide">{{ number_format($summary['overall_today_required']) }}</strong>
                 <small class="text-muted-custom d-block text-truncate zikr-stat-maskable" id="top-stat-daily-subtext" data-raw-subtext="{{ $summary['total_active_tasbeehs'] }} Tasbeehs" data-masked-subtext="•••• Tasbeehs" data-stat-card="daily_target" style="font-size: 0.72rem;">{{ $summary['total_active_tasbeehs'] }} Tasbeehs</small>
             </div>
         </div>
@@ -120,7 +120,7 @@
                         <i class="bi bi-eye"></i>
                     </button>
                 </div>
-                <strong class="fs-3 fs-md-2 d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-today-completed" data-raw-val="{{ number_format($summary['overall_today_completed']) }}" data-stat-card="read_today" style="color: #10b981 !important; line-height: 1.2;" title="Click to show/hide">••••</strong>
+                <strong class="fs-3 fs-md-2 d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-today-completed" data-raw-val="{{ number_format($summary['overall_today_completed']) }}" data-stat-card="read_today" style="color: #10b981 !important; line-height: 1.2;" title="Click to show/hide">{{ number_format($summary['overall_today_completed']) }}</strong>
                 <small class="text-muted-custom d-block text-truncate zikr-stat-maskable" id="top-stat-today-percentage" data-raw-subtext="{{ $summary['overall_today_percentage'] }}% of daily target" data-masked-subtext="•••% of daily target" data-stat-card="read_today" style="font-size: 0.72rem;">{{ $summary['overall_today_percentage'] }}% of daily target</small>
             </div>
         </div>
@@ -134,7 +134,7 @@
                         <i class="bi bi-eye"></i>
                     </button>
                 </div>
-                <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-total-required" data-raw-val="{{ number_format($summary['overall_total_required']) }}" data-stat-card="total_required" style="line-height: 1.2;" title="Click to show/hide">••••</strong>
+                <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-total-required" data-raw-val="{{ number_format($summary['overall_total_required']) }}" data-stat-card="total_required" style="line-height: 1.2;" title="Click to show/hide">{{ number_format($summary['overall_total_required']) }}</strong>
                 <small class="text-muted-custom d-block text-truncate zikr-stat-maskable" id="top-stat-required-subtext" data-raw-subtext="Active cycle till today" data-masked-subtext="Active cycle till today" data-stat-card="total_required" style="font-size: 0.72rem;">Active cycle till today</small>
             </div>
         </div>
@@ -148,7 +148,7 @@
                         <i class="bi bi-eye"></i>
                     </button>
                 </div>
-                <strong class="fs-3 fs-md-2 text-success d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-total-completed" data-raw-val="{{ number_format($summary['overall_total_completed']) }}" data-stat-card="total_completed" style="line-height: 1.2;" title="Click to show/hide">••••</strong>
+                <strong class="fs-3 fs-md-2 text-success d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-total-completed" data-raw-val="{{ number_format($summary['overall_total_completed']) }}" data-stat-card="total_completed" style="line-height: 1.2;" title="Click to show/hide">{{ number_format($summary['overall_total_completed']) }}</strong>
                 <small class="text-success d-block fw-semibold text-truncate zikr-stat-maskable" id="top-stat-overall-percentage" data-raw-subtext="{{ $summary['overall_percentage'] }}% Completed" data-masked-subtext="•••% Completed" data-stat-card="total_completed" style="font-size: 0.72rem;">{{ $summary['overall_percentage'] }}% Completed</small>
             </div>
         </div>
@@ -172,7 +172,7 @@
                     $subText = $isExtra ? 'Ahead of schedule' : ($isBehind ? 'Behind schedule' : 'On track');
                 @endphp
                 <strong class="fs-3 fs-md-2 {{ $colorClass }} d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-backlog-value" data-raw-val="{{ $valText }}" data-stat-card="backlog" style="line-height: 1.2;" title="Click to show/hide">
-                    ••••
+                    {{ $valText }}
                 </strong>
                 <small class="{{ $colorClass }} d-block fw-semibold text-truncate zikr-stat-maskable" id="top-stat-backlog-subtext" data-raw-subtext="{{ $subText }}" data-masked-subtext="{{ $subText }}" data-stat-card="backlog" style="font-size: 0.72rem;">
                     {{ $subText }}
@@ -424,6 +424,11 @@
             }
         }
 
+        function isCardVisible(map, cardKey) {
+            // Default to visible (true) unless explicitly set to false
+            return map[cardKey] !== false;
+        }
+
         function saveVisibilityMap(map) {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
@@ -432,7 +437,7 @@
 
         window.toggleZikrStatVisibility = function (cardKey) {
             const map = getVisibilityMap();
-            const current = map[cardKey] === true;
+            const current = isCardVisible(map, cardKey);
             map[cardKey] = !current;
             saveVisibilityMap(map);
             window.renderZikrStatCards();
@@ -440,7 +445,7 @@
 
         window.toggleAllZikrStatsVisibility = function () {
             const map = getVisibilityMap();
-            const anyHidden = ALL_CARDS.some(k => map[k] !== true);
+            const anyHidden = ALL_CARDS.some(k => !isCardVisible(map, k));
             ALL_CARDS.forEach(k => {
                 map[k] = anyHidden;
             });
@@ -452,7 +457,7 @@
             const map = getVisibilityMap();
 
             ALL_CARDS.forEach(key => {
-                const isVisible = map[key] === true;
+                const isVisible = isCardVisible(map, key);
 
                 // 1. Update Eye Icon & Tooltip
                 const eyeBtn = document.querySelector(`.zikr-stat-eye-btn[data-stat-target="${key}"]`);

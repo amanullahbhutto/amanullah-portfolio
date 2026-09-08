@@ -5,16 +5,23 @@
 class PwaDB {
     constructor() {
         this.db = null;
-        this.userId = null;
+        this.userId = document.querySelector('meta[name="auth-user-id"]')?.getAttribute('content') || 'guest';
         this.dbName = 'pwa_offline_db';
         this.version = 1;
+        this.initPromise = null;
     }
 
-    async init(userId = 'guest') {
-        this.userId = userId;
+    async init(userId = null) {
+        if (userId) this.userId = userId;
+        if (!this.userId) {
+            this.userId = document.querySelector('meta[name="auth-user-id"]')?.getAttribute('content') || 'guest';
+        }
+        if (this.db) return this.db;
+        if (this.initPromise) return this.initPromise;
+
         const currentDbName = `${this.dbName}_${this.userId}`;
 
-        return new Promise((resolve, reject) => {
+        this.initPromise = new Promise((resolve, reject) => {
             const request = indexedDB.open(currentDbName, this.version);
 
             request.onupgradeneeded = (event) => {
@@ -56,6 +63,8 @@ class PwaDB {
                 reject(event.target.error);
             };
         });
+
+        return this.initPromise;
     }
 
     // Helper: Run transaction
@@ -67,7 +76,8 @@ class PwaDB {
     // LocalStorage Mirror Helpers for 100% Durability
     _backupToLocalStorage(record) {
         try {
-            const key = `pwa_outbox_backup_${this.userId}`;
+            const uid = this.userId || document.querySelector('meta[name="auth-user-id"]')?.getAttribute('content') || 'guest';
+            const key = `pwa_outbox_backup_${uid}`;
             const existing = JSON.parse(localStorage.getItem(key) || '[]');
             const index = existing.findIndex(i => i.uuid === record.uuid);
             if (index >= 0) {
@@ -83,7 +93,8 @@ class PwaDB {
 
     _removeFromLocalStorage(uuid) {
         try {
-            const key = `pwa_outbox_backup_${this.userId}`;
+            const uid = this.userId || document.querySelector('meta[name="auth-user-id"]')?.getAttribute('content') || 'guest';
+            const key = `pwa_outbox_backup_${uid}`;
             const existing = JSON.parse(localStorage.getItem(key) || '[]');
             const filtered = existing.filter(i => i.uuid !== uuid);
             localStorage.setItem(key, JSON.stringify(filtered));
@@ -94,8 +105,22 @@ class PwaDB {
 
     _getLocalStorageBackup() {
         try {
-            const key = `pwa_outbox_backup_${this.userId}`;
-            return JSON.parse(localStorage.getItem(key) || '[]');
+            const uid = this.userId || document.querySelector('meta[name="auth-user-id"]')?.getAttribute('content') || 'guest';
+            const key = `pwa_outbox_backup_${uid}`;
+            const items = JSON.parse(localStorage.getItem(key) || '[]');
+            if (Array.isArray(items) && items.length > 0) return items;
+
+            // Fallback scan all pwa_outbox_backup_* keys in localStorage
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('pwa_outbox_backup_')) {
+                    try {
+                        const parsed = JSON.parse(localStorage.getItem(k) || '[]');
+                        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                    } catch (e) {}
+                }
+            }
+            return [];
         } catch (e) {
             return [];
         }
@@ -106,7 +131,7 @@ class PwaDB {
         const record = {
             uuid: item.uuid || crypto.randomUUID(),
             idempotency_key: item.idempotency_key || crypto.randomUUID(),
-            user_id: this.userId,
+            user_id: this.userId || document.querySelector('meta[name="auth-user-id"]')?.getAttribute('content') || 'guest',
             entity: item.entity,
             action: item.action || 'create', // create, update, delete
             temp_id: item.temp_id || null,
@@ -119,27 +144,25 @@ class PwaDB {
 
         this._backupToLocalStorage(record);
 
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             try {
+                if (!this.db) await this.init();
                 const store = this._tx('outbox', 'readwrite');
                 const req = store.put(record);
                 req.onsuccess = () => resolve(record);
-                req.onerror = () => {
-                    console.warn('IndexedDB outbox write error, saved in localStorage backup:', req.error);
-                    resolve(record);
-                };
+                req.onerror = () => resolve(record);
             } catch (e) {
-                console.warn('IndexedDB unavailable, preserved in localStorage backup:', e);
                 resolve(record);
             }
         });
     }
 
     async getPendingOutbox() {
-        return new Promise((resolve) => {
-            const backupItems = this._getLocalStorageBackup().filter(item => item.status === 'pending' || item.status === 'failed');
+        const backupItems = this._getLocalStorageBackup().filter(item => item.status === 'pending' || item.status === 'failed');
 
+        return new Promise(async (resolve) => {
             try {
+                if (!this.db) await this.init();
                 const store = this._tx('outbox', 'readonly');
                 const req = store.getAll();
                 req.onsuccess = () => {
