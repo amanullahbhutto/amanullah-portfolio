@@ -304,12 +304,12 @@
     @include('admin.pwa.partials.ios-modal')
 
     <script src="{{ asset('vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('assets/js/app.js') }}?v={{ file_exists(public_path('assets/js/app.js')) ? filemtime(public_path('assets/js/app.js')) : time() }}"></script>
     
     {{-- Progressive Web App (PWA) Core Scripts --}}
     <script src="{{ asset('assets/js/pwa/pwa-db.js') }}?v={{ file_exists(public_path('assets/js/pwa/pwa-db.js')) ? filemtime(public_path('assets/js/pwa/pwa-db.js')) : time() }}"></script>
     <script src="{{ asset('assets/js/pwa/pwa-sync.js') }}?v={{ file_exists(public_path('assets/js/pwa/pwa-sync.js')) ? filemtime(public_path('assets/js/pwa/pwa-sync.js')) : time() }}"></script>
     <script src="{{ asset('assets/js/pwa/pwa-installer.js') }}?v={{ file_exists(public_path('assets/js/pwa/pwa-installer.js')) ? filemtime(public_path('assets/js/pwa/pwa-installer.js')) : time() }}"></script>
+    <script src="{{ asset('assets/js/app.js') }}?v={{ file_exists(public_path('assets/js/app.js')) ? filemtime(public_path('assets/js/app.js')) : time() }}"></script>
     @stack('scripts')
 </body>
 </html>

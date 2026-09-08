@@ -555,12 +555,21 @@
                 const pwaCacheName = names.find(n => n.startsWith('portfolio-pwa-v'));
                 if (!pwaCacheName) return;
                 caches.open(pwaCacheName).then(function (cache) {
+                    cache.add(window.location.href).catch(() => {});
+                    cache.add(window.location.pathname).catch(() => {});
+                    cache.add('/admin/zikr').catch(() => {});
+                    cache.add('/admin/tasbeehs').catch(() => {});
+
                     document.querySelectorAll('a[href*="/admin/zikr/tasbeeh/"]').forEach(function (link) {
                         const href = link.getAttribute('href');
                         if (href) {
                             fetch(href, { credentials: 'same-origin' }).then(function (res) {
                                 if (res && res.ok) {
-                                    cache.put(href, res);
+                                    cache.put(href, res.clone()).catch(() => {});
+                                    try {
+                                        const parsedUrl = new URL(href, window.location.origin);
+                                        cache.put(parsedUrl.pathname, res).catch(() => {});
+                                    } catch (e) {}
                                 }
                             }).catch(function () {});
                         }

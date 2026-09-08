@@ -64,7 +64,7 @@
     <div id="tasbeehs-grid-container" class="admin-list-results">
         <div class="row g-3 g-md-4">
             @forelse($tasbeehs as $t)
-                <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $t->id }}">
+                <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $t->id }}" data-daily-target="{{ $t->daily_target }}" data-active-days="{{ $t->stats['active_days'] ?? 1 }}" data-today-completed="{{ $t->stats['today_completed'] ?? 0 }}">
                     <div class="zikr-item-card w-100 d-flex flex-column justify-content-between">
                         <!-- Right-Aligned Text Area with Custom Center Divider -->
                         <div class="text-container">
@@ -345,3 +345,37 @@
 @include('admin.zikr.partials.settings-modal')
 @include('admin.zikr.partials.bulk-actions-modals')
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if ('caches' in window && navigator.onLine) {
+            caches.keys().then(function (names) {
+                const pwaCacheName = names.find(n => n.startsWith('portfolio-pwa-v'));
+                if (!pwaCacheName) return;
+                caches.open(pwaCacheName).then(function (cache) {
+                    cache.add(window.location.href).catch(() => {});
+                    cache.add(window.location.pathname).catch(() => {});
+                    cache.add('/admin/zikr').catch(() => {});
+                    cache.add('/admin/tasbeehs').catch(() => {});
+
+                    document.querySelectorAll('a[href*="/admin/zikr/tasbeeh/"]').forEach(function (link) {
+                        const href = link.getAttribute('href');
+                        if (href) {
+                            fetch(href, { credentials: 'same-origin' }).then(function (res) {
+                                if (res && res.ok) {
+                                    cache.put(href, res.clone()).catch(() => {});
+                                    try {
+                                        const parsedUrl = new URL(href, window.location.origin);
+                                        cache.put(parsedUrl.pathname, res).catch(() => {});
+                                    } catch (e) {}
+                                }
+                            }).catch(function () {});
+                        }
+                    });
+                });
+            }).catch(function () {});
+        }
+    });
+</script>
+@endpush

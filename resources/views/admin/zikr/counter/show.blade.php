@@ -401,11 +401,23 @@
                 });
         }
 
-        // Tap Anywhere Handler for the Entire Screen
+        // Ultra-responsive Tap Anywhere Handler for Mobile & Desktop
+        let lastTapTimestamp = 0;
         function handleScreenTap(e) {
-            // Ignore clicks on buttons/links/inputs/modals/controls
-            if (e.target.closest('button, a, input, select, textarea, .modal, .modal-backdrop, [data-bs-toggle], .btn-menu-dots, .btn-close, .dropdown-menu, label')) {
+            // Ignore clicks on buttons/links/inputs/modals/controls/forms
+            if (e.target.closest('button, a, input, select, textarea, .modal, .modal-backdrop, [data-bs-toggle], .btn-menu-dots, .btn-close, .dropdown-menu, label, form, .preset-grid')) {
                 return;
+            }
+
+            const now = Date.now();
+            if (now - lastTapTimestamp < 50) {
+                return;
+            }
+            lastTapTimestamp = now;
+
+            // Instant physical haptic feedback on mobile devices
+            if (window.navigator && typeof window.navigator.vibrate === 'function') {
+                try { window.navigator.vibrate(15); } catch (err) {}
             }
 
             totalCompleted += 1;
@@ -525,18 +537,23 @@
         updateDisplay();
 
         // Reconcile pending offline counts stored for this tasbeeh
-        if (window.PwaDB && typeof window.PwaDB.getPendingOutbox === 'function') {
-            window.PwaDB.getPendingOutbox().then(items => {
-                const pendingForThis = (items || [])
-                    .filter(i => (i.entity === 'tasbeeh_count' || i.entity === 'zikr_count') && String(i.payload?.tasbeeh_id) === '{{ $tasbeeh->id }}')
-                    .reduce((sum, i) => sum + (parseInt(i.payload?.count, 10) || 0), 0);
-                if (pendingForThis > 0) {
-                    totalCompleted += pendingForThis;
-                    todayCompleted += pendingForThis;
-                    updateDisplay();
-                }
-            }).catch(() => {});
-        }
+        const reconcilePending = () => {
+            if (window.PwaDB && typeof window.PwaDB.getPendingOutbox === 'function') {
+                window.PwaDB.getPendingOutbox().then(items => {
+                    const pendingForThis = (items || [])
+                        .filter(i => (i.entity === 'tasbeeh_count' || i.entity === 'zikr_count') && String(i.payload?.tasbeeh_id) === '{{ $tasbeeh->id }}')
+                        .reduce((sum, i) => sum + (parseInt(i.payload?.count, 10) || 0), 0);
+                    if (pendingForThis > 0) {
+                        totalCompleted += pendingForThis;
+                        todayCompleted += pendingForThis;
+                        updateDisplay();
+                    }
+                }).catch(() => {});
+            }
+        };
+
+        reconcilePending();
+        window.addEventListener('pwa:sync-completed', reconcilePending);
 
         // Cache this counter page dynamically into Service Worker Cache
         if ('caches' in window) {
@@ -546,6 +563,8 @@
                     caches.open(pwaCacheName).then(cache => {
                         cache.add(window.location.href).catch(() => {});
                         cache.add(window.location.pathname).catch(() => {});
+                        cache.add('/admin/zikr').catch(() => {});
+                        cache.add('/admin/tasbeehs').catch(() => {});
                     });
                 }
             }).catch(() => {});

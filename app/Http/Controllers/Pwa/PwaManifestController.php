@@ -201,19 +201,31 @@ self.addEventListener('fetch', (event) => {
                         try {
                             const clone = networkResponse.clone();
                             caches.open(CACHE_NAME).then((cache) => {
-                                cache.put(request, clone).catch(() => {});
+                                cache.put(request, clone.clone()).catch(() => {});
+                                if (url && url.pathname) {
+                                    cache.put(url.pathname, clone.clone()).catch(() => {});
+                                }
                             }).catch(() => {});
                         } catch (e) {}
                     }
                     return networkResponse;
                 })
                 .catch(async () => {
+                    // Try exact request match first
                     let cachedResponse = await caches.match(request);
+                    // Try matching request ignoring query string (e.g. ?user_id=1, ?source=pwa)
                     if (!cachedResponse) {
+                        cachedResponse = await caches.match(request, { ignoreSearch: true });
+                    }
+                    // Try matching clean pathname (e.g. /admin/zikr/tasbeeh/8)
+                    if (!cachedResponse && url && url.pathname) {
                         cachedResponse = await caches.match(url.pathname);
                     }
+                    if (!cachedResponse && url && url.pathname) {
+                        cachedResponse = await caches.match(url.pathname, { ignoreSearch: true });
+                    }
                     if (!cachedResponse) {
-                        cachedResponse = await caches.match(request.url);
+                        cachedResponse = await caches.match(request.url, { ignoreSearch: true });
                     }
                     if (cachedResponse) {
                         return cachedResponse;
