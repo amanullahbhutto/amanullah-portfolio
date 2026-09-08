@@ -48,7 +48,7 @@ class PwaSettingsController extends Controller
             'maintenance_message' => 'nullable|string|max:1000',
             'offline_mode_enabled' => 'nullable|boolean',
             'auto_sync_enabled' => 'nullable|boolean',
-            'max_offline_days' => 'required|integer|min:1|max:365',
+            'max_offline_days' => 'required|integer|min:1|max:3650',
             'app_version' => 'required|string|max:32',
             'icon_192_file' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
             'icon_512_file' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:4096',

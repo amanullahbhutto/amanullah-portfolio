@@ -869,6 +869,7 @@ details.sidebar-group[open] > summary { color: var(--accent); background: var(--
 .contact-success-popup .flash-toast-close { width: 34px; height: 34px; border-radius: 11px; }
 .contact-success-popup .flash-toast-close:hover { color: #32bb7c; background: rgba(50,187,124,.12); }
 .flash-toast-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; transform-origin: left; animation: toast-progress var(--flash-duration) linear both; }
+.flash-toast:hover .flash-toast-progress { animation-play-state: paused; }
 .flash-toast.success .flash-toast-progress { background: #32bb7c; }
 .flash-toast.danger .flash-toast-progress { background: #ef5c66; }
 @keyframes toast-in {

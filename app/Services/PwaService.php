@@ -166,9 +166,10 @@ class PwaService
                         case 'tasbeeh_count':
                             $tasbeehId = $payload['tasbeeh_id'] ?? null;
                             $count = (int) ($payload['count'] ?? 1);
+                            $recordDate = $payload['date'] ?? (!empty($op['created_at']) ? substr($op['created_at'], 0, 10) : null);
                             $tasbeeh = Tasbeeh::find($tasbeehId);
                             if ($tasbeeh) {
-                                $this->zikrService->addCount($user, $tasbeeh, $count);
+                                $this->zikrService->addCount($user, $tasbeeh, $count, 'offline_sync', $recordDate);
                                 $serverId = $tasbeeh->id;
                             } else {
                                 $status = 'failed';

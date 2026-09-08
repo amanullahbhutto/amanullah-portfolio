@@ -384,16 +384,16 @@ class ZikrService
      * Atomically adds or adjusts count to a user's single active Tasbeeh progress record.
      * Also seamlessly updates the persistent lifetime/all-time counter and 24-hour daily log.
      */
-    public function addCount(User $user, Tasbeeh $tasbeeh, int $count, string $source = 'live'): array
+    public function addCount(User $user, Tasbeeh $tasbeeh, int $count, string $source = 'live', ?string $date = null): array
     {
         if ($count === 0) {
             throw new \InvalidArgumentException('Zikr count cannot be zero.');
         }
 
-        $progress = DB::transaction(function () use ($user, $tasbeeh, $count) {
+        $progress = DB::transaction(function () use ($user, $tasbeeh, $count, $date) {
             $record = $this->getOrCreateProgress($user, $tasbeeh);
             $lifetime = $this->getOrCreateLifetimeRecord($user);
-            $today = $this->now()->format('Y-m-d');
+            $today = $date ?: $this->now()->format('Y-m-d');
 
             if ($count > 0) {
                 // Atomic database increment for active cycle, lifetime and 24-hour daily log

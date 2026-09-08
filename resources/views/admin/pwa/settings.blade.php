@@ -202,8 +202,27 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label text-white small fw-bold">Max Offline Duration (Days)</label>
-                    <input type="number" name="max_offline_days" class="form-control" value="{{ old('max_offline_days', $settings->max_offline_days) }}" min="1" max="365" required style="background: #0c1626; border-color: #1c2c44; color: #fff;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label text-white small fw-bold mb-0">Max Offline Duration (Days)</label>
+                        <span id="offlineDurationBadge" class="badge rounded-pill px-2.5 py-1" style="background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.35); color: #38bdf8; font-size: 0.76rem;">
+                            <i class="bi bi-clock-history me-1"></i><span id="offlineDurationMonthsText">12 Months (365 Days)</span>
+                        </span>
+                    </div>
+                    <input type="number" id="maxOfflineDaysInput" name="max_offline_days" class="form-control" value="{{ old('max_offline_days', $settings->max_offline_days) }}" min="1" max="3650" required style="background: #0c1626; border-color: #1c2c44; color: #fff;">
+                    
+                    {{-- Quick Preset Buttons --}}
+                    <div class="d-flex flex-wrap gap-1.5 mt-2.5 align-items-center">
+                        <span class="text-muted-custom small me-1" style="font-size: 0.76rem;">Quick Presets:</span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill preset-days-btn" data-days="30" style="font-size: 0.72rem; border-color: #1f3352; color: #94a3b8;">30 Days (1 Mo)</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill preset-days-btn" data-days="180" style="font-size: 0.72rem; border-color: #1f3352; color: #94a3b8;">180 Days (6 Mo)</button>
+                        <button type="button" class="btn btn-sm btn-outline-info py-0 px-2 rounded-pill preset-days-btn" data-days="365" style="font-size: 0.72rem; border-color: #0284c7; color: #38bdf8;">365 Days (12 Mo)</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill preset-days-btn" data-days="730" style="font-size: 0.72rem; border-color: #1f3352; color: #94a3b8;">730 Days (24 Mo)</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill preset-days-btn" data-days="900" style="font-size: 0.72rem; border-color: #1f3352; color: #94a3b8;">900 Days (30 Mo)</button>
+                        <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill preset-days-btn" data-days="3650" style="font-size: 0.72rem; border-color: #059669; color: #34d399;">10 Years (Max)</button>
+                    </div>
+                    <small class="text-muted-custom mt-2 d-block" style="font-size: 0.78rem; line-height: 1.45;">
+                        <i class="bi bi-info-circle text-info me-1"></i>Aap jitne din yahan set karenge, utne din tak offline data (Tasbeeh aur Namaz) save rahega aur expire nahi hoga.
+                    </small>
                 </div>
             </div>
         </div>
@@ -333,6 +352,62 @@ document.addEventListener('DOMContentLoaded', function () {
             if (/^#[0-9A-Fa-f]{6}$/.test(bgInput.value)) bgPicker.value = bgInput.value;
         });
     }
+
+    // Max Offline Duration calculation & presets
+    const maxOfflineDaysInput = document.getElementById('maxOfflineDaysInput');
+    const offlineDurationMonthsText = document.getElementById('offlineDurationMonthsText');
+    const presetBtns = document.querySelectorAll('.preset-days-btn');
+
+    function updateDurationBadge(days) {
+        const d = parseInt(days, 10);
+        if (isNaN(d) || d <= 0) {
+            if (offlineDurationMonthsText) offlineDurationMonthsText.textContent = 'Invalid Duration';
+            return;
+        }
+
+        let label = '';
+        if (d >= 365) {
+            const years = (d / 365).toFixed(1).replace('.0', '');
+            const months = Math.round(d / 30.416);
+            label = `${months} Months (${years} ${years === '1' ? 'Year' : 'Years'} / ${d} Days)`;
+        } else if (d >= 30) {
+            const months = (d / 30.416).toFixed(1).replace('.0', '');
+            label = `${months} ${months === '1' ? 'Month' : 'Months'} (${d} Days)`;
+        } else {
+            label = `${d} Days`;
+        }
+
+        if (offlineDurationMonthsText) {
+            offlineDurationMonthsText.textContent = label;
+        }
+
+        // Highlight active preset button if matched
+        presetBtns.forEach(btn => {
+            const btnDays = parseInt(btn.dataset.days, 10);
+            if (btnDays === d) {
+                btn.className = 'btn btn-sm btn-info py-0 px-2 rounded-pill preset-days-btn';
+                btn.style.color = '#fff';
+            } else {
+                btn.className = 'btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill preset-days-btn';
+                btn.style.color = '#94a3b8';
+            }
+        });
+    }
+
+    if (maxOfflineDaysInput) {
+        maxOfflineDaysInput.addEventListener('input', () => updateDurationBadge(maxOfflineDaysInput.value));
+        updateDurationBadge(maxOfflineDaysInput.value);
+    }
+
+    presetBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const days = btn.dataset.days;
+            if (maxOfflineDaysInput) {
+                maxOfflineDaysInput.value = days;
+                updateDurationBadge(days);
+            }
+        });
+    });
 
     // Toggle Active Status AJAX
     const toggleBtn = document.getElementById('btnToggleAppActive');

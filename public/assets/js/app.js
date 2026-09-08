@@ -116,13 +116,41 @@
         const duration = Number(toast.dataset.flashDuration || 3000);
         toast.style.setProperty('--flash-duration', `${duration}ms`);
 
+        let timer = null;
+
         const hideToast = () => {
             if (toast.classList.contains('is-hiding')) return;
             toast.classList.add('is-hiding');
             window.setTimeout(() => toast.remove(), 260);
         };
 
-        window.setTimeout(hideToast, duration);
+        const startTimer = (ms) => {
+            clearTimeout(timer);
+            timer = window.setTimeout(hideToast, ms || duration);
+        };
+
+        startTimer(duration);
+
+        toast.addEventListener('mouseenter', () => {
+            clearTimeout(timer);
+            const progress = toast.querySelector('.flash-toast-progress');
+            if (progress) {
+                progress.style.animationPlayState = 'paused';
+            }
+        });
+
+        toast.addEventListener('mouseleave', () => {
+            const progress = toast.querySelector('.flash-toast-progress');
+            if (progress) {
+                // Restart progress bar animation smoothly for 3 seconds
+                progress.style.animation = 'none';
+                void progress.offsetWidth; // trigger reflow
+                progress.style.animation = `toast-progress ${duration}ms linear both`;
+                progress.style.animationPlayState = 'running';
+            }
+            startTimer(duration);
+        });
+
         toast.querySelector('[data-flash-close]')?.addEventListener('click', hideToast);
     };
 

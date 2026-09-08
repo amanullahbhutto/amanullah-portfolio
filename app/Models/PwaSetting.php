@@ -79,7 +79,7 @@ class PwaSetting extends Model
             'maintenance_message' => 'Application par maintenance jari hai. Barah-e-karam thori der baad check karein.',
             'offline_mode_enabled' => true,
             'auto_sync_enabled' => true,
-            'max_offline_days' => 7,
+            'max_offline_days' => 365,
             'app_version' => '1.0.0',
         ]);
     }
@@ -109,7 +109,7 @@ class PwaSetting extends Model
             'maintenance_message' => 'Application par maintenance jari hai. Barah-e-karam thori der baad check karein.',
             'offline_mode_enabled' => true,
             'auto_sync_enabled' => true,
-            'max_offline_days' => 7,
+            'max_offline_days' => 365,
             'app_version' => '1.0.0',
             'icon_192' => 'assets/pwa-icons/icon-192x192.png',
             'icon_512' => 'assets/pwa-icons/icon-512x512.png',
