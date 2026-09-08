@@ -37,9 +37,9 @@ class PwaService
     {
         $settings = $this->getSettings();
 
-        $icon192 = !empty($settings->icon_192) ? '/' . ltrim($settings->icon_192, '/') : '/assets/pwa-icons/icon-192x192.png';
-        $icon512 = !empty($settings->icon_512) ? '/' . ltrim($settings->icon_512, '/') : '/assets/pwa-icons/icon-512x512.png';
-        $iconMaskable = !empty($settings->icon_maskable) ? '/' . ltrim($settings->icon_maskable, '/') : $icon512;
+        $icon192 = !empty($settings->icon_192) ? asset($settings->icon_192) : asset('assets/pwa-icons/icon-192x192.png');
+        $icon512 = !empty($settings->icon_512) ? asset($settings->icon_512) : asset('assets/pwa-icons/icon-512x512.png');
+        $iconMaskable = !empty($settings->icon_maskable) ? asset($settings->icon_maskable) : $icon512;
 
         $icons = [
             [

@@ -3,7 +3,7 @@
 @section('page_title', 'Live Zikr Counter')
 
 @section('content')
-<div class="live-counter-page-wrapper" id="liveCounterPage" style="cursor: pointer; min-height: 80vh; width: 100%;">
+<div class="live-counter-page-wrapper" id="liveCounterPage" style="cursor: pointer; min-height: calc(100vh - 120px); width: 100%; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation;">
     {{-- Main Tasbeeh Card with Tap Anywhere Detection --}}
     <div
         class="tasbeeh-card"
@@ -252,31 +252,29 @@
             }
         }
 
-        const initialCompleted = totalCompleted;
         let todayCompleted = parseInt(container.dataset.todayCompleted || '0', 10) || 0;
         const dailyTarget = parseInt(container.dataset.dailyTarget || '100', 10) || 100;
         const liveTodayValEl = document.getElementById('liveTodayVal');
         const liveTodayBadgeEl = document.getElementById('liveTodayBadge');
 
         function updateTodayDisplay() {
-            const delta = totalCompleted - initialCompleted;
-            const currentToday = Math.max(todayCompleted + delta, 0);
+            if (todayCompleted < 0) todayCompleted = 0;
 
             if (liveTodayValEl) {
-                liveTodayValEl.innerText = currentToday.toLocaleString();
+                liveTodayValEl.innerText = todayCompleted.toLocaleString();
             }
 
             if (liveTodayBadgeEl) {
-                if (currentToday >= dailyTarget && dailyTarget > 0) {
+                if (todayCompleted >= dailyTarget && dailyTarget > 0) {
                     liveTodayBadgeEl.style.background = 'rgba(16, 185, 129, 0.15)';
                     liveTodayBadgeEl.style.borderColor = 'rgba(16, 185, 129, 0.4)';
                     liveTodayBadgeEl.style.color = '#34d399';
-                    liveTodayBadgeEl.innerHTML = `<i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace" id="liveTodayVal">${currentToday.toLocaleString()}</strong>`;
-                } else if (currentToday > 0) {
+                    liveTodayBadgeEl.innerHTML = `<i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace" id="liveTodayVal">${todayCompleted.toLocaleString()}</strong>`;
+                } else if (todayCompleted > 0) {
                     liveTodayBadgeEl.style.background = 'rgba(6, 182, 212, 0.15)';
                     liveTodayBadgeEl.style.borderColor = 'rgba(6, 182, 212, 0.4)';
                     liveTodayBadgeEl.style.color = '#38bdf8';
-                    liveTodayBadgeEl.innerHTML = `Today: <strong class="ms-1 font-monospace" id="liveTodayVal">${currentToday.toLocaleString()}</strong>`;
+                    liveTodayBadgeEl.innerHTML = `Today: <strong class="ms-1 font-monospace" id="liveTodayVal">${todayCompleted.toLocaleString()}</strong>`;
                 } else {
                     liveTodayBadgeEl.style.background = 'rgba(239, 68, 68, 0.12)';
                     liveTodayBadgeEl.style.borderColor = 'rgba(239, 68, 68, 0.3)';
@@ -378,10 +376,10 @@
                 })
                 .then((payload) => {
                     if (payload.stats) {
-                        // Reconcile totalCompleted with any new user taps during in-flight network request
+                        // Reconcile totalCompleted and todayCompleted with any new user taps during in-flight network request
                         totalCompleted = Number(payload.stats.total_completed) + pendingBatch;
                         if (payload.stats.today_completed !== undefined) {
-                            todayCompleted = Number(payload.stats.today_completed);
+                            todayCompleted = Number(payload.stats.today_completed) + pendingBatch;
                         }
                         updateDisplay();
                     }
@@ -411,6 +409,7 @@
             }
 
             totalCompleted += 1;
+            todayCompleted += 1;
             pendingBatch += 1;
             updateDisplay();
 
@@ -446,6 +445,7 @@
                         window.PwaSync.saveZikrCount('{{ $tasbeeh->id }}', val);
                     }
                     totalCompleted += val;
+                    todayCompleted += val;
                     updateDisplay();
                     const modalEl = document.getElementById('controlsModal');
                     if (modalEl && typeof bootstrap !== 'undefined') {
@@ -477,6 +477,9 @@
                     .then((payload) => {
                         if (payload.stats) {
                             totalCompleted = Number(payload.stats.total_completed);
+                            if (payload.stats.today_completed !== undefined) {
+                                todayCompleted = Number(payload.stats.today_completed);
+                            }
                             updateDisplay();
                         }
                         const modalEl = document.getElementById('controlsModal');
@@ -493,6 +496,7 @@
                         if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
                             window.PwaSync.saveZikrCount('{{ $tasbeeh->id }}', val);
                             totalCompleted += val;
+                            todayCompleted += val;
                             updateDisplay();
                         } else {
                             alert(err?.payload?.message || 'Could not update zikr count.');
@@ -528,6 +532,7 @@
                     .reduce((sum, i) => sum + (parseInt(i.payload?.count, 10) || 0), 0);
                 if (pendingForThis > 0) {
                     totalCompleted += pendingForThis;
+                    todayCompleted += pendingForThis;
                     updateDisplay();
                 }
             }).catch(() => {});

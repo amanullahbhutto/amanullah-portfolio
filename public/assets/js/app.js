@@ -1557,40 +1557,71 @@
         let backlogContainerEl = document.getElementById('top-stat-backlog-container');
 
         if (todayCompletedStatEl) {
-            todayCompletedStatEl.textContent = overallTodayCompleted.toLocaleString();
+            todayCompletedStatEl.dataset.rawVal = overallTodayCompleted.toLocaleString();
         }
 
         if (todayPercentStatEl) {
             let todayPercent = overallTodayRequired > 0 ? Math.min(100, Math.round((overallTodayCompleted / overallTodayRequired) * 100)) : 100;
-            todayPercentStatEl.textContent = `${todayPercent}% of daily target`;
+            todayPercentStatEl.dataset.rawSubtext = `${todayPercent}% of daily target`;
+            todayPercentStatEl.dataset.maskedSubtext = '•••% of daily target';
         }
 
         if (completedStatEl) {
-            completedStatEl.textContent = overallTotalCompleted.toLocaleString();
+            completedStatEl.dataset.rawVal = overallTotalCompleted.toLocaleString();
         }
 
         let percentage = overallTotalRequired > 0 ? Math.min(100, Math.round((overallTotalCompleted / overallTotalRequired) * 100)) : 100;
         if (percentStatEl) {
-            percentStatEl.textContent = `${percentage}% Completed`;
+            percentStatEl.dataset.rawSubtext = `${percentage}% Completed`;
+            percentStatEl.dataset.maskedSubtext = '•••% Completed';
         }
 
         if (backlogContainerEl) {
             let diff = overallTotalCompleted - overallTotalRequired;
+            let titleEl = document.getElementById('top-stat-backlog-title');
+            let valEl = document.getElementById('top-stat-backlog-value');
+            let subEl = document.getElementById('top-stat-backlog-subtext');
+
             if (diff > 0) {
-                backlogContainerEl.innerHTML = `
-                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Extra Zikr</span>
-                    <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0" style="line-height: 1.2;">+${diff.toLocaleString()}</strong>
-                    <small class="text-info d-block fw-semibold text-truncate" style="font-size: 0.72rem;">Ahead of schedule</small>
-                `;
+                if (titleEl) titleEl.textContent = 'Extra Zikr';
+                if (valEl) {
+                    valEl.className = 'fs-3 fs-md-2 text-info d-block font-monospace my-0 zikr-stat-maskable';
+                    valEl.dataset.rawVal = `+${diff.toLocaleString()}`;
+                }
+                if (subEl) {
+                    subEl.className = 'text-info d-block fw-semibold text-truncate zikr-stat-maskable';
+                    subEl.dataset.rawSubtext = 'Ahead of schedule';
+                    subEl.dataset.maskedSubtext = 'Ahead of schedule';
+                }
             } else {
                 let backlog = Math.abs(diff);
                 let colorClass = backlog > 0 ? 'text-warning' : 'text-success';
                 let label = backlog > 0 ? 'Behind schedule' : 'On track';
-                backlogContainerEl.innerHTML = `
-                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Remaining Backlog</span>
-                    <strong class="fs-3 fs-md-2 ${colorClass} d-block font-monospace my-0" style="line-height: 1.2;">${backlog.toLocaleString()}</strong>
-                    <small class="${colorClass} d-block fw-semibold text-truncate" style="font-size: 0.72rem;">${label}</small>
-                `;
+                if (titleEl) titleEl.textContent = 'Remaining Backlog';
+                if (valEl) {
+                    valEl.className = `fs-3 fs-md-2 ${colorClass} d-block font-monospace my-0 zikr-stat-maskable`;
+                    valEl.dataset.rawVal = backlog.toLocaleString();
+                }
+                if (subEl) {
+                    subEl.className = `${colorClass} d-block fw-semibold text-truncate zikr-stat-maskable`;
+                    subEl.dataset.rawSubtext = label;
+                    subEl.dataset.maskedSubtext = label;
+                }
+            }
+        }
+
+        if (typeof window.renderZikrStatCards === 'function') {
+            window.renderZikrStatCards();
+        } else {
+            if (todayCompletedStatEl) todayCompletedStatEl.textContent = overallTodayCompleted.toLocaleString();
+            if (todayPercentStatEl) {
+                let todayPercent = overallTodayRequired > 0 ? Math.min(100, Math.round((overallTodayCompleted / overallTodayRequired) * 100)) : 100;
+                todayPercentStatEl.textContent = `${todayPercent}% of daily target`;
+            }
+            if (completedStatEl) completedStatEl.textContent = overallTotalCompleted.toLocaleString();
+            if (percentStatEl) {
+                let percentage = overallTotalRequired > 0 ? Math.min(100, Math.round((overallTotalCompleted / overallTotalRequired) * 100)) : 100;
+                percentStatEl.textContent = `${percentage}% Completed`;
             }
         }
     };
@@ -1661,8 +1692,13 @@
         if (deltaAdded > 0) {
             let lifetimeEl = document.getElementById('top-stat-lifetime-total');
             if (lifetimeEl) {
-                let currentLifetime = parseInt(lifetimeEl.textContent.replace(/,/g, ''), 10) || 0;
-                lifetimeEl.textContent = (currentLifetime + deltaAdded).toLocaleString();
+                let currentLifetime = parseInt((lifetimeEl.dataset.rawVal || lifetimeEl.textContent).replace(/,/g, ''), 10) || 0;
+                lifetimeEl.dataset.rawVal = (currentLifetime + deltaAdded).toLocaleString();
+                if (typeof window.renderZikrStatCards === 'function') {
+                    window.renderZikrStatCards();
+                } else {
+                    lifetimeEl.textContent = (currentLifetime + deltaAdded).toLocaleString();
+                }
             }
         }
 

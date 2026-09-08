@@ -36,7 +36,8 @@ class PwaManifestController extends Controller
     public function serviceWorker(): Response
     {
         $settings = $this->pwaService->getSettings();
-        $cacheVersion = 'portfolio-pwa-v' . preg_replace('/[^0-9a-zA-Z\.\-]/', '', $settings->app_version ?? '1.0.0');
+        $cacheVersion = 'portfolio-pwa-v' . preg_replace('/[^0-9a-zA-Z\.\-]/', '', $settings->app_version ?? '1.0.0') . '-' . filemtime(__FILE__);
+        
         // Dynamic Tasbeeh Counter URLs
         $tasbeehUrls = [];
         try {
@@ -50,13 +51,14 @@ class PwaManifestController extends Controller
             // Silently ignore if table not ready
         }
 
-        // Precache URLs list (relative paths match current origin and scheme automatically)
+        // Precache URLs list
         $precacheUrls = array_unique(array_merge([
             '/',
             '/pwa/offline',
             '/admin',
             '/admin/namaz-attendance',
             '/admin/zikr',
+            '/admin/tasbeehs',
             '/admin/date-of-births',
             '/assets/css/app.css',
             '/assets/js/app.js',
@@ -75,6 +77,13 @@ const CACHE_NAME = '{$cacheVersion}';
 const OFFLINE_URL = '/pwa/offline';
 const PRECACHE_ASSETS = {$precacheJson};
 
+// Helper: check if request is safe to cache (http/https only)
+function isCacheable(req) {
+    if (!req) return false;
+    const urlStr = typeof req === 'string' ? req : (req.url || '');
+    return urlStr.startsWith('http://') || urlStr.startsWith('https://');
+}
+
 // Install Event: Cache Core App Shell & Static Assets with Resilient Fallback
 self.addEventListener('install', (event) => {
     self.skipWaiting();
@@ -83,15 +92,18 @@ self.addEventListener('install', (event) => {
             return Promise.allSettled(
                 PRECACHE_ASSETS.map((url) => {
                     return fetch(url, { credentials: 'same-origin' }).then((response) => {
-                        if (response && response.ok) {
-                            return cache.put(url, response);
+                        if (response && response.ok && !response.bodyUsed && isCacheable(url)) {
+                            try {
+                                const resClone = response.clone();
+                                return cache.put(url, resClone).catch(() => {});
+                            } catch (e) {}
                         }
-                    }).catch((err) => {
-                        console.warn('PWA: Precaching skipped for asset:', url);
+                    }).catch(() => {
+                        // Silently ignore precaching errors for dynamic routes
                     });
                 })
             );
-        })
+        }).catch(() => {})
     );
 });
 
@@ -102,28 +114,38 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.map((name) => {
                     if (name !== CACHE_NAME) {
-                        return caches.delete(name);
+                        return caches.delete(name).catch(() => {});
                     }
                 })
             );
-        }).then(() => self.clients.claim())
+        }).then(() => self.clients.claim()).catch(() => {})
     );
 });
 
-// Fetch Event Strategy:
-// - Static Assets & Fonts: Cache First (fallback to network)
-// - HTML & Dynamic Routes: Network First (fallback to Cache or Offline Page)
+// Fetch Event Strategy
 self.addEventListener('fetch', (event) => {
     const request = event.request;
-    const url = new URL(request.url);
+    if (!request || !request.url) return;
+
+    // Strictly ignore non-http / non-https schemes (e.g. chrome-extension://, moz-extension://)
+    if (!request.url.startsWith('http://') && !request.url.startsWith('https://')) {
+        return;
+    }
 
     // Only handle GET requests
     if (request.method !== 'GET') {
         return;
     }
 
-    // Don't intercept Laravel CSRF, Auth logout, or dynamic Sync API calls
-    if (url.pathname.includes('/logout') || url.pathname.includes('/pwa/sync/push')) {
+    let url;
+    try {
+        url = new URL(request.url);
+    } catch (e) {
+        return;
+    }
+
+    // Don't intercept dynamic Sync API calls, status, or auth endpoints
+    if (url.pathname.includes('/logout') || url.pathname.includes('/pwa/sync/push') || url.pathname.includes('/pwa/status') || url.pathname.includes('/pwa/sync/pull')) {
         return;
     }
 
@@ -139,19 +161,24 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(
             caches.match(request).then((cachedResponse) => {
                 if (cachedResponse) {
-                    // Update cache in background
+                    // Refresh in background if online
                     fetch(request).then((networkResponse) => {
-                        if (networkResponse && networkResponse.status === 200) {
-                            caches.open(CACHE_NAME).then((cache) => cache.put(request, networkResponse));
+                        if (networkResponse && networkResponse.status === 200 && !networkResponse.bodyUsed && isCacheable(request)) {
+                            try {
+                                const clone = networkResponse.clone();
+                                caches.open(CACHE_NAME).then((cache) => cache.put(request, clone).catch(() => {})).catch(() => {});
+                            } catch (e) {}
                         }
-                    }).catch(() => {/* Ignore network errors on background refresh */});
+                    }).catch(() => {});
                     return cachedResponse;
                 }
 
                 return fetch(request).then((networkResponse) => {
-                    if (networkResponse && networkResponse.status === 200) {
-                        const cloned = networkResponse.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(request, cloned));
+                    if (networkResponse && networkResponse.status === 200 && !networkResponse.bodyUsed && isCacheable(request)) {
+                        try {
+                            const clone = networkResponse.clone();
+                            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone).catch(() => {})).catch(() => {});
+                        } catch (e) {}
                     }
                     return networkResponse;
                 }).catch(() => {
@@ -170,12 +197,13 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(
             fetch(request)
                 .then((networkResponse) => {
-                    if (networkResponse && networkResponse.status === 200) {
-                        const cloned = networkResponse.clone();
-                        caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(request, cloned);
-                            cache.put(url.pathname, networkResponse.clone());
-                        });
+                    if (networkResponse && networkResponse.status === 200 && !networkResponse.bodyUsed && isCacheable(request)) {
+                        try {
+                            const clone = networkResponse.clone();
+                            caches.open(CACHE_NAME).then((cache) => {
+                                cache.put(request, clone).catch(() => {});
+                            }).catch(() => {});
+                        } catch (e) {}
                     }
                     return networkResponse;
                 })
@@ -214,7 +242,7 @@ self.addEventListener('sync', (event) => {
                 clients.forEach((client) => {
                     client.postMessage({ type: 'TRIGGER_PWA_SYNC' });
                 });
-            })
+            }).catch(() => {})
         );
     }
 });

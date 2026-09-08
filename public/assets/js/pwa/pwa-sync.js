@@ -22,6 +22,20 @@ class PwaSync {
         this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         const userId = document.querySelector('meta[name="auth-user-id"]')?.getAttribute('content') || 'guest';
 
+        // Read dynamic endpoint URLs from meta tags if available
+        const statusMeta = document.querySelector('meta[name="pwa-status-url"]');
+        if (statusMeta && statusMeta.getAttribute('content')) {
+            this.statusEndpoint = statusMeta.getAttribute('content');
+        }
+        const pushMeta = document.querySelector('meta[name="pwa-sync-push-url"]');
+        if (pushMeta && pushMeta.getAttribute('content')) {
+            this.pushEndpoint = pushMeta.getAttribute('content');
+        }
+        const pullMeta = document.querySelector('meta[name="pwa-sync-pull-url"]');
+        if (pullMeta && pullMeta.getAttribute('content')) {
+            this.pullEndpoint = pullMeta.getAttribute('content');
+        }
+
         await window.PwaDB.init(userId);
 
         // Register online/offline event listeners
@@ -157,6 +171,10 @@ class PwaSync {
             // 2. Fetch pending outbox operations
             const pending = await this.refreshPendingCount();
 
+            let syncedCount = 0;
+            let hasTasbeehSync = false;
+            let hasNamazSync = false;
+
             if (pending.length > 0) {
                 const pushPayload = {
                     operations: pending.map(item => ({
@@ -185,6 +203,15 @@ class PwaSync {
                     if (pushResult.success && pushResult.synced_operations) {
                         for (const op of pushResult.synced_operations) {
                             if (op.status === 'synced' || op.status === 'already_synced') {
+                                syncedCount++;
+                                const origItem = pending.find(p => p.uuid === op.uuid);
+                                const entityType = (origItem && origItem.entity) || '';
+                                if (entityType.includes('zikr') || entityType.includes('tasbeeh')) {
+                                    hasTasbeehSync = true;
+                                }
+                                if (entityType.includes('namaz')) {
+                                    hasNamazSync = true;
+                                }
                                 await window.PwaDB.removeOutbox(op.uuid);
                             } else {
                                 await window.PwaDB.updateOutbox(op.uuid, {
@@ -229,11 +256,23 @@ class PwaSync {
             await this.refreshPendingCount();
             this.updateBadge('synced');
 
-            if (isManual && window.App && typeof window.App.showToast === 'function') {
+            if (syncedCount > 0 && window.App && typeof window.App.showToast === 'function') {
+                let msg = 'Aap ka offline data kamyabi se database me add kar diya gaya hai!';
+                if (hasTasbeehSync && hasNamazSync) {
+                    msg = 'Aap ka offline data (Tasbeeh aur Namaz) kamyabi se database me add kar diya gaya hai!';
+                } else if (hasTasbeehSync) {
+                    msg = 'Aap ka offline Tasbeeh data kamyabi se database me add kar diya gaya hai!';
+                } else if (hasNamazSync) {
+                    msg = 'Aap ka offline Namaz data kamyabi se database me add kar diya gaya hai!';
+                }
+                window.App.showToast('success', msg);
+            } else if (isManual && window.App && typeof window.App.showToast === 'function') {
                 window.App.showToast('success', 'Data synchronized successfully with server!');
             }
 
-            window.dispatchEvent(new CustomEvent('pwa:sync-completed'));
+            window.dispatchEvent(new CustomEvent('pwa:sync-completed', {
+                detail: { syncedCount, hasTasbeehSync, hasNamazSync }
+            }));
         } catch (err) {
             console.error('PwaSync error:', err);
             await this.refreshPendingCount();

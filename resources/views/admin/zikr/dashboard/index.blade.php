@@ -43,6 +43,11 @@
             <i class="bi bi-check2-all"></i>
         </button>
 
+        {{-- Global Stats Visibility Eye Trigger --}}
+        <button class="action-btn-top" type="button" id="toggleAllStatsEyeBtn" title="Toggle Stats Visibility (Show/Hide Numbers)">
+            <i class="bi bi-eye" id="toggleAllStatsEyeIcon"></i>
+        </button>
+
         {{-- Display Settings Modal Trigger --}}
         <button class="action-btn-top" type="button" data-bs-toggle="modal" data-bs-target="#zikrSettingsModal" title="Display Settings (Font Size & Visibility)">
             <i class="bi bi-gear-fill"></i>
@@ -66,20 +71,25 @@
 @else
 
     {{-- Top Overall Statistics Cards (2 cards per row on mobile, 3 on tablet, 6 on desktop) --}}
-    <div class="row g-2 g-md-3 mb-4">
+    <div class="row g-2 g-md-3 mb-4" id="zikr-top-stat-cards">
         {{-- Lifetime All-Time Total Card --}}
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 position-relative d-flex flex-column justify-content-between" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.14) 0%, #08111e 100%); border-color: rgba(249, 115, 22, 0.4); min-height: 104px;">
-                <div class="d-flex align-items-center justify-content-between">
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 position-relative d-flex flex-column justify-content-between" data-stat-card="lifetime" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.14) 0%, #08111e 100%); border-color: rgba(249, 115, 22, 0.4); min-height: 104px;">
+                <div class="d-flex align-items-center justify-content-between w-100">
                     <span class="small fw-bold text-uppercase text-truncate" style="color: #f97316; font-size: 0.7rem;">
                         <i class="bi bi-infinity me-1"></i>Lifetime Total
                     </span>
-                    <button class="btn btn-link p-0 text-secondary" data-bs-toggle="modal" data-bs-target="#resetLifetimeModal" title="Reset Lifetime Total Counter" style="line-height: 1; font-size: 0.8rem; color: #94a3b8 !important;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
-                        <i class="bi bi-trash3"></i>
-                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-link p-0 text-secondary zikr-stat-eye-btn" data-stat-target="lifetime" title="Show/Hide Lifetime Total" style="line-height: 1; font-size: 0.82rem; color: #94a3b8 !important;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#94a3b8'">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-link p-0 text-secondary" data-bs-toggle="modal" data-bs-target="#resetLifetimeModal" title="Reset Lifetime Total Counter" style="line-height: 1; font-size: 0.8rem; color: #94a3b8 !important;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>
                 </div>
-                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0" id="top-stat-lifetime-total" style="color: #f97316 !important; line-height: 1.2;">{{ number_format($summary['lifetime_total']) }}</strong>
-                <small class="d-block text-truncate" id="top-stat-lifetime-duration" style="font-size: 0.72rem; color: #fdba74;" title="Started: {{ $summary['lifetime_duration']['start_date_formatted'] ?? 'Today' }}">
+                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-lifetime-total" data-raw-val="{{ number_format($summary['lifetime_total']) }}" data-stat-card="lifetime" style="color: #f97316 !important; line-height: 1.2;" title="Click to show/hide">••••</strong>
+                <small class="d-block text-truncate zikr-stat-maskable" id="top-stat-lifetime-duration" data-raw-subtext="<i class='bi bi-clock-history me-1'></i>{{ $summary['lifetime_duration']['formatted_full'] ?? 'Day 1' }}" data-masked-subtext="<i class='bi bi-clock-history me-1'></i>••••" data-stat-card="lifetime" style="font-size: 0.72rem; color: #fdba74;" title="Started: {{ $summary['lifetime_duration']['start_date_formatted'] ?? 'Today' }}">
                     <i class="bi bi-clock-history me-1"></i>{{ $summary['lifetime_duration']['formatted_full'] ?? 'Day 1' }}
                 </small>
             </div>
@@ -87,58 +97,86 @@
 
         {{-- Daily Target --}}
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
-                <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Daily Target</span>
-                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0" id="top-stat-daily-target" style="line-height: 1.2;">{{ number_format($summary['overall_today_required']) }}</strong>
-                <small class="text-muted-custom d-block text-truncate" style="font-size: 0.72rem;">{{ $summary['total_active_tasbeehs'] }} Tasbeehs</small>
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" data-stat-card="daily_target" style="background: #08111e; border-color: #142845; min-height: 104px;">
+                <div class="d-flex align-items-center justify-content-between w-100">
+                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Daily Target</span>
+                    <button type="button" class="btn btn-link p-0 text-secondary zikr-stat-eye-btn" data-stat-target="daily_target" title="Show/Hide Daily Target" style="line-height: 1; font-size: 0.82rem; color: #94a3b8 !important;" onmouseover="this.style.color='#38bdf8'" onmouseout="this.style.color='#94a3b8'">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-daily-target" data-raw-val="{{ number_format($summary['overall_today_required']) }}" data-stat-card="daily_target" style="line-height: 1.2;" title="Click to show/hide">••••</strong>
+                <small class="text-muted-custom d-block text-truncate zikr-stat-maskable" id="top-stat-daily-subtext" data-raw-subtext="{{ $summary['total_active_tasbeehs'] }} Tasbeehs" data-masked-subtext="•••• Tasbeehs" data-stat-card="daily_target" style="font-size: 0.72rem;">{{ $summary['total_active_tasbeehs'] }} Tasbeehs</small>
             </div>
         </div>
 
         {{-- Total Read Today --}}
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: rgba(16, 185, 129, 0.35); min-height: 104px;">
-                <span class="small fw-bold text-uppercase d-block text-truncate" style="color: #10b981; font-size: 0.7rem;">
-                    <i class="bi bi-calendar-check me-1"></i>Read Today
-                </span>
-                <strong class="fs-3 fs-md-2 d-block font-monospace my-0" id="top-stat-today-completed" style="color: #10b981 !important; line-height: 1.2;">{{ number_format($summary['overall_today_completed']) }}</strong>
-                <small class="text-muted-custom d-block text-truncate" id="top-stat-today-percentage" style="font-size: 0.72rem;">{{ $summary['overall_today_percentage'] }}% of daily target</small>
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" data-stat-card="read_today" style="background: #08111e; border-color: rgba(16, 185, 129, 0.35); min-height: 104px;">
+                <div class="d-flex align-items-center justify-content-between w-100">
+                    <span class="small fw-bold text-uppercase d-block text-truncate" style="color: #10b981; font-size: 0.7rem;">
+                        <i class="bi bi-calendar-check me-1"></i>Read Today
+                    </span>
+                    <button type="button" class="btn btn-link p-0 text-secondary zikr-stat-eye-btn" data-stat-target="read_today" title="Show/Hide Read Today" style="line-height: 1; font-size: 0.82rem; color: #94a3b8 !important;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <strong class="fs-3 fs-md-2 d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-today-completed" data-raw-val="{{ number_format($summary['overall_today_completed']) }}" data-stat-card="read_today" style="color: #10b981 !important; line-height: 1.2;" title="Click to show/hide">••••</strong>
+                <small class="text-muted-custom d-block text-truncate zikr-stat-maskable" id="top-stat-today-percentage" data-raw-subtext="{{ $summary['overall_today_percentage'] }}% of daily target" data-masked-subtext="•••% of daily target" data-stat-card="read_today" style="font-size: 0.72rem;">{{ $summary['overall_today_percentage'] }}% of daily target</small>
             </div>
         </div>
 
         {{-- Total Required --}}
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
-                <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Total Required</span>
-                <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0" id="top-stat-total-required" style="line-height: 1.2;">{{ number_format($summary['overall_total_required']) }}</strong>
-                <small class="text-muted-custom d-block text-truncate" style="font-size: 0.72rem;">Active cycle till today</small>
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" data-stat-card="total_required" style="background: #08111e; border-color: #142845; min-height: 104px;">
+                <div class="d-flex align-items-center justify-content-between w-100">
+                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Total Required</span>
+                    <button type="button" class="btn btn-link p-0 text-secondary zikr-stat-eye-btn" data-stat-target="total_required" title="Show/Hide Total Required" style="line-height: 1; font-size: 0.82rem; color: #94a3b8 !important;" onmouseover="this.style.color='#06b6d4'" onmouseout="this.style.color='#94a3b8'">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-total-required" data-raw-val="{{ number_format($summary['overall_total_required']) }}" data-stat-card="total_required" style="line-height: 1.2;" title="Click to show/hide">••••</strong>
+                <small class="text-muted-custom d-block text-truncate zikr-stat-maskable" id="top-stat-required-subtext" data-raw-subtext="Active cycle till today" data-masked-subtext="Active cycle till today" data-stat-card="total_required" style="font-size: 0.72rem;">Active cycle till today</small>
             </div>
         </div>
 
         {{-- Total Completed --}}
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" style="background: #08111e; border-color: #142845; min-height: 104px;">
-                <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Total Completed</span>
-                <strong class="fs-3 fs-md-2 text-success d-block font-monospace my-0" id="top-stat-total-completed" style="line-height: 1.2;">{{ number_format($summary['overall_total_completed']) }}</strong>
-                <small class="text-success d-block fw-semibold text-truncate" id="top-stat-overall-percentage" style="font-size: 0.72rem;">{{ $summary['overall_percentage'] }}% Completed</small>
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" data-stat-card="total_completed" style="background: #08111e; border-color: #142845; min-height: 104px;">
+                <div class="d-flex align-items-center justify-content-between w-100">
+                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Total Completed</span>
+                    <button type="button" class="btn btn-link p-0 text-secondary zikr-stat-eye-btn" data-stat-target="total_completed" title="Show/Hide Total Completed" style="line-height: 1; font-size: 0.82rem; color: #94a3b8 !important;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <strong class="fs-3 fs-md-2 text-success d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-total-completed" data-raw-val="{{ number_format($summary['overall_total_completed']) }}" data-stat-card="total_completed" style="line-height: 1.2;" title="Click to show/hide">••••</strong>
+                <small class="text-success d-block fw-semibold text-truncate zikr-stat-maskable" id="top-stat-overall-percentage" data-raw-subtext="{{ $summary['overall_percentage'] }}% Completed" data-masked-subtext="•••% Completed" data-stat-card="total_completed" style="font-size: 0.72rem;">{{ $summary['overall_percentage'] }}% Completed</small>
             </div>
         </div>
 
         {{-- Extra Zikr / Backlog --}}
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" id="top-stat-backlog-container" style="background: #08111e; border-color: #142845; min-height: 104px;">
-                @if($summary['overall_extra'] > 0)
-                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Extra Zikr</span>
-                    <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0" style="line-height: 1.2;">+{{ number_format($summary['overall_extra']) }}</strong>
-                    <small class="text-info d-block fw-semibold text-truncate" style="font-size: 0.72rem;">Ahead of schedule</small>
-                @else
-                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Remaining Backlog</span>
-                    <strong class="fs-3 fs-md-2 {{ $summary['overall_backlog'] > 0 ? 'text-warning' : 'text-success' }} d-block font-monospace my-0" style="line-height: 1.2;">
-                        {{ number_format($summary['overall_backlog']) }}
-                    </strong>
-                    <small class="{{ $summary['overall_backlog'] > 0 ? 'text-warning' : 'text-success' }} d-block fw-semibold text-truncate" style="font-size: 0.72rem;">
-                        {{ $summary['overall_backlog'] > 0 ? 'Behind schedule' : 'On track' }}
-                    </small>
-                @endif
+            <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" id="top-stat-backlog-container" data-stat-card="backlog" style="background: #08111e; border-color: #142845; min-height: 104px;">
+                <div class="d-flex align-items-center justify-content-between w-100">
+                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" id="top-stat-backlog-title" style="font-size: 0.7rem;">
+                        {{ $summary['overall_extra'] > 0 ? 'Extra Zikr' : 'Remaining Backlog' }}
+                    </span>
+                    <button type="button" class="btn btn-link p-0 text-secondary zikr-stat-eye-btn" data-stat-target="backlog" title="Show/Hide Backlog" style="line-height: 1; font-size: 0.82rem; color: #94a3b8 !important;" onmouseover="this.style.color='#f59e0b'" onmouseout="this.style.color='#94a3b8'">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                @php
+                    $isExtra = $summary['overall_extra'] > 0;
+                    $isBehind = $summary['overall_backlog'] > 0;
+                    $colorClass = $isExtra ? 'text-info' : ($isBehind ? 'text-warning' : 'text-success');
+                    $valText = $isExtra ? ('+' . number_format($summary['overall_extra'])) : number_format($summary['overall_backlog']);
+                    $subText = $isExtra ? 'Ahead of schedule' : ($isBehind ? 'Behind schedule' : 'On track');
+                @endphp
+                <strong class="fs-3 fs-md-2 {{ $colorClass }} d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-backlog-value" data-raw-val="{{ $valText }}" data-stat-card="backlog" style="line-height: 1.2;" title="Click to show/hide">
+                    ••••
+                </strong>
+                <small class="{{ $colorClass }} d-block fw-semibold text-truncate zikr-stat-maskable" id="top-stat-backlog-subtext" data-raw-subtext="{{ $subText }}" data-masked-subtext="{{ $subText }}" data-stat-card="backlog" style="font-size: 0.72rem;">
+                    {{ $subText }}
+                </small>
             </div>
         </div>
     </div>
@@ -373,6 +411,144 @@
 
 @push('scripts')
 <script>
+    (function () {
+        const STORAGE_KEY = 'zikr_stat_cards_visibility_state';
+        const ALL_CARDS = ['lifetime', 'daily_target', 'read_today', 'total_required', 'total_completed', 'backlog'];
+
+        function getVisibilityMap() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                return saved ? JSON.parse(saved) : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveVisibilityMap(map) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+            } catch (e) {}
+        }
+
+        window.toggleZikrStatVisibility = function (cardKey) {
+            const map = getVisibilityMap();
+            const current = map[cardKey] === true;
+            map[cardKey] = !current;
+            saveVisibilityMap(map);
+            window.renderZikrStatCards();
+        };
+
+        window.toggleAllZikrStatsVisibility = function () {
+            const map = getVisibilityMap();
+            const anyHidden = ALL_CARDS.some(k => map[k] !== true);
+            ALL_CARDS.forEach(k => {
+                map[k] = anyHidden;
+            });
+            saveVisibilityMap(map);
+            window.renderZikrStatCards();
+        };
+
+        window.renderZikrStatCards = function () {
+            const map = getVisibilityMap();
+
+            ALL_CARDS.forEach(key => {
+                const isVisible = map[key] === true;
+
+                // 1. Update Eye Icon & Tooltip
+                const eyeBtn = document.querySelector(`.zikr-stat-eye-btn[data-stat-target="${key}"]`);
+                if (eyeBtn) {
+                    const icon = eyeBtn.querySelector('i');
+                    if (icon) {
+                        icon.className = isVisible ? 'bi bi-eye-slash' : 'bi bi-eye';
+                    }
+                    eyeBtn.setAttribute('title', isVisible ? 'Click to hide' : 'Click to show');
+                }
+
+                // 2. Update Main Number Element
+                const valEls = document.querySelectorAll(`.zikr-stat-maskable[data-stat-card="${key}"][data-raw-val]`);
+                valEls.forEach(valEl => {
+                    const rawVal = valEl.dataset.rawVal !== undefined ? valEl.dataset.rawVal : valEl.textContent;
+                    valEl.dataset.rawVal = rawVal;
+                    if (isVisible) {
+                        valEl.textContent = rawVal;
+                        valEl.classList.remove('zikr-stat-masked-dots');
+                    } else {
+                        valEl.textContent = '••••';
+                        valEl.classList.add('zikr-stat-masked-dots');
+                    }
+                });
+
+                // 3. Update Subtext Element
+                const subEls = document.querySelectorAll(`.zikr-stat-maskable[data-stat-card="${key}"][data-raw-subtext]`);
+                subEls.forEach(subEl => {
+                    const rawSubtext = subEl.dataset.rawSubtext !== undefined ? subEl.dataset.rawSubtext : subEl.innerHTML;
+                    const maskedSubtext = subEl.dataset.maskedSubtext || rawSubtext;
+                    subEl.dataset.rawSubtext = rawSubtext;
+                    if (isVisible) {
+                        subEl.innerHTML = rawSubtext;
+                    } else {
+                        subEl.innerHTML = maskedSubtext;
+                    }
+                });
+            });
+
+            // 4. Update Top Master Eye Icon
+            const masterIcon = document.getElementById('toggleAllStatsEyeIcon');
+            const masterBtn = document.getElementById('toggleAllStatsEyeBtn');
+            if (masterIcon) {
+                const anyHidden = ALL_CARDS.some(k => map[k] !== true);
+                masterIcon.className = anyHidden ? 'bi bi-eye' : 'bi bi-eye-slash';
+                if (masterBtn) {
+                    masterBtn.setAttribute('title', anyHidden ? 'Show All Stats' : 'Hide All Stats');
+                }
+            }
+        };
+
+        function initZikrStatVisibility() {
+            // Individual Eye Buttons
+            document.querySelectorAll('.zikr-stat-eye-btn').forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const cardKey = this.dataset.statTarget;
+                    if (cardKey) {
+                        window.toggleZikrStatVisibility(cardKey);
+                    }
+                });
+            });
+
+            // Click on Masked Value or Subtext directly to toggle
+            document.querySelectorAll('.zikr-stat-maskable').forEach(el => {
+                el.addEventListener('click', function (e) {
+                    // Ignore clicks if text was selected or clicking inside links/buttons
+                    if (window.getSelection && window.getSelection().toString().length > 0) return;
+                    const cardKey = this.dataset.statCard;
+                    if (cardKey) {
+                        window.toggleZikrStatVisibility(cardKey);
+                    }
+                });
+            });
+
+            // Top Master Eye Button
+            const masterBtn = document.getElementById('toggleAllStatsEyeBtn');
+            if (masterBtn) {
+                masterBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    window.toggleAllZikrStatsVisibility();
+                });
+            }
+
+            // Initial render
+            window.renderZikrStatCards();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initZikrStatVisibility);
+        } else {
+            initZikrStatVisibility();
+        }
+    })();
+
     document.addEventListener('DOMContentLoaded', function () {
         if ('caches' in window && navigator.onLine) {
             caches.keys().then(function (names) {

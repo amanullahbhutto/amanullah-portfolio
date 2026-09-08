@@ -43,7 +43,7 @@ class PwaInstaller {
         if ('serviceWorker' in navigator) {
             try {
                 const swUrl = this.getSwUrl();
-                const registration = await navigator.serviceWorker.register(swUrl, { scope: '/' });
+                const registration = await navigator.serviceWorker.register(swUrl);
                 console.log('PWA Service Worker registered with scope:', registration.scope);
 
                 // Listen for updates

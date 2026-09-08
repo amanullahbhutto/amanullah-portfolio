@@ -571,9 +571,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 await window.PwaSync.resetLifetime();
             }
             const lifetimeEl = document.getElementById('top-stat-lifetime-total');
-            if (lifetimeEl) lifetimeEl.textContent = '0';
+            if (lifetimeEl) {
+                lifetimeEl.dataset.rawVal = '0';
+                lifetimeEl.textContent = '0';
+            }
             const lifetimeDurEl = document.getElementById('top-stat-lifetime-duration');
-            if (lifetimeDurEl) lifetimeDurEl.innerHTML = '<i class="bi bi-clock-history me-1"></i>1 Day';
+            if (lifetimeDurEl) {
+                lifetimeDurEl.dataset.rawSubtext = '<i class="bi bi-clock-history me-1"></i>1 Day';
+                lifetimeDurEl.innerHTML = '<i class="bi bi-clock-history me-1"></i>1 Day';
+            }
+            if (typeof window.renderZikrStatCards === 'function') {
+                window.renderZikrStatCards();
+            }
 
             const modalInstance = bootstrap.Modal.getOrCreateInstance(verifyModalEl);
             if (modalInstance) modalInstance.hide();
@@ -603,16 +612,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const data = await response.json();
             if (response.ok && data.success) {
-                const lifetimeEl = document.getElementById('top-stat-lifetime-total');
-                if (lifetimeEl) lifetimeEl.textContent = '0';
-
                 const durationText = data.lifetime_duration ? data.lifetime_duration.formatted_full : '1 Day';
                 const startDateStr = data.lifetime_duration ? data.lifetime_duration.start_date_formatted : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+                const lifetimeEl = document.getElementById('top-stat-lifetime-total');
+                if (lifetimeEl) {
+                    lifetimeEl.dataset.rawVal = '0';
+                    lifetimeEl.textContent = '0';
+                }
+
                 const lifetimeDurEl = document.getElementById('top-stat-lifetime-duration');
                 if (lifetimeDurEl) {
+                    lifetimeDurEl.dataset.rawSubtext = `<i class="bi bi-clock-history me-1"></i>${durationText}`;
                     lifetimeDurEl.innerHTML = `<i class="bi bi-clock-history me-1"></i>${durationText}`;
                     lifetimeDurEl.title = `Started: ${startDateStr}`;
+                }
+
+                if (typeof window.renderZikrStatCards === 'function') {
+                    window.renderZikrStatCards();
                 }
 
                 const modalInstance = bootstrap.Modal.getOrCreateInstance(verifyModalEl);
