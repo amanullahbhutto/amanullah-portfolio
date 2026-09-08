@@ -1968,10 +1968,7 @@
                     lifetimeEl.dataset.rawVal = '0';
                     lifetimeEl.textContent = '0';
                 } else {
-                    if (!lifetimeEl.dataset.baseLifetime) {
-                        lifetimeEl.dataset.baseLifetime = lifetimeEl.dataset.rawVal || lifetimeEl.textContent.replace(/,/g, '') || '0';
-                    }
-                    let baseLifetime = parseInt(lifetimeEl.dataset.baseLifetime || '0', 10) || 0;
+                    let baseLifetime = parseInt(String(lifetimeEl.dataset.baseLifetime || lifetimeEl.dataset.rawVal || lifetimeEl.textContent || '0').replace(/,/g, ''), 10) || 0;
                     let totalAddedAcrossAll = Object.values(countByTasbeeh).reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0);
                     let finalLifetime = baseLifetime + totalAddedAcrossAll;
                     lifetimeEl.dataset.rawVal = finalLifetime.toLocaleString();

@@ -88,7 +88,7 @@
                         </button>
                     </div>
                 </div>
-                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-lifetime-total" data-raw-val="{{ number_format($summary['lifetime_total']) }}" data-stat-card="lifetime" style="color: #f97316 !important; line-height: 1.2;" title="Click to show/hide">{{ number_format($summary['lifetime_total']) }}</strong>
+                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-lifetime-total" data-raw-val="{{ number_format($summary['lifetime_total']) }}" data-base-lifetime="{{ (int) $summary['lifetime_total'] }}" data-stat-card="lifetime" style="color: #f97316 !important; line-height: 1.2;" title="Click to show/hide">{{ number_format($summary['lifetime_total']) }}</strong>
                 <small class="d-block text-truncate zikr-stat-maskable" id="top-stat-lifetime-duration" data-raw-subtext="<i class='bi bi-clock-history me-1'></i>{{ $summary['lifetime_duration']['formatted_full'] ?? 'Day 1' }}" data-masked-subtext="<i class='bi bi-clock-history me-1'></i>••••" data-stat-card="lifetime" style="font-size: 0.72rem; color: #fdba74;" title="Started: {{ $summary['lifetime_duration']['start_date_formatted'] ?? 'Today' }}">
                     <i class="bi bi-clock-history me-1"></i>{{ $summary['lifetime_duration']['formatted_full'] ?? 'Day 1' }}
                 </small>
