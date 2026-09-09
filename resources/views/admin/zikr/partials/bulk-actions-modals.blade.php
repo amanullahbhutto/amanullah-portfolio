@@ -482,6 +482,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             const lifetimeEl = document.getElementById('top-stat-lifetime-total');
             if (lifetimeEl) {
+                lifetimeEl.dataset.baseLifetime = '0';
                 lifetimeEl.dataset.rawVal = '0';
                 lifetimeEl.textContent = '0';
             }
@@ -527,6 +528,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const lifetimeEl = document.getElementById('top-stat-lifetime-total');
                 if (lifetimeEl) {
+                    lifetimeEl.dataset.baseLifetime = '0';
                     lifetimeEl.dataset.rawVal = '0';
                     lifetimeEl.textContent = '0';
                 }
