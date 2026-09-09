@@ -29,6 +29,9 @@
                     <i class="bi bi-arrow-left fs-5"></i>
                 </a>
                 <span class="fw-semibold text-white text-truncate" style="font-size: 0.9rem;">{{ $tasbeeh->title }}</span>
+                <span class="badge rounded-pill d-none tasbeeh-lock-status-pill ms-1" id="tasbeehLockStatusPill" style="background: rgba(245, 158, 11, 0.18); border: 1px solid rgba(245, 158, 11, 0.5); color: #fbbf24; font-size: 0.72rem; font-weight: 600;">
+                    <i class="bi bi-lock-fill me-1"></i>Locked
+                </span>
             </div>
             <div class="d-flex align-items-center gap-2">
                 @if($stats['today_completed'] >= $stats['daily_target'] && $stats['daily_target'] > 0)
@@ -44,6 +47,10 @@
                         Today: <strong class="ms-1 font-monospace" id="liveTodayVal">0</strong>
                     </span>
                 @endif
+                {{-- Focus / Lock Mode Button --}}
+                <button class="btn-menu-dots btn-tasbeeh-lock flex-shrink-0" id="tasbeehLockToggleBtn" type="button" onclick="event.stopPropagation()" title="Lock Mode (Only Tasbeeh)">
+                    <i class="bi bi-unlock fs-5" id="tasbeehLockIcon"></i>
+                </button>
                 <button class="btn-menu-dots flex-shrink-0" type="button" onclick="event.stopPropagation()" data-bs-toggle="modal" data-bs-target="#controlsModal" title="Controls & Quick Add">
                     <i class="bi bi-three-dots-vertical fs-5"></i>
                 </button>
@@ -409,12 +416,111 @@
             } catch (_) {}
         }
 
+        // Focus / Lock Mode State (Only Tasbeeh Active)
+        let isTasbeehLocked = false;
+        const lockToggleBtn = document.getElementById('tasbeehLockToggleBtn');
+        const lockIcon = document.getElementById('tasbeehLockIcon');
+        const lockStatusPill = document.getElementById('tasbeehLockStatusPill');
+
+        function toggleTasbeehLock(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            isTasbeehLocked = !isTasbeehLocked;
+
+            if (isTasbeehLocked) {
+                document.body.classList.add('tasbeeh-locked-mode');
+                const topbar = document.querySelector('.admin-topbar');
+                if (topbar) topbar.style.setProperty('display', 'none', 'important');
+                const sidebar = document.getElementById('adminSidebar');
+                if (sidebar) sidebar.style.setProperty('display', 'none', 'important');
+                const bottomNav = document.querySelector('.pwa-bottom-nav');
+                if (bottomNav) bottomNav.style.setProperty('display', 'none', 'important');
+
+                if (lockToggleBtn) {
+                    lockToggleBtn.classList.add('is-locked');
+                    lockToggleBtn.setAttribute('title', 'Tasbeeh Locked (Click to Unlock)');
+                }
+                if (lockIcon) {
+                    lockIcon.className = 'bi bi-lock-fill fs-5 text-warning';
+                }
+                if (lockStatusPill) {
+                    lockStatusPill.classList.remove('d-none');
+                }
+                try {
+                    history.pushState({ tasbeehLocked: true }, document.title, window.location.href);
+                } catch (_) {}
+
+                if (window.App && typeof window.App.showToast === 'function') {
+                    window.App.showToast('warning', 'Tasbeeh Lock Active: Sirf Tasbeeh chalegi, baqi sab lock hai.');
+                }
+            } else {
+                document.body.classList.remove('tasbeeh-locked-mode');
+                const topbar = document.querySelector('.admin-topbar');
+                if (topbar) topbar.style.removeProperty('display');
+                const sidebar = document.getElementById('adminSidebar');
+                if (sidebar) sidebar.style.removeProperty('display');
+                const bottomNav = document.querySelector('.pwa-bottom-nav');
+                if (bottomNav) bottomNav.style.removeProperty('display');
+
+                if (lockToggleBtn) {
+                    lockToggleBtn.classList.remove('is-locked');
+                    lockToggleBtn.setAttribute('title', 'Lock Mode (Only Tasbeeh)');
+                }
+                if (lockIcon) {
+                    lockIcon.className = 'bi bi-unlock fs-5 text-white';
+                }
+                if (lockStatusPill) {
+                    lockStatusPill.classList.add('d-none');
+                }
+                if (window.App && typeof window.App.showToast === 'function') {
+                    window.App.showToast('info', 'Tasbeeh Unlocked: Tamam controls dobara active hain.');
+                }
+            }
+        }
+
+        if (lockToggleBtn) {
+            lockToggleBtn.addEventListener('click', toggleTasbeehLock);
+        }
+
+        // Prevent navigation while locked
+        const backBtn = document.getElementById('backToZikrBtn');
+        if (backBtn) {
+            backBtn.addEventListener('click', function (e) {
+                if (isTasbeehLocked) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            });
+        }
+
+        window.addEventListener('popstate', function (e) {
+            if (isTasbeehLocked) {
+                try {
+                    history.pushState({ tasbeehLocked: true }, document.title, window.location.href);
+                } catch (_) {}
+                if (window.App && typeof window.App.showToast === 'function') {
+                    window.App.showToast('warning', 'Tasbeeh lock hai. Unlock karne ke liye lock icon dabayein.');
+                }
+            }
+        });
+
         // Ultra-responsive Tap Anywhere Handler for Mobile & Desktop with Haptics & Ripples
         let lastTapTimestamp = 0;
         function handleScreenTap(e) {
-            // Ignore clicks on buttons/links/inputs/modals/controls/forms
-            if (e && e.target && e.target.closest && e.target.closest('button, a, input, select, textarea, .modal, .modal-backdrop, [data-bs-toggle], .btn-menu-dots, .btn-close, .dropdown-menu, label, form, .preset-grid')) {
+            // If clicking the lock toggle button itself, do not count tasbeeh
+            if (e && e.target && e.target.closest && e.target.closest('#tasbeehLockToggleBtn')) {
                 return;
+            }
+
+            // If not locked, ignore clicks on buttons/links/inputs/modals/controls/forms
+            if (!isTasbeehLocked) {
+                if (e && e.target && e.target.closest && e.target.closest('button, a, input, select, textarea, .modal, .modal-backdrop, [data-bs-toggle], .btn-menu-dots, .btn-close, .dropdown-menu, label, form, .preset-grid')) {
+                    return;
+                }
             }
 
             const now = Date.now();
@@ -423,13 +529,6 @@
             }
             lastTapTimestamp = now;
 
-            // Gentle haptic feedback on mobile touch devices
-            if (window.navigator && typeof window.navigator.vibrate === 'function') {
-                try {
-                    window.navigator.vibrate(15);
-                } catch (_) {}
-            }
-
             // Visual touch ripple
             if (e) createTouchRipple(e);
 
@@ -437,6 +536,16 @@
             todayCompleted += 1;
             pendingBatch += 1;
             updateDisplay(true);
+
+            // Vibrate ONLY when reaching 100 (or every 100 milestone) — do not vibrate on normal clicks
+            const isHundredMilestone = (totalCompleted > 0 && totalCompleted % 100 === 0) || (todayCompleted > 0 && todayCompleted % 100 === 0);
+            if (isHundredMilestone && window.navigator && typeof window.navigator.vibrate === 'function') {
+                try {
+                    window.navigator.vibrate([150, 80, 150]);
+                } catch (_) {
+                    try { window.navigator.vibrate(200); } catch (__) {}
+                }
+            }
 
             // Broadcast real-time tap to other tabs/pages immediately
             if (window.PwaSync && typeof window.PwaSync.broadcastZikrCountUpdate === 'function') {
@@ -451,8 +560,13 @@
         let lastTouchHandled = 0;
         document.addEventListener('pointerdown', function (e) {
             if (e.pointerType === 'touch') {
-                if (e.target && e.target.closest && e.target.closest('button, a, input, select, textarea, .modal, .modal-backdrop, [data-bs-toggle], .btn-menu-dots, .btn-close, .dropdown-menu, label, form, .preset-grid')) {
+                if (e.target && e.target.closest && e.target.closest('#tasbeehLockToggleBtn')) {
                     return;
+                }
+                if (!isTasbeehLocked) {
+                    if (e.target && e.target.closest && e.target.closest('button, a, input, select, textarea, .modal, .modal-backdrop, [data-bs-toggle], .btn-menu-dots, .btn-close, .dropdown-menu, label, form, .preset-grid')) {
+                        return;
+                    }
                 }
                 lastTouchHandled = Date.now();
                 handleScreenTap(e);
@@ -460,6 +574,9 @@
         }, { passive: true });
 
         document.addEventListener('click', function (e) {
+            if (e.target && e.target.closest && e.target.closest('#tasbeehLockToggleBtn')) {
+                return;
+            }
             if (Date.now() - lastTouchHandled < 650) {
                 return; // Prevent duplicate execution from synthesized click
             }

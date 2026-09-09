@@ -4138,3 +4138,107 @@ body.is-standalone-pwa .admin-main {
     color: #ffffff !important;
 }
 
+/* ==========================================================================
+   Tasbeeh Focus / Lock Mode (Only Tasbeeh Active)
+   ========================================================================== */
+.btn-tasbeeh-lock {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1060;
+}
+
+.btn-tasbeeh-lock:hover {
+    color: #fbbf24 !important;
+    border-color: rgba(251, 191, 36, 0.4) !important;
+}
+
+.btn-tasbeeh-lock.is-locked {
+    background: rgba(245, 158, 11, 0.25) !important;
+    border-color: rgba(245, 158, 11, 0.7) !important;
+    color: #fbbf24 !important;
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
+    animation: tasbeehLockPulse 2s infinite ease-in-out;
+}
+
+@keyframes tasbeehLockPulse {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 18px rgba(245, 158, 11, 0.7);
+        transform: scale(1.05);
+    }
+}
+
+body.tasbeeh-locked-mode {
+    overflow: hidden !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+body.tasbeeh-locked-mode .admin-topbar,
+body.tasbeeh-locked-mode header.admin-topbar,
+body.tasbeeh-locked-mode .admin-sidebar,
+body.tasbeeh-locked-mode .sidebar-overlay,
+body.tasbeeh-locked-mode .pwa-bottom-nav,
+body.tasbeeh-locked-mode #backToZikrBtn,
+body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+body.tasbeeh-locked-mode .admin-shell {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+body.tasbeeh-locked-mode .admin-main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+body.tasbeeh-locked-mode .admin-content {
+    padding: 10px !important;
+    margin: 0 !important;
+    min-height: 100vh !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body.tasbeeh-locked-mode #liveCounterPage {
+    min-height: 100vh !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+body.tasbeeh-locked-mode .tasbeeh-card {
+    border-color: rgba(245, 158, 11, 0.45) !important;
+    box-shadow: 0 0 35px rgba(245, 158, 11, 0.25) !important;
+}
+
+.tasbeeh-lock-status-pill {
+    animation: fadeInLock 0.3s ease;
+}
+
+@keyframes fadeInLock {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
