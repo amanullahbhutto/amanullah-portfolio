@@ -9,6 +9,10 @@ class PwaSync {
         this.statusEndpoint = '/pwa/status';
         this.pushEndpoint = '/pwa/sync/push';
         this.pullEndpoint = '/pwa/sync/pull';
+        this.clientId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : 'client_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        window.PWA_CLIENT_ID = this.clientId;
         this.appState = {
             isOnline: navigator.onLine,
             isAppActive: true,
@@ -100,8 +104,12 @@ class PwaSync {
             // 1. Immediately cache current page
             cache.add(window.location.href).catch(() => {});
             cache.add(window.location.pathname).catch(() => {});
+            if (window.location.search) {
+                cache.add(window.location.pathname + window.location.search).catch(() => {});
+            }
 
             // 2. Comprehensive Admin Routes to pre-cache with active user session
+            const selectedUserId = document.querySelector('meta[name="selected-user-id"]')?.getAttribute('content');
             const routesToWarm = [
                 '/',
                 '/admin',
@@ -114,8 +122,26 @@ class PwaSync {
                 '/pwa/offline'
             ];
 
-            // 3. Scan DOM for all active Tasbeeh counter URLs on page
-            document.querySelectorAll('a[href*="/admin/zikr/tasbeeh/"]').forEach(a => {
+            if (selectedUserId) {
+                routesToWarm.push(`/admin/zikr?user_id=${selectedUserId}`);
+                routesToWarm.push(`/admin/tasbeehs?user_id=${selectedUserId}`);
+            }
+
+            // Check if application is running in a subfolder
+            const basePath = window.location.pathname.includes('/admin')
+                ? window.location.pathname.substring(0, window.location.pathname.indexOf('/admin'))
+                : '';
+            if (basePath) {
+                routesToWarm.push(`${basePath}/admin/zikr`);
+                routesToWarm.push(`${basePath}/admin/tasbeehs`);
+                if (selectedUserId) {
+                    routesToWarm.push(`${basePath}/admin/zikr?user_id=${selectedUserId}`);
+                    routesToWarm.push(`${basePath}/admin/tasbeehs?user_id=${selectedUserId}`);
+                }
+            }
+
+            // 3. Scan DOM for all active Tasbeeh counter URLs and navigation links on page
+            document.querySelectorAll('a[href*="/admin/zikr"], a[href*="/admin/tasbeehs"]').forEach(a => {
                 const href = a.getAttribute('href');
                 if (href && !routesToWarm.includes(href)) {
                     routesToWarm.push(href);
@@ -166,6 +192,21 @@ class PwaSync {
                 window.App.showToast('info', 'Internet connection restored. Synchronizing data...');
             }
             await this.syncNow();
+            // Quick backup syncs in case WiFi / DNS was still settling
+            setTimeout(() => {
+                if (navigator.onLine && !this.isSyncing) {
+                    this.refreshPendingCount().then(pending => {
+                        if (pending && pending.length > 0) this.syncNow();
+                    });
+                }
+            }, 1500);
+            setTimeout(() => {
+                if (navigator.onLine && !this.isSyncing) {
+                    this.refreshPendingCount().then(pending => {
+                        if (pending && pending.length > 0) this.syncNow();
+                    });
+                }
+            }, 3500);
             this.warmOfflineCache();
         } else {
             this.updateBadge('offline');
@@ -222,22 +263,27 @@ class PwaSync {
         this.updateBadge('syncing');
 
         try {
-            // 1. Verify Application Active Status
-            const statusRes = await fetch(this.statusEndpoint, {
-                headers: { 'Accept': 'application/json' }
-            });
+            // 1. Verify Application Active Status (Non-blocking check so offline push is never killed by status lag)
+            try {
+                const statusRes = await fetch(this.statusEndpoint, {
+                    headers: { 'Accept': 'application/json' },
+                    signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined
+                });
 
-            if (statusRes.ok) {
-                const statusData = await statusRes.json();
-                this.appState.isAppActive = statusData.is_active;
-                this.appState.appVersion = statusData.app_version;
+                if (statusRes && statusRes.ok) {
+                    const statusData = await statusRes.json();
+                    this.appState.isAppActive = statusData.is_active;
+                    this.appState.appVersion = statusData.app_version;
 
-                if (!statusData.is_active) {
-                    this.updateBadge('disabled');
-                    window.dispatchEvent(new CustomEvent('pwa:app-disabled', { detail: statusData }));
-                    this.isSyncing = false;
-                    return;
+                    if (!statusData.is_active) {
+                        this.updateBadge('disabled');
+                        window.dispatchEvent(new CustomEvent('pwa:app-disabled', { detail: statusData }));
+                        this.isSyncing = false;
+                        return;
+                    }
                 }
+            } catch (statusErr) {
+                console.warn('PwaSync status check notice (proceeding with outbox push):', statusErr);
             }
 
             // 2. Fetch pending outbox operations
@@ -248,7 +294,9 @@ class PwaSync {
             let hasNamazSync = false;
 
             if (pending.length > 0) {
+                const selectedUserId = document.querySelector('meta[name="selected-user-id"]')?.getAttribute('content');
                 const pushPayload = {
+                    user_id: selectedUserId ? parseInt(selectedUserId, 10) : undefined,
                     operations: pending.map(item => ({
                         uuid: item.uuid,
                         idempotency_key: item.idempotency_key,
@@ -303,7 +351,12 @@ class PwaSync {
 
             // 3. Pull latest delta updates
             const lastSyncedAt = await window.PwaDB.getMeta('last_synced_at');
-            const pullUrl = lastSyncedAt ? `${this.pullEndpoint}?last_synced_at=${encodeURIComponent(lastSyncedAt)}` : this.pullEndpoint;
+            const selectedUserId = document.querySelector('meta[name="selected-user-id"]')?.getAttribute('content');
+            let pullUrl = this.pullEndpoint;
+            const queryParams = [];
+            if (lastSyncedAt) queryParams.push(`last_synced_at=${encodeURIComponent(lastSyncedAt)}`);
+            if (selectedUserId) queryParams.push(`user_id=${encodeURIComponent(selectedUserId)}`);
+            if (queryParams.length > 0) pullUrl += `?${queryParams.join('&')}`;
 
             const pullRes = await fetch(pullUrl, {
                 headers: { 'Accept': 'application/json' }
@@ -527,6 +580,7 @@ class PwaSync {
         try {
             const payload = {
                 type: eventType,
+                clientId: this.clientId,
                 ...data,
                 timestamp: Date.now()
             };

@@ -303,6 +303,36 @@
                                 <i class="bi bi-speedometer2"></i>
                             </a>
 
+                            {{-- View Description & Complete Details (Click icon to view all details) --}}
+                            <button
+                                class="action-icon-btn btn-desc-icon"
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#tasbeehDescModal"
+                                data-id="{{ $item['tasbeeh_id'] }}"
+                                data-title="{{ $item['title'] }}"
+                                data-arabic="{{ $item['arabic_text'] }}"
+                                data-urdu="{{ $item['urdu_meaning'] }}"
+                                data-desc="{{ $item['description'] ?? '' }}"
+                                data-ref="{{ $item['reference'] ?? '' }}"
+                                data-target="{{ $item['daily_target'] }}"
+                                data-order="{{ ($item['sort_order'] ?? 0) > 0 ? $item['sort_order'] : $loop->iteration }}"
+                                data-active="{{ ($item['is_active'] ?? true) ? '1' : '0' }}"
+                                data-today-completed="{{ $item['today_completed'] ?? 0 }}"
+                                data-total-completed="{{ $item['total_completed'] ?? 0 }}"
+                                data-total-required="{{ $item['total_required'] ?? $item['daily_target'] }}"
+                                data-percentage="{{ $item['percentage'] ?? 0 }}"
+                                data-remaining="{{ $item['remaining'] ?? 0 }}"
+                                data-extra="{{ $item['extra'] ?? 0 }}"
+                                data-active-days="{{ $item['active_days'] ?? 1 }}"
+                                data-started="{{ $item['formatted_start_date'] ?? '—' }}"
+                                data-last-zikr="{{ $item['formatted_last_zikr'] ?? '—' }}"
+                                data-counter-url="{{ route('admin.zikr.counter.show', ['tasbeeh' => $item['tasbeeh_id'], 'user_id' => $selectedUser->id]) }}"
+                                title="View Complete Details & Description"
+                            >
+                                <i class="bi bi-file-earmark-text"></i>
+                            </button>
+
                             {{-- Reset Tracking Cycle --}}
                             <button
                                 class="action-icon-btn btn-reset-icon"
@@ -405,6 +435,7 @@
     </div>
 </div>
 
+@include('admin.zikr.partials.desc-modal')
 @include('admin.zikr.partials.settings-modal')
 @include('admin.zikr.partials.bulk-actions-modals')
 @endsection

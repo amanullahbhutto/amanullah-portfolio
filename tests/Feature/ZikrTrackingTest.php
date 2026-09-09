@@ -278,9 +278,14 @@ class ZikrTrackingTest extends TestCase
             'urdu_meaning' => 'اور وہ مومنوں کے سینوں کو شفا دیتا ہے۔',
             'daily_target' => 70,
             'sort_order' => 10,
+            'description' => 'This Ayat is known for spiritual cure and healing.',
         ]);
         $storeResponse->assertOk();
-        $this->assertDatabaseHas('tasbeehs', ['title' => 'Ayat-e-Shifa', 'daily_target' => 70]);
+        $this->assertDatabaseHas('tasbeehs', [
+            'title' => 'Ayat-e-Shifa',
+            'daily_target' => 70,
+            'description' => 'This Ayat is known for spiritual cure and healing.',
+        ]);
 
         $created = Tasbeeh::where('title', 'Ayat-e-Shifa')->first();
 
@@ -290,9 +295,11 @@ class ZikrTrackingTest extends TestCase
             'arabic_text' => 'وَيَشْفِ صُدُورَ قَوْمٍ مُؤْمِنِينَ',
             'urdu_meaning' => 'شفا کی آیت',
             'daily_target' => 100,
+            'description' => 'Updated spiritual healing description.',
         ])->assertOk();
 
         $this->assertSame('Ayat-e-Shifa Updated', $created->fresh()->title);
+        $this->assertSame('Updated spiritual healing description.', $created->fresh()->description);
 
         // Toggle
         $this->patchJson(route('admin.tasbeehs.toggle', $created))->assertOk();

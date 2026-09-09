@@ -42,18 +42,20 @@ class PwaManifestController extends Controller
         // Dynamic Tasbeeh Counter URLs
         $tasbeehUrls = [];
         try {
-            $activeTasbeehIds = \App\Models\Tasbeeh::query()
-                ->where('is_active', true)
+            $tasbeehIds = \App\Models\Tasbeeh::query()
                 ->pluck('id');
-            foreach ($activeTasbeehIds as $tId) {
+            foreach ($tasbeehIds as $tId) {
                 $tasbeehUrls[] = "/admin/zikr/tasbeeh/{$tId}";
+                try {
+                    $tasbeehUrls[] = url("/admin/zikr/tasbeeh/{$tId}");
+                } catch (\Throwable $e) {}
             }
         } catch (\Throwable $e) {
             // Silently ignore if table not ready
         }
 
         // Precache URLs list
-        $precacheUrls = array_unique(array_merge([
+        $coreRoutes = [
             '/',
             '/pwa/offline',
             '/admin',
@@ -70,7 +72,16 @@ class PwaManifestController extends Controller
             '/assets/js/pwa/pwa-installer.js',
             '/assets/pwa-icons/icon-192x192.png',
             '/assets/pwa-icons/icon-512x512.png',
-        ], $tasbeehUrls));
+        ];
+
+        $precacheUrls = [];
+        foreach ($coreRoutes as $r) {
+            $precacheUrls[] = $r;
+            try {
+                $precacheUrls[] = url($r);
+            } catch (\Throwable $e) {}
+        }
+        $precacheUrls = array_values(array_unique(array_merge($precacheUrls, $tasbeehUrls)));
 
         $precacheJson = json_encode(array_values($precacheUrls), JSON_UNESCAPED_SLASHES);
 

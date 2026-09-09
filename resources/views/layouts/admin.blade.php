@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="auth-user-id" content="{{ auth()->id() }}">
+    <meta name="selected-user-id" content="{{ $selectedUser->id ?? ($user->id ?? auth()->id()) }}">
     <title>@yield('title', 'Dashboard') - Amanullah</title>
     
     {{-- Progressive Web App (PWA) Meta & Icons --}}

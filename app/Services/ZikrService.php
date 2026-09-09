@@ -281,6 +281,9 @@ class ZikrService
             'status_badge' => $statusBadge,
             'last_zikr_at' => $progress?->last_zikr_at,
             'formatted_last_zikr' => $progress?->last_zikr_at ? Carbon::parse($progress->last_zikr_at, $tz)->diffForHumans() : null,
+            'description' => $tasbeeh->description,
+            'reference' => $tasbeeh->reference,
+            'is_active' => (bool) $tasbeeh->is_active,
             'progress' => $progress,
         ];
     }

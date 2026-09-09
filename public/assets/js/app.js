@@ -966,6 +966,21 @@
         pill.innerHTML = html;
     }
 
+    // Universal Micro-Animation Handler for Action Icon Buttons (0ms Instant Tactile Feedback)
+    document.addEventListener('pointerdown', (e) => {
+        const btn = e.target.closest?.('.action-icon-btn');
+        if (!btn) return;
+        btn.classList.remove('btn-click-anim');
+        void btn.offsetWidth; // Reflow to restart keyframe animation on rapid repeated clicks
+        btn.classList.add('btn-click-anim');
+    }, { passive: true });
+
+    document.addEventListener('animationend', (e) => {
+        if (e.target?.classList?.contains('btn-click-anim')) {
+            e.target.classList.remove('btn-click-anim');
+        }
+    });
+
     document.addEventListener('click', (event) => {
         // Direct 1-Click Complete for Individual Tasbeeh (Instant 0ms Visual & Robust Offline/Online Sync)
         const completeIconBtn = event.target.closest?.('.btn-complete-icon');
@@ -981,11 +996,6 @@
                 const card = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
                 let countToAdd = parseInt(card?.dataset?.dailyTarget || '100', 10);
                 if (countToAdd <= 0) countToAdd = 100;
-
-                // Micro-interaction bounce feedback
-                completeIconBtn.style.transform = 'scale(1.25)';
-                completeIconBtn.style.transition = 'transform 0.2s ease';
-                setTimeout(() => { completeIconBtn.style.transform = 'scale(1)'; }, 250);
 
                 // Immediate 0ms local visual update on screen
                 if (typeof window.updateZikrCardDom === 'function') {
@@ -1014,9 +1024,19 @@
                         },
                         body: JSON.stringify({ user_id: userId })
                     }).then(res => res.json()).then(data => {
-                        if (data && data.success && data.stats && card) {
-                            card.dataset.baseTodayCompleted = String(data.stats.today_completed ?? data.stats.total_completed ?? 0);
-                            card.dataset.baseTotalCompleted = String(data.stats.total_completed ?? 0);
+                        if (data && data.success && card) {
+                            if (data.summary && typeof window.reconcileZikrOfflineCounts === 'function') {
+                                window.reconcileZikrOfflineCounts({ zikr_summary: data.summary });
+                            } else if (data.stats) {
+                                const sToday = data.stats.today_completed !== undefined ? data.stats.today_completed : (data.stats.total_completed ?? 0);
+                                card.dataset.baseTodayCompleted = String(sToday);
+                                card.dataset.baseTotalCompleted = String(data.stats.total_completed ?? 0);
+                                card.dataset.todayCompleted = String(sToday);
+                                card.dataset.totalCompleted = String(data.stats.total_completed ?? 0);
+                                if (typeof window.recalculateZikrTopStats === 'function') {
+                                    window.recalculateZikrTopStats();
+                                }
+                            }
                         }
                         if (window.PwaSync && typeof window.PwaSync.broadcastEvent === 'function') {
                             window.PwaSync.broadcastEvent('ZIKR_COMPLETE_TODAY', { tasbeehId: String(tasbeehId) });
@@ -1632,6 +1652,7 @@
             const titleInput = document.getElementById('editTasbeehTitle');
             const arabicInput = document.getElementById('editTasbeehArabic');
             const urduInput = document.getElementById('editTasbeehUrdu');
+            const descInput = document.getElementById('editTasbeehDesc');
             const targetInput = document.getElementById('editTasbeehTarget');
             const orderInput = document.getElementById('editTasbeehOrder');
             const activeInput = document.getElementById('editTasbeehIsActive');
@@ -1640,10 +1661,150 @@
             if (titleInput) titleInput.value = title || '';
             if (arabicInput) arabicInput.value = arabic || '';
             if (urduInput) urduInput.value = urdu || '';
+            if (descInput) descInput.value = desc || '';
             if (targetInput) targetInput.value = target || 100;
             if (orderInput) orderInput.value = order || 0;
             if (activeInput) activeInput.checked = active === '1';
             if (refInput) refInput.value = ref || '';
+        }
+
+        const descTasbeehTrigger = e.target.closest?.('[data-bs-target="#tasbeehDescModal"]');
+        if (descTasbeehTrigger) {
+            const {
+                id,
+                title,
+                arabic,
+                urdu,
+                desc,
+                ref,
+                target,
+                order,
+                active,
+                todayCompleted,
+                totalCompleted,
+                totalRequired,
+                percentage,
+                remaining,
+                extra,
+                activeDays,
+                started,
+                lastZikr,
+                counterUrl,
+                updateUrl
+            } = descTasbeehTrigger.dataset;
+
+            const titleEl = document.getElementById('descModalTitle');
+            const seqEl = document.getElementById('descModalSeqBadge');
+            const statusEl = document.getElementById('descModalStatusBadge');
+            const targetEl = document.getElementById('descModalTarget');
+            const todayCompEl = document.getElementById('descModalTodayCompleted');
+            const todaySubtextEl = document.getElementById('descModalTodaySubtext');
+            const totalCompEl = document.getElementById('descModalTotalCompleted');
+            const totalReqEl = document.getElementById('descModalTotalRequired');
+            const cyclePctEl = document.getElementById('descModalCyclePercentage');
+            const progressBarEl = document.getElementById('descModalProgressBar');
+            const startedEl = document.getElementById('descModalStarted');
+            const activeDaysEl = document.getElementById('descModalActiveDays');
+            const lastZikrEl = document.getElementById('descModalLastZikr');
+            const refEl = document.getElementById('descModalRef');
+            const refRowEl = document.getElementById('descModalRefRow');
+            const arabicEl = document.getElementById('descModalArabic');
+            const urduEl = document.getElementById('descModalUrdu');
+            const descBodyEl = document.getElementById('descModalBodyText');
+            const descEmptyEl = document.getElementById('descModalEmptyText');
+            const counterBtn = document.getElementById('descModalCounterBtn');
+            const editBtn = document.getElementById('descModalEditBtn');
+
+            const numTarget = Number(target || 100);
+            const numToday = Number(todayCompleted || 0);
+            const numTotal = Number(totalCompleted || 0);
+            const numReq = Number(totalRequired || numTarget);
+            const numPct = Number(percentage || 0);
+
+            if (titleEl) titleEl.textContent = title || 'Tasbeeh Details';
+            if (seqEl) seqEl.textContent = `#${order || '1'}`;
+
+            if (statusEl) {
+                const isActive = active !== '0';
+                statusEl.textContent = isActive ? 'Active' : 'Inactive';
+                statusEl.className = `badge rounded-pill px-2 py-0.5 ${isActive ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'}`;
+            }
+
+            if (targetEl) targetEl.textContent = numTarget.toLocaleString();
+            if (todayCompEl) todayCompEl.textContent = numToday.toLocaleString();
+
+            if (todaySubtextEl) {
+                if (numToday >= numTarget && numTarget > 0) {
+                    todaySubtextEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check2"></i> Target Done</span>';
+                } else {
+                    const rem = Math.max(numTarget - numToday, 0);
+                    todaySubtextEl.innerHTML = `Rem: <strong class="text-white">${rem.toLocaleString()}</strong>`;
+                }
+            }
+
+            if (totalCompEl) totalCompEl.textContent = numTotal.toLocaleString();
+            if (totalReqEl) totalReqEl.textContent = numReq.toLocaleString();
+
+            if (cyclePctEl) cyclePctEl.textContent = `${numPct}%`;
+            if (progressBarEl) {
+                progressBarEl.style.width = `${Math.min(numPct, 100)}%`;
+                progressBarEl.className = 'progress-bar ' + (Number(extra || 0) > 0 ? 'bg-info' : (numPct >= 100 ? 'bg-success' : 'bg-warning'));
+            }
+
+            if (startedEl) startedEl.textContent = started || '—';
+            if (activeDaysEl) activeDaysEl.textContent = activeDays || '1';
+            if (lastZikrEl) lastZikrEl.textContent = lastZikr || 'Never';
+
+            if (ref && ref.trim()) {
+                if (refEl) refEl.textContent = ref;
+                if (refRowEl) refRowEl.classList.remove('d-none');
+            } else {
+                if (refRowEl) refRowEl.classList.add('d-none');
+            }
+
+            if (arabicEl) arabicEl.textContent = arabic || '';
+            if (urduEl) urduEl.textContent = urdu || '—';
+
+            if (desc && desc.trim()) {
+                if (descBodyEl) {
+                    descBodyEl.textContent = desc;
+                    descBodyEl.classList.remove('d-none');
+                }
+                if (descEmptyEl) descEmptyEl.classList.add('d-none');
+            } else {
+                if (descBodyEl) {
+                    descBodyEl.textContent = '';
+                    descBodyEl.classList.add('d-none');
+                }
+                if (descEmptyEl) descEmptyEl.classList.remove('d-none');
+            }
+
+            if (counterBtn) {
+                if (counterUrl) {
+                    counterBtn.href = counterUrl;
+                    counterBtn.classList.remove('d-none');
+                } else {
+                    counterBtn.classList.add('d-none');
+                }
+            }
+
+            if (editBtn) {
+                if (updateUrl) {
+                    editBtn.classList.remove('d-none');
+                    editBtn.dataset.id = id || '';
+                    editBtn.dataset.title = title || '';
+                    editBtn.dataset.arabic = arabic || '';
+                    editBtn.dataset.urdu = urdu || '';
+                    editBtn.dataset.target = target || '';
+                    editBtn.dataset.order = order || '';
+                    editBtn.dataset.active = active || '1';
+                    editBtn.dataset.desc = desc || '';
+                    editBtn.dataset.ref = ref || '';
+                    editBtn.dataset.updateUrl = updateUrl || '';
+                } else {
+                    editBtn.classList.add('d-none');
+                }
+            }
         }
     });
 
@@ -1889,21 +2050,6 @@
                     lifetimeEl.dataset.baseLifetime = String(summary.lifetime_total);
                     lifetimeEl.dataset.rawVal = Number(summary.lifetime_total).toLocaleString();
                     lifetimeEl.textContent = Number(summary.lifetime_total).toLocaleString();
-                }
-            } else if (window.PwaDB && typeof window.PwaDB.getMeta === 'function') {
-                const cachedSummary = await window.PwaDB.getMeta('zikr_summary');
-                if (cachedSummary && Array.isArray(cachedSummary.tasbeehs)) {
-                    cachedSummary.tasbeehs.forEach(t => {
-                        const card = document.getElementById(`tasbeeh-card-${t.tasbeeh_id}`) || document.querySelector(`[data-tasbeeh-card="${t.tasbeeh_id}"]`);
-                        if (card && !card.dataset.baseTodayCompleted) {
-                            card.dataset.baseTodayCompleted = String(t.today_completed || 0);
-                            card.dataset.baseTotalCompleted = String(t.total_completed || 0);
-                        }
-                    });
-                    const lifetimeEl = document.getElementById('top-stat-lifetime-total');
-                    if (lifetimeEl && cachedSummary.lifetime_total !== undefined && !lifetimeEl.dataset.baseLifetime) {
-                        lifetimeEl.dataset.baseLifetime = String(cachedSummary.lifetime_total);
-                    }
                 }
             }
 
@@ -2251,6 +2397,10 @@
     // Helper to process live broadcast messages across tabs
     function handleZikrLiveBroadcast(eventData) {
         if (!eventData || !eventData.type) return;
+        const myClientId = window.PWA_CLIENT_ID || (window.PwaSync && window.PwaSync.clientId);
+        if (eventData.clientId && myClientId && eventData.clientId === myClientId) {
+            return; // Ignore broadcast generated by this same tab
+        }
 
         if (eventData.type === 'ZIKR_COUNT_INCREMENT') {
             const tId = String(eventData.tasbeehId);
@@ -2656,9 +2806,28 @@
     applyZikrDisplaySettings();
     document.addEventListener('DOMContentLoaded', applyZikrDisplaySettings);
 
-    const zikrSettingsModalEl = document.getElementById('zikrSettingsModal');
-    if (zikrSettingsModalEl) {
-        zikrSettingsModalEl.addEventListener('show.bs.modal', applyZikrDisplaySettings);
+    // Auto-scroll and highlight target Tasbeeh card on page load or hash change
+    function handleTasbeehCardHashScroll() {
+        const hash = window.location.hash;
+        if (!hash || !hash.startsWith('#tasbeeh-card-')) return;
+
+        const targetEl = document.querySelector(hash);
+        if (targetEl) {
+            setTimeout(() => {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetEl.classList.add('tasbeeh-card-highlighted');
+                setTimeout(() => {
+                    targetEl.classList.remove('tasbeeh-card-highlighted');
+                }, 2800);
+            }, 150);
+        }
     }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', handleTasbeehCardHashScroll);
+    } else {
+        handleTasbeehCardHashScroll();
+    }
+    window.addEventListener('hashchange', handleTasbeehCardHashScroll);
 
 })();

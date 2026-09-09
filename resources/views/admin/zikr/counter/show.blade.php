@@ -18,7 +18,14 @@
         {{-- Card Top Header Bar --}}
         <div class="card-top-bar">
             <div class="d-flex align-items-center gap-2 min-w-0">
-                <a href="{{ route('admin.zikr.index', ['user_id' => $user->id]) }}" class="btn-menu-dots text-decoration-none flex-shrink-0" onclick="event.stopPropagation()" title="Back to Dashboard">
+                @php
+                    $from = request('from');
+                    $backRoute = $from === 'tasbeehs'
+                        ? route('admin.tasbeehs.index', ['user_id' => $user->id])
+                        : route('admin.zikr.index', ['user_id' => $user->id]);
+                    $backUrl = $backRoute . '#tasbeeh-card-' . $tasbeeh->id;
+                @endphp
+                <a href="{{ $backUrl }}" id="backToZikrBtn" class="btn-menu-dots text-decoration-none flex-shrink-0" onclick="event.stopPropagation()" title="Back to Dashboard">
                     <i class="bi bi-arrow-left fs-5"></i>
                 </a>
                 <span class="fw-semibold text-white text-truncate" style="font-size: 0.9rem;">{{ $tasbeeh->title }}</span>
@@ -453,7 +460,7 @@
         }, { passive: true });
 
         document.addEventListener('click', function (e) {
-            if (Date.now() - lastTouchHandled < 350) {
+            if (Date.now() - lastTouchHandled < 650) {
                 return; // Prevent duplicate execution from synthesized click
             }
             handleScreenTap(e);
@@ -597,16 +604,6 @@
                         baseTotalCompleted = Number(match.total_completed || 0);
                         baseTodayCompleted = Number(match.today_completed || 0);
                     }
-                } else if (window.PwaDB && typeof window.PwaDB.getMeta === 'function') {
-                    // Check cached zikr_summary from IndexedDB if available
-                    const cachedSummary = await window.PwaDB.getMeta('zikr_summary');
-                    if (cachedSummary && Array.isArray(cachedSummary.tasbeehs)) {
-                        const match = cachedSummary.tasbeehs.find(t => String(t.tasbeeh_id) === currentTasbeehId);
-                        if (match) {
-                            baseTotalCompleted = Number(match.total_completed || 0);
-                            baseTodayCompleted = Number(match.today_completed || 0);
-                        }
-                    }
                 }
 
                 // 2. Read pending outbox items
@@ -668,6 +665,10 @@
 
         function handleCounterBroadcast(data) {
             if (!data || !data.type) return;
+            const myClientId = window.PWA_CLIENT_ID || (window.PwaSync && window.PwaSync.clientId);
+            if (data.clientId && myClientId && data.clientId === myClientId) {
+                return; // Never process broadcast triggered by this exact same tab
+            }
             const currentTasbeehId = '{{ $tasbeeh->id }}';
 
             if (data.type === 'ZIKR_COUNT_INCREMENT' && String(data.tasbeehId) === currentTasbeehId) {

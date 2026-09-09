@@ -32,6 +32,13 @@ class ZikrCounterController extends Controller
             return $targetUser;
         }
 
+        if (! $currentUser->isMuslim()) {
+            $firstMuslim = User::query()->muslim()->first();
+            if ($firstMuslim) {
+                return $firstMuslim;
+            }
+        }
+
         return $currentUser;
     }
 
@@ -126,6 +133,7 @@ class ZikrCounterController extends Controller
 
         $user = $this->authorizeAccess($request, $targetUser);
         $result = $this->zikrService->completeSingleForToday($user, $tasbeeh);
+        $result['summary'] = $this->zikrService->getDashboardSummary($user);
 
         return response()->json($result);
     }

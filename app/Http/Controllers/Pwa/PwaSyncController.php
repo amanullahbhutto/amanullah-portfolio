@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Pwa;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\PwaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,28 @@ class PwaSyncController extends Controller
         ]);
     }
 
+    protected function resolveTargetUser(Request $request): User
+    {
+        $currentUser = $request->user();
+        $targetUserId = $request->query('user_id') ?? $request->input('user_id');
+
+        if ($targetUserId && ($currentUser->hasAnyRole(['Super Admin', 'Admin', 'admin']) || $currentUser->can('manage tasbeeh') || $currentUser->can('view zikr'))) {
+            $found = User::find($targetUserId);
+            if ($found) {
+                return $found;
+            }
+        }
+
+        if (!$currentUser->isMuslim()) {
+            $firstMuslim = User::query()->muslim()->first();
+            if ($firstMuslim) {
+                return $firstMuslim;
+            }
+        }
+
+        return $currentUser;
+    }
+
     /**
      * Push batch of offline operations to server.
      */
@@ -73,7 +96,8 @@ class PwaSyncController extends Controller
             'operations.*.retry_count' => 'nullable|integer',
         ]);
 
-        $result = $this->pwaService->processPushSync($user, $validated['operations']);
+        $targetUser = $this->resolveTargetUser($request);
+        $result = $this->pwaService->processPushSync($targetUser, $validated['operations']);
 
         return response()->json($result);
     }
@@ -92,8 +116,9 @@ class PwaSyncController extends Controller
             ], 401);
         }
 
+        $targetUser = $this->resolveTargetUser($request);
         $lastSyncedAt = $request->query('last_synced_at');
-        $result = $this->pwaService->processPullSync($user, $lastSyncedAt);
+        $result = $this->pwaService->processPullSync($targetUser, $lastSyncedAt);
 
         return response()->json($result);
     }

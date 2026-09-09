@@ -20,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'pwa/sync/push',
+        ]);
+
         $middleware->redirectTo(
             guests: '/login',
             users: function (Request $request) {

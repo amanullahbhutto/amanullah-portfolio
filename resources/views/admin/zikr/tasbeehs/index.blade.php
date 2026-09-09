@@ -33,6 +33,18 @@
 
     {{-- Top Action Buttons --}}
     <div class="d-flex flex-wrap align-items-center justify-content-center gap-2">
+        @if(isset($muslimUsers) && $muslimUsers->count() > 1 && (auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->can('manage tasbeeh')))
+            <form method="GET" action="{{ route('admin.tasbeehs.index') }}" class="d-inline-block">
+                <select name="user_id" class="form-select form-select-sm" onchange="this.form.submit()" style="background: #08111e; border: 1px solid #142845; color: #38bdf8; border-radius: 12px; font-weight: 600; font-size: 0.8rem; padding: 6px 32px 6px 12px;">
+                    @foreach($muslimUsers as $u)
+                        <option value="{{ $u->id }}" @selected($selectedUser && $selectedUser->id === $u->id)>
+                            {{ $u->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </form>
+        @endif
+
         {{-- Reset All Tasbeehs Trigger (Icon 1) --}}
         <button class="action-btn-top danger" type="button" data-bs-toggle="modal" data-bs-target="#resetAllTasbeehsModal" title="Reset All Tasbeehs to 0 (Start Date Today)">
             <i class="bi bi-arrow-counterclockwise"></i>
@@ -49,7 +61,7 @@
         </button>
 
         {{-- Zikr Dashboard Shortcut --}}
-        <a class="action-btn-top cyan" href="{{ route('admin.zikr.index') }}" title="Zikr Dashboard">
+        <a class="action-btn-top cyan" href="{{ route('admin.zikr.index', ['user_id' => $user->id]) }}" title="Zikr Dashboard">
             <i class="bi bi-speedometer2"></i>
         </a>
 
@@ -64,7 +76,7 @@
     <div id="tasbeehs-grid-container" class="admin-list-results">
         <div class="row g-3 g-md-4">
             @forelse($tasbeehs as $t)
-                <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $t->id }}" data-daily-target="{{ $t->daily_target }}" data-active-days="{{ $t->stats['active_days'] ?? 1 }}" data-today-completed="{{ $t->stats['today_completed'] ?? 0 }}" data-total-completed="{{ $t->stats['total_completed'] ?? 0 }}" data-total-required="{{ $t->stats['total_required'] ?? $t->daily_target }}">
+                <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $t->id }}" data-daily-target="{{ $t->daily_target }}" data-active-days="{{ $t->stats['active_days'] ?? 1 }}" data-today-completed="{{ $t->stats['today_completed'] ?? 0 }}" data-total-completed="{{ $t->stats['total_completed'] ?? 0 }}" data-base-today-completed="{{ $t->stats['today_completed'] ?? 0 }}" data-base-total-completed="{{ $t->stats['total_completed'] ?? 0 }}" data-total-required="{{ $t->stats['total_required'] ?? $t->daily_target }}">
                     <div class="zikr-item-card w-100 d-flex flex-column justify-content-between">
                         <div>
                             {{-- Top Header with Sort Number Circle Badge and Today's Count Badge --}}
@@ -141,7 +153,7 @@
                                     type="button"
                                     data-tasbeeh-id="{{ $t->id }}"
                                     data-tasbeeh-title="{{ $t->title }}"
-                                    data-user-id="{{ auth()->id() }}"
+                                    data-user-id="{{ $user->id }}"
                                     data-complete-url="{{ route('admin.zikr.counter.complete-today', $t) }}"
                                     title="Complete Today for this Tasbeeh"
                                 >
@@ -156,7 +168,7 @@
                                     data-bs-target="#quickAddModal"
                                     data-tasbeeh-id="{{ $t->id }}"
                                     data-tasbeeh-title="{{ $t->title }}"
-                                    data-user-id="{{ auth()->id() }}"
+                                    data-user-id="{{ $user->id }}"
                                     data-post-url="{{ route('admin.zikr.counter.manual', $t) }}"
                                     title="Add Count"
                                 >
@@ -164,9 +176,40 @@
                                 </button>
 
                                 {{-- Open Counter Page --}}
-                                <a href="{{ route('admin.zikr.counter.show', $t) }}" class="action-icon-btn btn-speed-icon" title="Speed / Counter">
+                                <a href="{{ route('admin.zikr.counter.show', ['tasbeeh' => $t, 'user_id' => $user->id]) }}" class="action-icon-btn btn-speed-icon" title="Speed / Counter">
                                     <i class="bi bi-speedometer2"></i>
                                 </a>
+
+                                {{-- View Description & Complete Details (Click icon to view all details) --}}
+                                <button
+                                    class="action-icon-btn btn-desc-icon"
+                                    type="button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#tasbeehDescModal"
+                                    data-id="{{ $t->id }}"
+                                    data-title="{{ $t->title }}"
+                                    data-arabic="{{ $t->arabic_text }}"
+                                    data-urdu="{{ $t->urdu_meaning }}"
+                                    data-desc="{{ $t->description }}"
+                                    data-ref="{{ $t->reference }}"
+                                    data-target="{{ $t->daily_target }}"
+                                    data-order="{{ ($t->sort_order ?? 0) > 0 ? $t->sort_order : $loop->iteration }}"
+                                    data-active="{{ $t->is_active ? '1' : '0' }}"
+                                    data-today-completed="{{ $t->stats['today_completed'] ?? 0 }}"
+                                    data-total-completed="{{ $t->stats['total_completed'] ?? 0 }}"
+                                    data-total-required="{{ $t->stats['total_required'] ?? $t->daily_target }}"
+                                    data-percentage="{{ $t->stats['percentage'] ?? 0 }}"
+                                    data-remaining="{{ $t->stats['remaining'] ?? 0 }}"
+                                    data-extra="{{ $t->stats['extra'] ?? 0 }}"
+                                    data-active-days="{{ $t->stats['active_days'] ?? 1 }}"
+                                    data-started="{{ $t->stats['formatted_start_date'] ?? '—' }}"
+                                    data-last-zikr="{{ $t->stats['formatted_last_zikr'] ?? '—' }}"
+                                    data-counter-url="{{ route('admin.zikr.counter.show', ['tasbeeh' => $t, 'user_id' => $user->id]) }}"
+                                    data-update-url="{{ route('admin.tasbeehs.update', $t) }}"
+                                    title="View Complete Details & Description"
+                                >
+                                    <i class="bi bi-file-earmark-text"></i>
+                                </button>
 
                                 {{-- Edit Tasbeeh --}}
                                 <button
@@ -217,7 +260,7 @@
         <div class="modal-content" style="background: #08111e; border: 1px solid #142845; border-radius: 20px;">
             <form id="quickAddForm" method="POST" action="">
                 @csrf
-                <input type="hidden" name="user_id" id="quickAddUserId" value="{{ auth()->id() }}">
+                <input type="hidden" name="user_id" id="quickAddUserId" value="{{ $user->id }}">
                 <div class="modal-header border-secondary border-opacity-25">
                     <div>
                         <h5 class="modal-title mb-0 text-white">Add Zikr Count</h5>
@@ -283,6 +326,11 @@
                             <textarea class="form-control font-urdu" name="urdu_meaning" rows="2" dir="rtl" placeholder="اللہ پاک ہے..." style="background: #0c1626; border-color: #1c2c44; color: #94a3b8; font-size: 1.05rem; line-height: 1.8;"></textarea>
                             <div class="invalid-feedback" data-error-for="urdu_meaning"></div>
                         </div>
+                        <div class="col-12">
+                            <label class="form-label text-white fw-bold">Description / Fazilat (تفصیل / فضیلت و فوائد)</label>
+                            <textarea class="form-control" name="description" rows="3" placeholder="Enter details, fazilat, benefits or notes for this Tasbeeh..." style="background: #0c1626; border-color: #1c2c44; color: #fff; font-size: 0.95rem;"></textarea>
+                            <div class="invalid-feedback" data-error-for="description"></div>
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label text-white fw-bold">Reference / Source (Optional)</label>
                             <input class="form-control" type="text" name="reference" placeholder="e.g. Sahih Bukhari" style="background: #0c1626; border-color: #1c2c44; color: #fff;">
@@ -343,6 +391,11 @@
                             <textarea class="form-control font-urdu" name="urdu_meaning" id="editTasbeehUrdu" rows="2" dir="rtl" style="background: #0c1626; border-color: #1c2c44; color: #94a3b8; font-size: 1.05rem; line-height: 1.8;"></textarea>
                             <div class="invalid-feedback" data-error-for="urdu_meaning"></div>
                         </div>
+                        <div class="col-12">
+                            <label class="form-label text-white fw-bold">Description / Fazilat (تفصیل / فضیلت و فوائد)</label>
+                            <textarea class="form-control" name="description" id="editTasbeehDesc" rows="3" placeholder="Enter details, fazilat, benefits or notes for this Tasbeeh..." style="background: #0c1626; border-color: #1c2c44; color: #fff; font-size: 0.95rem;"></textarea>
+                            <div class="invalid-feedback" data-error-for="description"></div>
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label text-white fw-bold">Reference / Source (Optional)</label>
                             <input class="form-control" type="text" name="reference" id="editTasbeehRef" style="background: #0c1626; border-color: #1c2c44; color: #fff;">
@@ -370,6 +423,7 @@
     </div>
 </div>
 
+@include('admin.zikr.partials.desc-modal')
 @include('admin.zikr.partials.settings-modal')
 @include('admin.zikr.partials.bulk-actions-modals')
 @endsection

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tasbeeh;
+use App\Models\User;
 use App\Services\ZikrService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,22 +26,40 @@ class TasbeehAdminController extends Controller
 
     public function index(Request $request): View
     {
-        $user = $request->user();
-        $tasbeehs = Tasbeeh::query()->ordered()->get();
-        $progressMap = $user->tasbeehProgress()->get()->keyBy('tasbeeh_id');
+        $currentUser = $request->user();
+        $muslimUsers = User::query()->muslim()->orderBy('name')->get();
 
-        $tasbeehsWithStats = $tasbeehs->map(function ($tasbeeh) use ($user, $progressMap) {
+        // Selected user resolution (fallback to first Muslim user if admin is non-Muslim)
+        $selectedUserId = $request->input('user_id');
+        $selectedUser = null;
+
+        if ($selectedUserId && ($currentUser->hasAnyRole(['Super Admin', 'Admin', 'admin']) || $currentUser->can('manage tasbeeh'))) {
+            $selectedUser = User::query()->muslim()->find($selectedUserId);
+        }
+
+        if (! $selectedUser) {
+            $selectedUser = $currentUser->isMuslim() ? $currentUser : $muslimUsers->first();
+        }
+
+        $targetUser = $selectedUser ?? $currentUser;
+
+        $tasbeehs = Tasbeeh::query()->ordered()->get();
+        $progressMap = $targetUser ? $targetUser->tasbeehProgress()->get()->keyBy('tasbeeh_id') : collect();
+
+        $tasbeehsWithStats = $tasbeehs->map(function ($tasbeeh) use ($targetUser, $progressMap) {
             $progress = $progressMap->get($tasbeeh->id);
-            $stats = $this->zikrService->calculateTasbeehStats($user, $tasbeeh, $progress);
+            $stats = $this->zikrService->calculateTasbeehStats($targetUser, $tasbeeh, $progress);
             $tasbeeh->stats = $stats;
             return $tasbeeh;
         });
 
-        $summary = $this->zikrService->getDashboardSummary($user);
+        $summary = $targetUser ? $this->zikrService->getDashboardSummary($targetUser) : null;
 
         return view('admin.zikr.tasbeehs.index', [
             'tasbeehs' => $tasbeehsWithStats,
-            'user' => $user,
+            'user' => $targetUser,
+            'selectedUser' => $targetUser,
+            'muslimUsers' => $muslimUsers,
             'summary' => $summary,
         ]);
     }
