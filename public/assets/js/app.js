@@ -1977,8 +1977,8 @@
             }
         }
 
-        // Live Real-Time Lifetime Total Counter Update
-        if (deltaAdded !== 0) {
+        // Live Real-Time Lifetime Total Counter Update (Only increments on new zikr additions, NEVER on resets)
+        if (!isAbsolute && deltaAdded > 0) {
             let lifetimeEl = document.getElementById('top-stat-lifetime-total');
             if (lifetimeEl) {
                 let currentLifetime = parseInt((lifetimeEl.dataset.rawVal || lifetimeEl.textContent).replace(/,/g, ''), 10) || 0;
