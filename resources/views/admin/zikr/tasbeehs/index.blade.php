@@ -237,7 +237,7 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold text-white">Enter Count <span class="text-danger">*</span></label>
-                        <input class="form-control form-control-lg text-center font-monospace fw-bold" type="number" name="count" id="quickAddCountInput" min="-2000000000" max="2000000000" placeholder="e.g. 100 or -33" required style="background: #0c1626; border-color: #1c2c44; color: #fff;">
+                        <input class="form-control form-control-lg text-center font-monospace fw-bold" type="number" inputmode="numeric" name="count" id="quickAddCountInput" min="-2000000000" max="2000000000" placeholder="e.g. 100 or -33" required style="background: #0c1626; border-color: #1c2c44; color: #fff;">
                     </div>
                 </div>
                 <div class="modal-footer border-secondary border-opacity-25">

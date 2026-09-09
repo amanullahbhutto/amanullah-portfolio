@@ -967,7 +967,7 @@
     }
 
     document.addEventListener('click', (event) => {
-        // Direct 1-Click Complete for Individual Tasbeeh (No Modal / No Prompt - Instant 0ms Visual & Offline Enqueue)
+        // Direct 1-Click Complete for Individual Tasbeeh (Instant 0ms Visual & Robust Offline/Online Sync)
         const completeIconBtn = event.target.closest?.('.btn-complete-icon');
         if (completeIconBtn) {
             event.preventDefault();
@@ -987,18 +987,9 @@
                 completeIconBtn.style.transition = 'transform 0.2s ease';
                 setTimeout(() => { completeIconBtn.style.transform = 'scale(1)'; }, 250);
 
-                // Immediate 0ms local visual update
+                // Immediate 0ms local visual update on screen
                 if (typeof window.updateZikrCardDom === 'function') {
                     window.updateZikrCardDom(tasbeehId, countToAdd, false);
-                }
-
-                // Queue offline action & broadcast event across tabs
-                if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
-                    window.PwaSync.completeTasbeehToday(tasbeehId);
-                }
-
-                if (typeof window.reconcileZikrOfflineCounts === 'function') {
-                    window.reconcileZikrOfflineCounts();
                 }
 
                 if (typeof window.showFlashToast === 'function') {
@@ -1007,7 +998,12 @@
                     window.App.showToast('success', `+${countToAdd.toLocaleString()} completed for '${title}'!`);
                 }
 
-                if (navigator.onLine && completeUrl) {
+                if (!navigator.onLine) {
+                    // Queue offline action & broadcast event across tabs
+                    if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
+                        window.PwaSync.completeTasbeehToday(tasbeehId);
+                    }
+                } else if (completeUrl) {
                     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                     fetch(completeUrl, {
                         method: 'POST',
@@ -1022,8 +1018,14 @@
                             card.dataset.baseTodayCompleted = String(data.stats.today_completed ?? data.stats.total_completed ?? 0);
                             card.dataset.baseTotalCompleted = String(data.stats.total_completed ?? 0);
                         }
+                        if (window.PwaSync && typeof window.PwaSync.broadcastEvent === 'function') {
+                            window.PwaSync.broadcastEvent('ZIKR_COMPLETE_TODAY', { tasbeehId: String(tasbeehId) });
+                        }
                     }).catch(err => {
-                        console.warn('Online sync background request:', err);
+                        console.warn('Online sync background request failed, saving offline:', err);
+                        if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
+                            window.PwaSync.completeTasbeehToday(tasbeehId);
+                        }
                     });
                 }
             }
@@ -1668,11 +1670,18 @@
             overallTotalRequired += required;
         });
 
+        let dailyTargetStatEl = document.getElementById('top-stat-daily-target');
         let todayCompletedStatEl = document.getElementById('top-stat-today-completed');
         let todayPercentStatEl = document.getElementById('top-stat-today-percentage');
+        let totalRequiredStatEl = document.getElementById('top-stat-total-required');
         let completedStatEl = document.getElementById('top-stat-total-completed');
         let percentStatEl = document.getElementById('top-stat-overall-percentage');
         let backlogContainerEl = document.getElementById('top-stat-backlog-container');
+
+        if (dailyTargetStatEl) {
+            dailyTargetStatEl.dataset.rawVal = overallTodayRequired.toLocaleString();
+            dailyTargetStatEl.textContent = overallTodayRequired.toLocaleString();
+        }
 
         if (todayCompletedStatEl) {
             todayCompletedStatEl.dataset.rawVal = overallTodayCompleted.toLocaleString();
@@ -1684,6 +1693,11 @@
             todayPercentStatEl.dataset.rawSubtext = `${todayPercent}% of daily target`;
             todayPercentStatEl.dataset.maskedSubtext = '•••% of daily target';
             todayPercentStatEl.textContent = `${todayPercent}% of daily target`;
+        }
+
+        if (totalRequiredStatEl) {
+            totalRequiredStatEl.dataset.rawVal = overallTotalRequired.toLocaleString();
+            totalRequiredStatEl.textContent = overallTotalRequired.toLocaleString();
         }
 
         if (completedStatEl) {
@@ -1803,12 +1817,13 @@
         }
 
         // Live Real-Time Lifetime Total Counter Update
-        if (deltaAdded > 0) {
+        if (deltaAdded !== 0) {
             let lifetimeEl = document.getElementById('top-stat-lifetime-total');
             if (lifetimeEl) {
                 let currentLifetime = parseInt((lifetimeEl.dataset.rawVal || lifetimeEl.textContent).replace(/,/g, ''), 10) || 0;
-                lifetimeEl.dataset.rawVal = (currentLifetime + deltaAdded).toLocaleString();
-                lifetimeEl.textContent = (currentLifetime + deltaAdded).toLocaleString();
+                let newLifetime = Math.max(currentLifetime + deltaAdded, 0);
+                lifetimeEl.dataset.rawVal = newLifetime.toLocaleString();
+                lifetimeEl.textContent = newLifetime.toLocaleString();
                 if (typeof window.renderZikrStatCards === 'function') {
                     window.renderZikrStatCards();
                 }
@@ -1874,6 +1889,21 @@
                     lifetimeEl.dataset.baseLifetime = String(summary.lifetime_total);
                     lifetimeEl.dataset.rawVal = Number(summary.lifetime_total).toLocaleString();
                     lifetimeEl.textContent = Number(summary.lifetime_total).toLocaleString();
+                }
+            } else if (window.PwaDB && typeof window.PwaDB.getMeta === 'function') {
+                const cachedSummary = await window.PwaDB.getMeta('zikr_summary');
+                if (cachedSummary && Array.isArray(cachedSummary.tasbeehs)) {
+                    cachedSummary.tasbeehs.forEach(t => {
+                        const card = document.getElementById(`tasbeeh-card-${t.tasbeeh_id}`) || document.querySelector(`[data-tasbeeh-card="${t.tasbeeh_id}"]`);
+                        if (card && !card.dataset.baseTodayCompleted) {
+                            card.dataset.baseTodayCompleted = String(t.today_completed || 0);
+                            card.dataset.baseTotalCompleted = String(t.total_completed || 0);
+                        }
+                    });
+                    const lifetimeEl = document.getElementById('top-stat-lifetime-total');
+                    if (lifetimeEl && cachedSummary.lifetime_total !== undefined && !lifetimeEl.dataset.baseLifetime) {
+                        lifetimeEl.dataset.baseLifetime = String(cachedSummary.lifetime_total);
+                    }
                 }
             }
 
@@ -2218,13 +2248,69 @@
         runAllOfflineReconciliations(e.detail?.data || null);
     });
 
+    // Helper to process live broadcast messages across tabs
+    function handleZikrLiveBroadcast(eventData) {
+        if (!eventData || !eventData.type) return;
+
+        if (eventData.type === 'ZIKR_COUNT_INCREMENT') {
+            const tId = String(eventData.tasbeehId);
+            const delta = parseInt(eventData.delta, 10) || 0;
+            if (tId && delta !== 0 && typeof window.updateZikrCardDom === 'function') {
+                window.updateZikrCardDom(tId, delta, false);
+            }
+        } else if (eventData.type === 'ZIKR_COMPLETE_TODAY') {
+            const tId = String(eventData.tasbeehId);
+            const card = document.getElementById(`tasbeeh-card-${tId}`) || document.querySelector(`[data-tasbeeh-card="${tId}"]`);
+            let countToAdd = parseInt(card?.dataset?.dailyTarget || '100', 10);
+            if (countToAdd <= 0) countToAdd = 100;
+            if (tId && typeof window.updateZikrCardDom === 'function') {
+                window.updateZikrCardDom(tId, countToAdd, false);
+            }
+        } else if (eventData.type === 'ZIKR_COMPLETE_ALL') {
+            document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                const tId = card.id.replace('tasbeeh-card-', '');
+                let countToAdd = parseInt(card?.dataset?.dailyTarget || '100', 10);
+                if (countToAdd <= 0) countToAdd = 100;
+                if (typeof window.updateZikrCardDom === 'function') {
+                    window.updateZikrCardDom(tId, countToAdd, false);
+                }
+            });
+        } else if (eventData.type === 'ZIKR_RESET_SINGLE') {
+            const tId = String(eventData.tasbeehId);
+            if (tId && typeof window.updateZikrCardDom === 'function') {
+                window.updateZikrCardDom(tId, 0, true);
+            }
+        } else if (eventData.type === 'ZIKR_RESET_ALL') {
+            document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                const tId = card.id.replace('tasbeeh-card-', '');
+                if (typeof window.updateZikrCardDom === 'function') {
+                    window.updateZikrCardDom(tId, 0, true);
+                }
+            });
+        } else if (eventData.type === 'ZIKR_LIFETIME_RESET') {
+            let lifetimeEl = document.getElementById('top-stat-lifetime-total');
+            if (lifetimeEl) {
+                lifetimeEl.dataset.rawVal = '0';
+                lifetimeEl.textContent = '0';
+            }
+            let lifetimeDurEl = document.getElementById('top-stat-lifetime-duration');
+            if (lifetimeDurEl) {
+                lifetimeDurEl.dataset.rawSubtext = '<i class="bi bi-clock-history me-1"></i>1 Day';
+                lifetimeDurEl.innerHTML = '<i class="bi bi-clock-history me-1"></i>1 Day';
+            }
+            if (typeof window.renderZikrStatCards === 'function') {
+                window.renderZikrStatCards();
+            }
+        }
+    }
+
     // Real-Time Cross-Tab / Broadcast Listener
     if ('BroadcastChannel' in window) {
         try {
             const appBroadcastChannel = new BroadcastChannel('portfolio_zikr_channel');
             appBroadcastChannel.onmessage = (event) => {
                 if (event.data && event.data.type) {
-                    runAllOfflineReconciliations();
+                    handleZikrLiveBroadcast(event.data);
                 }
             };
         } catch (e) {}
@@ -2234,7 +2320,8 @@
     window.addEventListener('storage', (event) => {
         if (event.key === 'pwa_zikr_live_broadcast' && event.newValue) {
             try {
-                runAllOfflineReconciliations();
+                const parsed = JSON.parse(event.newValue);
+                handleZikrLiveBroadcast(parsed);
             } catch (e) {}
         }
     });
@@ -2242,22 +2329,24 @@
     const resetFormHandler = (formId) => {
         const form = document.getElementById(formId);
         if (!form) return;
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const modal = form.closest('.modal');
             const actionUrl = form.action || '';
             const match = actionUrl.match(/counter\/(\d+)/);
             const tasbeehId = match ? match[1] : null;
 
+            // Immediate visual reset to 0
+            if (tasbeehId && typeof window.updateZikrCardDom === 'function') {
+                window.updateZikrCardDom(tasbeehId, 0, true);
+            }
+            if (modal && window.bootstrap) {
+                window.bootstrap.Modal.getInstance(modal)?.hide();
+            }
+
             if (!navigator.onLine) {
                 if (window.PwaSync && tasbeehId) {
-                    window.PwaSync.resetTasbeeh(tasbeehId);
-                }
-                if (tasbeehId) {
-                    window.updateZikrCardDom(tasbeehId, 0, true);
-                }
-                if (modal && window.bootstrap) {
-                    window.bootstrap.Modal.getInstance(modal)?.hide();
+                    await window.PwaSync.resetTasbeeh(tasbeehId);
                 }
                 showFlashToast('Tracking reset saved offline and updated on screen.', 'info');
                 return;
@@ -2278,27 +2367,23 @@
                     return payload;
                 })
                 .then((payload) => {
-                    if (modal && window.bootstrap) {
-                        window.bootstrap.Modal.getInstance(modal)?.hide();
-                    }
                     if (tasbeehId) {
-                        window.updateZikrCardDom(tasbeehId, 0, true);
+                        const card = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
+                        if (card) {
+                            card.dataset.baseTodayCompleted = '0';
+                            card.dataset.baseTotalCompleted = '0';
+                        }
+                        if (window.PwaSync && typeof window.PwaSync.broadcastEvent === 'function') {
+                            window.PwaSync.broadcastEvent('ZIKR_RESET_SINGLE', { tasbeehId: String(tasbeehId) });
+                        }
                     }
                     showFlashToast(payload.message || 'Tracking reset successfully.');
                 })
                 .catch((err) => {
-                    if (!navigator.onLine && window.PwaSync && tasbeehId) {
+                    if (window.PwaSync && tasbeehId) {
                         window.PwaSync.resetTasbeeh(tasbeehId);
-                        if (tasbeehId) {
-                            window.updateZikrCardDom(tasbeehId, 0, true);
-                        }
-                        if (modal && window.bootstrap) {
-                            window.bootstrap.Modal.getInstance(modal)?.hide();
-                        }
-                        showFlashToast('Tracking reset saved offline and updated on screen.', 'info');
-                    } else {
-                        showFlashToast(firstErrorMessage(err.payload, 'Could not reset tracking.'), 'danger');
                     }
+                    showFlashToast('Tracking reset saved offline and updated on screen.', 'info');
                 });
         });
     };
@@ -2307,7 +2392,7 @@
 
     const quickAddForm = document.getElementById('quickAddForm');
     if (quickAddForm) {
-        quickAddForm.addEventListener('submit', (e) => {
+        quickAddForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const modal = quickAddForm.closest('.modal');
             const btn = document.getElementById('quickAddSubmitBtn');
@@ -2315,73 +2400,77 @@
 
             const formData = new FormData(quickAddForm);
             const countVal = parseInt(formData.get('count'), 10);
+            if (isNaN(countVal) || countVal === 0) {
+                if (btn) btn.disabled = false;
+                return;
+            }
+
             const actionUrl = quickAddForm.action || '';
             const match = actionUrl.match(/counter\/(\d+)/);
             const tasbeehId = quickAddForm.dataset.tasbeehId || (match ? match[1] : null);
 
+            // Immediate 0ms local visual update on screen
+            if (tasbeehId && typeof window.updateZikrCardDom === 'function') {
+                window.updateZikrCardDom(tasbeehId, countVal, false);
+            }
+
             if (!navigator.onLine) {
                 if (window.PwaSync && tasbeehId) {
-                    window.PwaSync.saveZikrCount(tasbeehId, countVal);
+                    await window.PwaSync.saveZikrCount(tasbeehId, countVal, null, true);
                 }
-                window.reconcileZikrOfflineCounts();
                 if (modal && window.bootstrap) {
                     window.bootstrap.Modal.getInstance(modal)?.hide();
                 }
                 const countInput = document.getElementById('quickAddCountInput');
                 if (countInput) countInput.value = '';
                 if (btn) btn.disabled = false;
-                showFlashToast('Zikr count saved offline and updated on screen!', 'info');
+                showFlashToast(`+${countVal.toLocaleString()} Zikr count saved offline and updated on screen!`, 'info');
                 return;
             }
 
-            fetch(quickAddForm.action, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': financeCsrf,
-                },
-                body: formData,
-            })
-                .then(async (res) => {
-                    const payload = await res.json().catch(() => ({}));
-                    if (!res.ok) throw Object.assign(new Error('Quick add failed'), { payload });
-                    return payload;
-                })
-                .then((payload) => {
-                    if (modal && window.bootstrap) {
-                        window.bootstrap.Modal.getInstance(modal)?.hide();
-                    }
-                    if (tasbeehId && payload.stats) {
-                        const cardCol = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
-                        if (cardCol) {
-                            cardCol.dataset.baseTodayCompleted = String(payload.stats.today_completed ?? payload.stats.total_completed ?? 0);
-                            cardCol.dataset.baseTotalCompleted = String(payload.stats.total_completed ?? 0);
-                        }
-                    }
-                    if (window.PwaSync && typeof window.PwaSync.broadcastZikrCountUpdate === 'function' && tasbeehId) {
-                        window.PwaSync.broadcastZikrCountUpdate(tasbeehId, countVal);
-                    }
-                    window.reconcileZikrOfflineCounts();
-                    const countInput = document.getElementById('quickAddCountInput');
-                    if (countInput) countInput.value = '';
-                    showFlashToast(payload.message || 'Zikr added successfully.', 'success');
-                })
-                .catch((err) => {
-                    if (!navigator.onLine && window.PwaSync && tasbeehId) {
-                        window.PwaSync.saveZikrCount(tasbeehId, countVal);
-                        window.reconcileZikrOfflineCounts();
-                        if (modal && window.bootstrap) {
-                            window.bootstrap.Modal.getInstance(modal)?.hide();
-                        }
-                        showFlashToast('Zikr count saved offline and updated on screen!', 'info');
-                    } else {
-                        showFlashToast(firstErrorMessage(err.payload, 'Could not add zikr.'), 'danger');
-                    }
-                })
-                .finally(() => {
-                    if (btn) btn.disabled = false;
+            try {
+                const res = await fetch(quickAddForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': financeCsrf,
+                    },
+                    body: formData,
                 });
+                const payload = await res.json().catch(() => ({}));
+                if (!res.ok) throw Object.assign(new Error('Quick add failed'), { payload });
+
+                if (modal && window.bootstrap) {
+                    window.bootstrap.Modal.getInstance(modal)?.hide();
+                }
+                if (tasbeehId && payload.stats) {
+                    const cardCol = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
+                    if (cardCol) {
+                        cardCol.dataset.baseTodayCompleted = String(payload.stats.today_completed ?? payload.stats.total_completed ?? 0);
+                        cardCol.dataset.baseTotalCompleted = String(payload.stats.total_completed ?? 0);
+                    }
+                }
+                if (window.PwaSync && typeof window.PwaSync.broadcastZikrCountUpdate === 'function' && tasbeehId) {
+                    window.PwaSync.broadcastZikrCountUpdate(tasbeehId, countVal);
+                }
+                const countInput = document.getElementById('quickAddCountInput');
+                if (countInput) countInput.value = '';
+                showFlashToast(payload.message || `+${countVal.toLocaleString()} Zikr added successfully.`, 'success');
+            } catch (err) {
+                console.warn('Quick add online request failed, saving to offline outbox:', err);
+                if (window.PwaSync && tasbeehId) {
+                    await window.PwaSync.saveZikrCount(tasbeehId, countVal, null, true);
+                }
+                if (modal && window.bootstrap) {
+                    window.bootstrap.Modal.getInstance(modal)?.hide();
+                }
+                const countInput = document.getElementById('quickAddCountInput');
+                if (countInput) countInput.value = '';
+                showFlashToast(`+${countVal.toLocaleString()} Zikr saved offline and updated on screen!`, 'info');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
         });
     }
 

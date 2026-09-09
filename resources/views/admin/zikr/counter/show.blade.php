@@ -111,7 +111,7 @@
             <form id="counterManualForm" method="POST" action="{{ route('admin.zikr.counter.manual', $tasbeeh) }}" class="d-flex gap-2 mb-3">
                 @csrf
                 <input type="hidden" name="user_id" value="{{ $user->id }}">
-                <input type="number" name="count" id="customInputCount" class="form-control input-dark font-monospace fw-bold" placeholder="Custom (e.g. 50 or -33)" required>
+                <input type="number" inputmode="numeric" name="count" id="customInputCount" class="form-control input-dark font-monospace fw-bold" placeholder="Custom (e.g. 50 or -33)" required>
                 <button type="submit" class="btn btn-action-add text-nowrap d-flex align-items-center gap-1">
                     <i class="bi bi-plus-lg"></i> Add
                 </button>
@@ -314,10 +314,10 @@
 
             const tasbeehId = '{{ $tasbeeh->id }}';
 
-            // If offline, save directly to IndexedDB outbox
+            // If offline, save directly to IndexedDB outbox without duplicate broadcasting
             if (!navigator.onLine || forceOffline) {
                 if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
-                    window.PwaSync.saveZikrCount(tasbeehId, inFlightBatch);
+                    window.PwaSync.saveZikrCount(tasbeehId, inFlightBatch, null, false);
                 }
                 inFlightBatch = 0;
                 isSyncing = false;
@@ -363,7 +363,7 @@
                     clearTimeout(timeoutId);
                     console.warn('Increment network sync failed, saving to offline outbox:', err);
                     if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
-                        window.PwaSync.saveZikrCount(tasbeehId, inFlightBatch);
+                        window.PwaSync.saveZikrCount(tasbeehId, inFlightBatch, null, false);
                     }
                     inFlightBatch = 0;
                 })
@@ -376,19 +376,55 @@
                 });
         }
 
-        // Ultra-responsive Tap Anywhere Handler for Mobile & Desktop (No Vibration)
+        // Helper to spawn a gentle animated glowing ripple on mobile tap
+        function createTouchRipple(e) {
+            try {
+                const ripple = document.createElement('div');
+                ripple.className = 'zikr-touch-ripple';
+                let x = e.clientX;
+                let y = e.clientY;
+                if ((x === undefined || y === undefined) && e.touches && e.touches[0]) {
+                    x = e.touches[0].clientX;
+                    y = e.touches[0].clientY;
+                }
+                if (x === undefined || y === undefined) {
+                    const archBox = document.getElementById('mehrabArchBox') || container;
+                    const rect = archBox.getBoundingClientRect();
+                    x = rect.left + rect.width / 2;
+                    y = rect.top + rect.height / 2;
+                }
+                ripple.style.left = `${x}px`;
+                ripple.style.top = `${y}px`;
+                document.body.appendChild(ripple);
+                setTimeout(() => {
+                    if (ripple.parentNode) ripple.parentNode.removeChild(ripple);
+                }, 380);
+            } catch (_) {}
+        }
+
+        // Ultra-responsive Tap Anywhere Handler for Mobile & Desktop with Haptics & Ripples
         let lastTapTimestamp = 0;
         function handleScreenTap(e) {
             // Ignore clicks on buttons/links/inputs/modals/controls/forms
-            if (e.target.closest('button, a, input, select, textarea, .modal, .modal-backdrop, [data-bs-toggle], .btn-menu-dots, .btn-close, .dropdown-menu, label, form, .preset-grid')) {
+            if (e && e.target && e.target.closest && e.target.closest('button, a, input, select, textarea, .modal, .modal-backdrop, [data-bs-toggle], .btn-menu-dots, .btn-close, .dropdown-menu, label, form, .preset-grid')) {
                 return;
             }
 
             const now = Date.now();
-            if (now - lastTapTimestamp < 100) {
+            if (now - lastTapTimestamp < 75) {
                 return;
             }
             lastTapTimestamp = now;
+
+            // Gentle haptic feedback on mobile touch devices
+            if (window.navigator && typeof window.navigator.vibrate === 'function') {
+                try {
+                    window.navigator.vibrate(15);
+                } catch (_) {}
+            }
+
+            // Visual touch ripple
+            if (e) createTouchRipple(e);
 
             totalCompleted += 1;
             todayCompleted += 1;
@@ -404,7 +440,24 @@
             batchTimer = setTimeout(() => flushBatch(), 400);
         }
 
-        document.addEventListener('click', handleScreenTap);
+        // Fast pointerdown for touchscreens (0ms latency), click for desktop mouse
+        let lastTouchHandled = 0;
+        document.addEventListener('pointerdown', function (e) {
+            if (e.pointerType === 'touch') {
+                if (e.target && e.target.closest && e.target.closest('button, a, input, select, textarea, .modal, .modal-backdrop, [data-bs-toggle], .btn-menu-dots, .btn-close, .dropdown-menu, label, form, .preset-grid')) {
+                    return;
+                }
+                lastTouchHandled = Date.now();
+                handleScreenTap(e);
+            }
+        }, { passive: true });
+
+        document.addEventListener('click', function (e) {
+            if (Date.now() - lastTouchHandled < 350) {
+                return; // Prevent duplicate execution from synthesized click
+            }
+            handleScreenTap(e);
+        });
         window.handleLiveCardTap = handleScreenTap;
 
         // Quick Preset amount handler
@@ -506,7 +559,7 @@
                 const countToSave = pendingBatch;
                 pendingBatch = 0;
                 if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
-                    window.PwaSync.saveZikrCount('{{ $tasbeeh->id }}', countToSave);
+                    window.PwaSync.saveZikrCount('{{ $tasbeeh->id }}', countToSave, null, false);
                 }
             }
         };
@@ -613,13 +666,41 @@
         });
         window.addEventListener('pwa:sync-completed', (e) => reconcilePending(e.detail?.data || null));
 
+        function handleCounterBroadcast(data) {
+            if (!data || !data.type) return;
+            const currentTasbeehId = '{{ $tasbeeh->id }}';
+
+            if (data.type === 'ZIKR_COUNT_INCREMENT' && String(data.tasbeehId) === currentTasbeehId) {
+                const delta = parseInt(data.delta, 10) || 0;
+                if (delta !== 0) {
+                    totalCompleted += delta;
+                    todayCompleted += delta;
+                    updateDisplay(true);
+                }
+            } else if (data.type === 'ZIKR_COMPLETE_TODAY' && String(data.tasbeehId) === currentTasbeehId) {
+                const countToAdd = dailyTarget > 0 ? dailyTarget : 100;
+                totalCompleted += countToAdd;
+                todayCompleted += countToAdd;
+                updateDisplay(true);
+            } else if (data.type === 'ZIKR_COMPLETE_ALL') {
+                const countToAdd = dailyTarget > 0 ? dailyTarget : 100;
+                totalCompleted += countToAdd;
+                todayCompleted += countToAdd;
+                updateDisplay(true);
+            } else if ((data.type === 'ZIKR_RESET_SINGLE' && String(data.tasbeehId) === currentTasbeehId) || data.type === 'ZIKR_RESET_ALL') {
+                totalCompleted = 0;
+                todayCompleted = 0;
+                updateDisplay();
+            }
+        }
+
         // Listen for BroadcastChannel & storage events
         if ('BroadcastChannel' in window) {
             try {
                 const zikrChannel = new BroadcastChannel('portfolio_zikr_channel');
                 zikrChannel.onmessage = (event) => {
                     if (event.data && event.data.type) {
-                        reconcilePending();
+                        handleCounterBroadcast(event.data);
                     }
                 };
             } catch (e) {}
@@ -628,7 +709,8 @@
         window.addEventListener('storage', (event) => {
             if (event.key === 'pwa_zikr_live_broadcast' && event.newValue) {
                 try {
-                    reconcilePending();
+                    const parsed = JSON.parse(event.newValue);
+                    handleCounterBroadcast(parsed);
                 } catch (e) {}
             }
         });

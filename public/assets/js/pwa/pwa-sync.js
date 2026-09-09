@@ -408,14 +408,16 @@ class PwaSync {
     }
 
     // High-level offline action helpers
-    async saveZikrCount(tasbeehId, count, date = null) {
+    async saveZikrCount(tasbeehId, count, date = null, shouldBroadcast = true) {
         const todayStr = date || (new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0'));
         const actionItem = await this.enqueueAction('zikr_count', 'create', {
             tasbeeh_id: parseInt(tasbeehId, 10),
             count: parseInt(count, 10),
             date: todayStr,
         });
-        this.broadcastZikrCountUpdate(tasbeehId, count);
+        if (shouldBroadcast) {
+            this.broadcastZikrCountUpdate(tasbeehId, count);
+        }
         return actionItem;
     }
 

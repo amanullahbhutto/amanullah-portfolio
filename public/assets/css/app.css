@@ -2468,47 +2468,219 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
     color: #fff;
 }
-@media (max-height: 720px) {
-    .live-counter-page-wrapper {
-        min-height: calc(100vh - 80px);
-        padding: 4px 6px;
+/* Touch Ripple Effect for Live Counter & Quick Add */
+.zikr-touch-ripple {
+    position: fixed;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 107, 44, 0.45) 0%, rgba(45, 212, 191, 0.25) 50%, transparent 100%);
+    box-shadow: 0 0 18px rgba(255, 107, 44, 0.6);
+    pointer-events: none;
+    transform: translate(-50%, -50%) scale(1);
+    animation: zikrRippleExpand 0.35s ease-out forwards;
+    z-index: 9999;
+}
+@keyframes zikrRippleExpand {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.95;
     }
-    .tasbeeh-card {
-        border-radius: 22px;
-        padding: 12px 14px 8px 14px;
-        min-height: auto;
+    100% {
+        transform: translate(-50%, -50%) scale(7.5);
+        opacity: 0;
     }
-    .mehrab-arch {
-        border-radius: 140px 140px 0 0;
-        height: 155px;
-        padding: 6px 8px 2px 8px;
+}
+
+/* ========================================================================== */
+/* Mobile & Small Screen Optimizations                                         */
+/* ========================================================================== */
+
+@media (max-width: 768px) {
+    .admin-content {
+        padding: 12px 10px;
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
     }
-    .svg-arc-container {
-        top: 0px;
-        transform: translateX(-50%) scale(0.9);
-        transform-origin: top center;
+    .action-btn-top {
+        width: 40px;
+        height: 40px;
+        font-size: 1.05rem;
+        border-radius: 10px;
     }
-    .counter-number {
-        margin-top: 44px;
-        margin-bottom: 4px;
-    }
-    .bottom-stats-row {
-        padding: 4px 2px 2px 2px;
+    .zikr-journey-pill {
+        width: 100%;
+        justify-content: center;
+        padding: 8px 12px !important;
     }
 }
 
 @media (max-width: 576px) {
+    /* Top Overall Statistics Cards Mobile 2-Column Grid */
+    #zikr-top-stat-cards {
+        --bs-gutter-x: 0.5rem;
+        --bs-gutter-y: 0.5rem;
+    }
+    .zikr-stat-card {
+        padding: 10px 10px 8px 10px !important;
+        min-height: 94px !important;
+        border-radius: 16px !important;
+    }
+    .zikr-stat-card .fs-3 {
+        font-size: clamp(1.2rem, 4.2vw, 1.55rem) !important;
+        line-height: 1.15;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .zikr-stat-card span.small {
+        font-size: 0.65rem !important;
+    }
+    .zikr-stat-card small {
+        font-size: 0.65rem !important;
+    }
+
+    /* Tasbeeh Item Card Mobile Styling */
+    .zikr-item-card {
+        padding: 14px 12px 12px 12px !important;
+        border-radius: 18px !important;
+    }
+    .text-container {
+        padding: 12px 12px 10px 12px !important;
+        border-radius: 14px !important;
+        margin-bottom: 10px !important;
+    }
+    .arabic-text {
+        font-size: clamp(1.18rem, 3.8vw, 1.45rem) !important;
+        line-height: 1.85 !important;
+    }
+    .urdu-text {
+        font-size: clamp(0.92rem, 2.8vw, 1.1rem) !important;
+        line-height: 2.1 !important;
+    }
+
+    /* Card Footer Strip on Mobile: 2 Clean Rows */
+    .card-footer-strip {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding-top: 10px;
+    }
+    .badge-info-group {
+        width: 100%;
+        justify-content: center;
+        gap: 6px;
+    }
+    .badge-actions-group {
+        width: 100%;
+        justify-content: center;
+        gap: 10px;
+    }
+    .action-icon-btn {
+        width: 42px;
+        height: 42px;
+        font-size: 1.1rem;
+        border-radius: 10px;
+    }
+    .action-icon-btn:active {
+        transform: scale(0.92);
+    }
+    .badge-remaining,
+    .badge-completed {
+        font-size: 0.74rem !important;
+        padding: 4px 10px !important;
+    }
+
+    /* Live Counter Screen Mobile View */
+    .admin-content:has(.live-counter-page-wrapper) {
+        padding: 8px 8px;
+        min-height: calc(100dvh - 75px);
+        align-items: center;
+    }
     .live-counter-page-wrapper {
-        min-height: calc(100vh - 120px);
-        padding: 4px 0;
+        min-height: calc(100dvh - 90px);
+        padding: 0;
         margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
     .tasbeeh-card {
         width: 100%;
         max-width: 100%;
         margin: 0 auto;
         border-radius: 24px;
-        padding: 14px 16px 10px 16px;
+        padding: 12px 14px 10px 14px;
+        min-height: auto;
+    }
+    .card-top-bar {
+        margin-bottom: 6px;
+    }
+    .btn-menu-dots {
+        width: 38px;
+        height: 38px;
+    }
+    .dua-content-box {
+        padding: 2px 2px 4px 2px;
+        margin-bottom: 2px;
+    }
+    .dua-content-box .arabic-text {
+        font-size: clamp(1.2rem, 3.4vh, 1.6rem) !important;
+        line-height: 1.75;
+    }
+    .dua-content-box .urdu-text {
+        font-size: clamp(0.95rem, 2.0vh, 1.15rem) !important;
+        line-height: 1.95;
+    }
+    .mehrab-arch {
+        border-radius: 140px 140px 0 0;
+        height: clamp(145px, 24vh, 175px);
+        padding: 6px 8px 4px 8px;
+    }
+    .counter-number {
+        font-size: clamp(2.2rem, 5.5vh, 2.9rem) !important;
+        margin-top: auto;
+        margin-bottom: 6px;
+    }
+    .bottom-stats-row {
+        padding: 6px 2px 2px 2px;
+    }
+    .stat-col small {
+        font-size: 0.62rem;
+    }
+    .stat-col strong {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-height: 720px) {
+    .live-counter-page-wrapper {
+        min-height: calc(100dvh - 70px);
+        padding: 2px 0;
+    }
+    .tasbeeh-card {
+        border-radius: 20px;
+        padding: 10px 12px 6px 12px;
+    }
+    .dua-content-box .arabic-text {
+        font-size: clamp(1.1rem, 2.8vh, 1.45rem) !important;
+        line-height: 1.65;
+    }
+    .dua-content-box .urdu-text {
+        font-size: clamp(0.88rem, 1.8vh, 1.05rem) !important;
+        line-height: 1.75;
+    }
+    .mehrab-arch {
+        border-radius: 125px 125px 0 0;
+        height: clamp(130px, 22vh, 155px);
+        padding: 4px 6px 2px 6px;
+    }
+    .counter-number {
+        margin-top: auto;
+        margin-bottom: 2px;
+    }
+    .bottom-stats-row {
+        padding: 4px 2px 2px 2px;
     }
 }
 
