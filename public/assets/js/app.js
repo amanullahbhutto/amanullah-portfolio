@@ -2029,16 +2029,34 @@
     // Absolute Offline Reconciliation for Dashboard & Counter Cards
     window.reconcileZikrOfflineCounts = async function (pulledServerData = null) {
         try {
+            function getLocalDateStr() {
+                const d = new Date();
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            }
+            const clientToday = getLocalDateStr();
+            const globalPageDate = document.querySelector('meta[name="page-rendered-date"]')?.getAttribute('content');
+            let lastActiveDate = null;
+            try {
+                lastActiveDate = localStorage.getItem('pwa_zikr_active_date');
+            } catch (_) {}
+
             // 1. If fresh server data was passed (e.g. from pull sync), update baseline values
             if (pulledServerData && pulledServerData.zikr_summary) {
                 const summary = pulledServerData.zikr_summary;
+                const syncDate = (pulledServerData.server_time || '').substring(0, 10);
+                const isSyncToday = !syncDate || syncDate === clientToday;
+
                 if (Array.isArray(summary.tasbeehs)) {
                     summary.tasbeehs.forEach(t => {
                         const card = document.getElementById(`tasbeeh-card-${t.tasbeeh_id}`) || document.querySelector(`[data-tasbeeh-card="${t.tasbeeh_id}"]`);
                         if (card) {
-                            card.dataset.baseTodayCompleted = String(t.today_completed || 0);
+                            const todayCount = isSyncToday ? (t.today_completed || 0) : 0;
+                            card.dataset.baseTodayCompleted = String(todayCount);
                             card.dataset.baseTotalCompleted = String(t.total_completed || 0);
-                            card.dataset.todayCompleted = String(t.today_completed || 0);
+                            card.dataset.todayCompleted = String(todayCount);
                             card.dataset.totalCompleted = String(t.total_completed || 0);
                             card.dataset.dailyTarget = String(t.daily_target || card.dataset.dailyTarget || 100);
                             card.dataset.totalRequired = String(t.total_required || card.dataset.totalRequired || 100);
@@ -2059,26 +2077,37 @@
                 items = await window.PwaDB.getPendingOutbox();
             }
 
-            const countByTasbeeh = {};
+            const countTodayByTasbeeh = {};
+            const countTotalByTasbeeh = {};
             const completedTodayByTasbeeh = {};
             const resetByTasbeeh = {};
             let hasLifetimeReset = false;
             let hasZikrResetAll = false;
-            let hasZikrCompleteAll = false;
+            let hasZikrCompleteAllToday = false;
 
             (items || []).forEach(item => {
                 const entity = item.entity || '';
                 const p = item.payload || {};
                 const tId = p.tasbeeh_id ? String(p.tasbeeh_id) : null;
+                const itemDate = p.date || (item.created_at ? item.created_at.substring(0, 10) : clientToday);
+                const isTodayItem = (itemDate === clientToday);
 
                 if (entity === 'zikr_count' || entity === 'tasbeeh_count') {
                     if (tId) {
-                        countByTasbeeh[tId] = (countByTasbeeh[tId] || 0) + (parseInt(p.count, 10) || 0);
+                        const cnt = (parseInt(p.count, 10) || 0);
+                        countTotalByTasbeeh[tId] = (countTotalByTasbeeh[tId] || 0) + cnt;
+                        if (isTodayItem) {
+                            countTodayByTasbeeh[tId] = (countTodayByTasbeeh[tId] || 0) + cnt;
+                        }
                     }
                 } else if (entity === 'tasbeeh_complete_today') {
-                    if (tId) completedTodayByTasbeeh[tId] = (completedTodayByTasbeeh[tId] || 0) + 1;
+                    if (tId && isTodayItem) {
+                        completedTodayByTasbeeh[tId] = (completedTodayByTasbeeh[tId] || 0) + 1;
+                    }
                 } else if (entity === 'zikr_complete_all') {
-                    hasZikrCompleteAll = true;
+                    if (isTodayItem) {
+                        hasZikrCompleteAllToday = true;
+                    }
                 } else if (entity === 'tasbeeh_reset_single') {
                     if (tId) resetByTasbeeh[tId] = true;
                 } else if (entity === 'zikr_reset_all') {
@@ -2094,7 +2123,16 @@
 
             cards.forEach(card => {
                 const tId = card.id.replace('tasbeeh-card-', '');
-                if (!card.dataset.baseTodayCompleted) {
+                const cardRenderDate = card.dataset.renderDate || globalPageDate;
+                const isCardPastDay = Boolean(
+                    (cardRenderDate && cardRenderDate < clientToday) ||
+                    (lastActiveDate && lastActiveDate < clientToday) ||
+                    (!cardRenderDate && !navigator.onLine)
+                );
+
+                if (isCardPastDay) {
+                    card.dataset.baseTodayCompleted = '0';
+                } else if (!card.dataset.baseTodayCompleted) {
                     card.dataset.baseTodayCompleted = card.dataset.todayCompleted || '0';
                 }
                 if (!card.dataset.baseTotalCompleted) {
@@ -2102,11 +2140,20 @@
                     card.dataset.baseTotalCompleted = card.dataset.totalCompleted || (completedEl ? completedEl.textContent.replace(/,/g, '') : '0');
                 }
 
-                let baseToday = parseInt(card.dataset.baseTodayCompleted || '0', 10) || 0;
+                let baseToday = isCardPastDay ? 0 : (parseInt(card.dataset.baseTodayCompleted || '0', 10) || 0);
                 let baseTotal = parseInt(card.dataset.baseTotalCompleted || '0', 10) || 0;
                 let dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10) || 100;
+
                 let totalRequired = parseInt(card.dataset.totalRequired || '0', 10);
-                if (!totalRequired) {
+                const startDateStr = card.dataset.trackingStartDate;
+                if (startDateStr && isCardPastDay) {
+                    const start = new Date(startDateStr + 'T00:00:00');
+                    const cur = new Date(clientToday + 'T00:00:00');
+                    const activeDays = Math.max(1, Math.floor((cur - start) / 86400000) + 1);
+                    card.dataset.activeDays = String(activeDays);
+                    totalRequired = activeDays * dailyTarget;
+                    card.dataset.totalRequired = String(totalRequired);
+                } else if (!totalRequired) {
                     let badgeCompletedText = card.querySelector('.badge-completed')?.textContent || '';
                     let matchReq = badgeCompletedText.match(/\/\s*([0-9,]+)/);
                     totalRequired = matchReq ? (parseInt(matchReq[1].replace(/,/g, ''), 10) || 0) : 0;
@@ -2119,14 +2166,15 @@
                     finalToday = 0;
                     finalTotal = 0;
                 } else {
-                    const addedCount = countByTasbeeh[tId] || 0;
-                    const completesCount = (completedTodayByTasbeeh[tId] || 0) + (hasZikrCompleteAll ? 1 : 0);
-                    const completeTodayAdd = completesCount * (dailyTarget > 0 ? dailyTarget : 100);
+                    const addedTodayCount = countTodayByTasbeeh[tId] || 0;
+                    const addedTotalCount = countTotalByTasbeeh[tId] || 0;
+                    const completesCount = (completedTodayByTasbeeh[tId] || 0) + (hasZikrCompleteAllToday ? 1 : 0);
+                    const completeTodayAdd = completesCount > 0 ? Math.max(0, dailyTarget - baseToday) : 0;
 
                     allCompletesTotalCount += completeTodayAdd;
 
-                    finalToday = baseToday + completeTodayAdd + addedCount;
-                    finalTotal = baseTotal + completeTodayAdd + addedCount;
+                    finalToday = baseToday + completeTodayAdd + addedTodayCount;
+                    finalTotal = baseTotal + completeTodayAdd + addedTotalCount;
                 }
 
                 if (finalToday < 0) finalToday = 0;
@@ -2210,7 +2258,7 @@
                     lifetimeEl.textContent = '0';
                 } else {
                     let baseLifetime = parseInt(String(lifetimeEl.dataset.baseLifetime || lifetimeEl.dataset.rawVal || lifetimeEl.textContent || '0').replace(/,/g, ''), 10) || 0;
-                    let totalAddedAcrossAll = Object.values(countByTasbeeh).reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0) + allCompletesTotalCount;
+                    let totalAddedAcrossAll = Object.values(countTotalByTasbeeh).reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0) + allCompletesTotalCount;
                     let finalLifetime = baseLifetime + totalAddedAcrossAll;
                     lifetimeEl.dataset.rawVal = finalLifetime.toLocaleString();
                     lifetimeEl.textContent = finalLifetime.toLocaleString();
@@ -2221,6 +2269,9 @@
             if (typeof window.recalculateZikrTopStats === 'function') {
                 window.recalculateZikrTopStats();
             }
+            try {
+                localStorage.setItem('pwa_zikr_active_date', clientToday);
+            } catch (_) {}
         } catch (e) {
             console.warn('reconcileZikrOfflineCounts notice:', e);
         }
@@ -2393,6 +2444,27 @@
     });
     window.addEventListener('pwa:sync-completed', (e) => {
         runAllOfflineReconciliations(e.detail?.data || null);
+    });
+
+    // Periodic midnight / 24-hour rollover monitor for offline PWA
+    let lastKnownDayStr = (function () {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    })();
+
+    const checkDayRollover = () => {
+        const d = new Date();
+        const curDayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        if (curDayStr !== lastKnownDayStr) {
+            lastKnownDayStr = curDayStr;
+            runAllOfflineReconciliations();
+        }
+    };
+
+    setInterval(checkDayRollover, 10000);
+    window.addEventListener('focus', checkDayRollover);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') checkDayRollover();
     });
 
     // Helper to process live broadcast messages across tabs

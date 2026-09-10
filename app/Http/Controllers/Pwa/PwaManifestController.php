@@ -132,9 +132,12 @@ self.addEventListener('activate', (event) => {
                         const oldCache = await caches.open(name);
                         const oldKeys = await oldCache.keys();
                         for (const key of oldKeys) {
-                            const oldResp = await oldCache.match(key);
-                            if (oldResp) {
-                                await currentCache.put(key, oldResp);
+                            const alreadyExists = await currentCache.match(key);
+                            if (!alreadyExists) {
+                                const oldResp = await oldCache.match(key);
+                                if (oldResp) {
+                                    await currentCache.put(key, oldResp);
+                                }
                             }
                         }
                         await caches.delete(name);
@@ -182,7 +185,7 @@ self.addEventListener('fetch', (event) => {
         url.hostname.includes('cdn.jsdelivr.net')
     ) {
         event.respondWith(
-            caches.match(request).then((cachedResponse) => {
+            caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
                 if (cachedResponse) {
                     // Refresh in background if online
                     fetch(request).then((networkResponse) => {

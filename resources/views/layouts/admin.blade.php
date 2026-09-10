@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="auth-user-id" content="{{ auth()->id() }}">
     <meta name="selected-user-id" content="{{ $selectedUser->id ?? ($user->id ?? auth()->id()) }}">
+    <meta name="page-rendered-date" content="{{ now()->format('Y-m-d') }}">
     <title>@yield('title', 'Dashboard') - Amanullah</title>
     
     {{-- Progressive Web App (PWA) Meta & Icons --}}

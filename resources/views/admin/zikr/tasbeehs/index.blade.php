@@ -76,7 +76,7 @@
     <div id="tasbeehs-grid-container" class="admin-list-results">
         <div class="row g-3 g-md-4">
             @forelse($tasbeehs as $t)
-                <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $t->id }}" data-daily-target="{{ $t->daily_target }}" data-active-days="{{ $t->stats['active_days'] ?? 1 }}" data-today-completed="{{ $t->stats['today_completed'] ?? 0 }}" data-total-completed="{{ $t->stats['total_completed'] ?? 0 }}" data-base-today-completed="{{ $t->stats['today_completed'] ?? 0 }}" data-base-total-completed="{{ $t->stats['total_completed'] ?? 0 }}" data-total-required="{{ $t->stats['total_required'] ?? $t->daily_target }}">
+                <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $t->id }}" data-daily-target="{{ $t->daily_target }}" data-active-days="{{ $t->stats['active_days'] ?? 1 }}" data-today-completed="{{ $t->stats['today_completed'] ?? 0 }}" data-total-completed="{{ $t->stats['total_completed'] ?? 0 }}" data-total-required="{{ $t->stats['total_required'] ?? $t->daily_target }}" data-tracking-start-date="{{ $t->stats['tracking_start_date'] ?? '' }}" data-render-date="{{ now()->format('Y-m-d') }}">
                     <div class="zikr-item-card w-100 d-flex flex-column justify-content-between">
                         <div>
                             {{-- Top Header with Sort Number Circle Badge and Today's Count Badge --}}

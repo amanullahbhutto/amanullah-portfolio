@@ -234,6 +234,7 @@ class PwaSync {
             entity,
             action,
             payload,
+            created_at: new Date().toISOString(),
             temp_id: tempId || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         };
 
@@ -463,6 +464,9 @@ class PwaSync {
     // High-level offline action helpers
     async saveZikrCount(tasbeehId, count, date = null, shouldBroadcast = true) {
         const todayStr = date || (new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0'));
+        try {
+            localStorage.setItem('pwa_zikr_active_date', todayStr);
+        } catch (_) {}
         const actionItem = await this.enqueueAction('zikr_count', 'create', {
             tasbeeh_id: parseInt(tasbeehId, 10),
             count: parseInt(count, 10),
@@ -475,16 +479,21 @@ class PwaSync {
     }
 
     async completeTasbeehToday(tasbeehId) {
+        const todayStr = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
         const actionItem = await this.enqueueAction('tasbeeh_complete_today', 'update', {
-            tasbeeh_id: parseInt(tasbeehId, 10)
+            tasbeeh_id: parseInt(tasbeehId, 10),
+            date: todayStr
         });
-        this.broadcastEvent('ZIKR_COMPLETE_TODAY', { tasbeehId: String(tasbeehId) });
+        this.broadcastEvent('ZIKR_COMPLETE_TODAY', { tasbeehId: String(tasbeehId), date: todayStr });
         return actionItem;
     }
 
     async completeAllTasbeehsToday() {
-        const actionItem = await this.enqueueAction('zikr_complete_all', 'update', {});
-        this.broadcastEvent('ZIKR_COMPLETE_ALL', {});
+        const todayStr = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
+        const actionItem = await this.enqueueAction('zikr_complete_all', 'update', {
+            date: todayStr
+        });
+        this.broadcastEvent('ZIKR_COMPLETE_ALL', { date: todayStr });
         return actionItem;
     }
 

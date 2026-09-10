@@ -2,8 +2,90 @@
 @section('title', $tasbeeh->title . ' — Live Counter')
 @section('page_title', 'Live Zikr Counter')
 
+@push('styles')
+<style>
+.btn-tasbeeh-lock-fixed {
+    position: fixed;
+    top: calc(82px + 14px);
+    right: max(14px, env(safe-area-inset-right, 14px));
+    z-index: 2500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 9999px;
+    background: rgba(8, 17, 30, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    color: #e2e8f0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+@media (max-width: 991px) {
+    .btn-tasbeeh-lock-fixed {
+        top: calc(62px + 12px);
+        right: max(12px, env(safe-area-inset-right, 12px));
+        padding: 6px 12px;
+        font-size: 0.78rem;
+    }
+}
+.btn-tasbeeh-lock-fixed:hover {
+    background: rgba(14, 28, 48, 0.98);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #fff;
+    transform: translateY(-1px);
+}
+.btn-tasbeeh-lock-fixed.is-locked {
+    background: rgba(245, 158, 11, 0.22);
+    border-color: rgba(245, 158, 11, 0.65);
+    color: #fbbf24;
+    box-shadow: 0 0 22px rgba(245, 158, 11, 0.38);
+}
+.btn-tasbeeh-lock-fixed:active {
+    transform: scale(0.96);
+}
+.btn-tasbeeh-lock-fixed.lock-hint-active {
+    background: rgba(14, 116, 144, 0.35) !important;
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.65) !important;
+    transform: scale(1.05);
+    animation: lockHintPulse 0.35s ease infinite alternate;
+}
+@keyframes lockHintPulse {
+    from { transform: scale(1.02); }
+    to { transform: scale(1.08); }
+}
+body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
+    top: max(14px, env(safe-area-inset-top, 14px));
+    z-index: 2500;
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+.flash-toast-viewport {
+    pointer-events: none !important;
+}
+</style>
+@endpush
+
 @section('content')
 <div class="live-counter-page-wrapper" id="liveCounterPage" style="cursor: pointer; min-height: calc(100vh - 120px); width: 100%; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation;">
+    {{-- Fixed Top-Right Focus / Lock Mode Button (Away from card tap surface) --}}
+    <button class="btn-tasbeeh-lock-fixed" id="tasbeehLockToggleBtn" type="button" onclick="event.stopPropagation()" title="Double click to Lock (Only Tasbeeh)">
+        <i class="bi bi-unlock fs-5" id="tasbeehLockIcon"></i>
+        <span class="d-inline" id="tasbeehLockText">Lock</span>
+    </button>
+
     {{-- Main Tasbeeh Card with Tap Anywhere Detection --}}
     <div
         class="tasbeeh-card"
@@ -14,6 +96,8 @@
         data-total-completed="{{ $stats['total_completed'] }}"
         data-today-completed="{{ $stats['today_completed'] }}"
         data-daily-target="{{ $stats['daily_target'] }}"
+        data-tracking-start-date="{{ $stats['tracking_start_date'] }}"
+        data-render-date="{{ now()->format('Y-m-d') }}"
     >
         {{-- Card Top Header Bar --}}
         <div class="card-top-bar">
@@ -47,10 +131,6 @@
                         Today: <strong class="ms-1 font-monospace" id="liveTodayVal">0</strong>
                     </span>
                 @endif
-                {{-- Focus / Lock Mode Button --}}
-                <button class="btn-menu-dots btn-tasbeeh-lock flex-shrink-0" id="tasbeehLockToggleBtn" type="button" onclick="event.stopPropagation()" title="Lock Mode (Only Tasbeeh)">
-                    <i class="bi bi-unlock fs-5" id="tasbeehLockIcon"></i>
-                </button>
                 <button class="btn-menu-dots flex-shrink-0" type="button" onclick="event.stopPropagation()" data-bs-toggle="modal" data-bs-target="#controlsModal" title="Controls & Quick Add">
                     <i class="bi bi-three-dots-vertical fs-5"></i>
                 </button>
@@ -220,11 +300,34 @@
         const container = document.getElementById('tasbeehContainer');
         if (!container) return;
 
+        function getLocalDateStr() {
+            const d = new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        const pageRenderDate = container.dataset.renderDate || document.querySelector('meta[name="page-rendered-date"]')?.getAttribute('content');
+        let clientToday = getLocalDateStr();
+        let lastActiveDate = null;
+        try {
+            lastActiveDate = localStorage.getItem('pwa_zikr_active_date');
+        } catch (_) {}
+
+        let isPastDayRender = Boolean(
+            (pageRenderDate && pageRenderDate < clientToday) ||
+            (lastActiveDate && lastActiveDate < clientToday) ||
+            (!pageRenderDate && !navigator.onLine)
+        );
+
+        const dailyTarget = parseInt(container.dataset.dailyTarget || '100', 10) || 100;
         let baseTotalCompleted = parseInt(container.dataset.totalCompleted, 10) || 0;
-        let baseTodayCompleted = parseInt(container.dataset.todayCompleted || '0', 10) || 0;
+        let baseTodayCompleted = isPastDayRender ? 0 : (parseInt(container.dataset.todayCompleted || '0', 10) || 0);
         let totalCompleted = baseTotalCompleted;
         let todayCompleted = baseTodayCompleted;
-        const totalRequired = parseInt(container.dataset.totalRequired, 10) || 0;
+        let totalRequired = parseInt(container.dataset.totalRequired, 10) || 0;
+
         const maxBeads = 33;
         let pendingBatch = 0;
         let batchTimer = null;
@@ -237,9 +340,24 @@
         const remainingLabelEl = document.getElementById('remainingLabel');
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
-        const dailyTarget = parseInt(container.dataset.dailyTarget || '100', 10) || 100;
         const liveTodayValEl = document.getElementById('liveTodayVal');
         const liveTodayBadgeEl = document.getElementById('liveTodayBadge');
+
+        function recalculateRequiredForDate(targetDateStr) {
+            const startStr = container.dataset.trackingStartDate;
+            if (startStr) {
+                const start = new Date(startStr + 'T00:00:00');
+                const current = new Date(targetDateStr + 'T00:00:00');
+                const diffDays = Math.max(1, Math.floor((current - start) / 86400000) + 1);
+                totalRequired = diffDays * dailyTarget;
+                if (reqValEl) reqValEl.innerText = String(totalRequired);
+            }
+        }
+
+        if (isPastDayRender) {
+            recalculateRequiredForDate(clientToday);
+            updateTodayDisplay();
+        }
 
         function updateTodayDisplay() {
             if (todayCompleted < 0) todayCompleted = 0;
@@ -441,8 +559,10 @@
 
                 if (lockToggleBtn) {
                     lockToggleBtn.classList.add('is-locked');
-                    lockToggleBtn.setAttribute('title', 'Tasbeeh Locked (Click to Unlock)');
+                    lockToggleBtn.setAttribute('title', 'Tasbeeh Locked (Double click to Unlock)');
                 }
+                const lockTextEl = document.getElementById('tasbeehLockText');
+                if (lockTextEl) lockTextEl.textContent = 'Unlock';
                 if (lockIcon) {
                     lockIcon.className = 'bi bi-lock-fill fs-5 text-warning';
                 }
@@ -454,7 +574,7 @@
                 } catch (_) {}
 
                 if (window.App && typeof window.App.showToast === 'function') {
-                    window.App.showToast('warning', 'Tasbeeh Lock Active: Sirf Tasbeeh chalegi, baqi sab lock hai.');
+                    window.App.showToast('warning', 'Tasbeeh Lock Active: Sirf Tasbeeh chalegi. Unlock ke liye lock par double click karein.');
                 }
             } else {
                 document.body.classList.remove('tasbeeh-locked-mode');
@@ -467,8 +587,10 @@
 
                 if (lockToggleBtn) {
                     lockToggleBtn.classList.remove('is-locked');
-                    lockToggleBtn.setAttribute('title', 'Lock Mode (Only Tasbeeh)');
+                    lockToggleBtn.setAttribute('title', 'Lock Mode (Double click to Lock)');
                 }
+                const lockTextEl = document.getElementById('tasbeehLockText');
+                if (lockTextEl) lockTextEl.textContent = 'Lock';
                 if (lockIcon) {
                     lockIcon.className = 'bi bi-unlock fs-5 text-white';
                 }
@@ -481,8 +603,62 @@
             }
         }
 
+        // Double click / double tap handler for the lock button
+        let lastLockTapTime = 0;
+        let lockHintTimeout = null;
+
+        function triggerLockDoubleTapAction(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const now = Date.now();
+            const timeSinceLast = now - lastLockTapTime;
+
+            if (timeSinceLast > 50 && timeSinceLast < 800) {
+                // Confirmed second tap / double click!
+                clearTimeout(lockHintTimeout);
+                lastLockTapTime = 0;
+                if (lockToggleBtn) lockToggleBtn.classList.remove('lock-hint-active');
+                if (window.navigator && typeof window.navigator.vibrate === 'function') {
+                    try { window.navigator.vibrate(100); } catch (_) {}
+                }
+                toggleTasbeehLock(e);
+            } else {
+                // First tap / click: NO blocking toast popup
+                lastLockTapTime = now;
+                if (lockToggleBtn) {
+                    lockToggleBtn.classList.add('lock-hint-active');
+                }
+                const lockTextEl = document.getElementById('tasbeehLockText');
+                if (lockTextEl) lockTextEl.textContent = 'Tap Again!';
+
+                if (window.navigator && typeof window.navigator.vibrate === 'function') {
+                    try { window.navigator.vibrate(40); } catch (_) {}
+                }
+
+                clearTimeout(lockHintTimeout);
+                lockHintTimeout = setTimeout(() => {
+                    if (lockToggleBtn) lockToggleBtn.classList.remove('lock-hint-active');
+                    if (lockTextEl) lockTextEl.textContent = isTasbeehLocked ? 'Unlock' : 'Lock';
+                    lastLockTapTime = 0;
+                }, 800);
+            }
+        }
+
         if (lockToggleBtn) {
-            lockToggleBtn.addEventListener('click', toggleTasbeehLock);
+            lockToggleBtn.addEventListener('pointerdown', function (e) {
+                if (e.pointerType === 'touch') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    triggerLockDoubleTapAction(e);
+                }
+            });
+            lockToggleBtn.addEventListener('click', function (e) {
+                if (e.pointerType !== 'touch') {
+                    triggerLockDoubleTapAction(e);
+                }
+            });
         }
 
         // Prevent navigation while locked
@@ -503,16 +679,36 @@
                     history.pushState({ tasbeehLocked: true }, document.title, window.location.href);
                 } catch (_) {}
                 if (window.App && typeof window.App.showToast === 'function') {
-                    window.App.showToast('warning', 'Tasbeeh lock hai. Unlock karne ke liye lock icon dabayein.');
+                    window.App.showToast('warning', 'Tasbeeh lock hai. Unlock karne ke liye lock button par double click karein.');
                 }
             }
         });
 
         // Ultra-responsive Tap Anywhere Handler for Mobile & Desktop with Haptics & Ripples
         let lastTapTimestamp = 0;
+        function isTapNearLockBtn(e) {
+            if (e && e.target && e.target.closest && e.target.closest('#tasbeehLockToggleBtn, .btn-tasbeeh-lock-fixed')) {
+                return true;
+            }
+            if (!lockToggleBtn) return false;
+            let cx = e ? e.clientX : undefined;
+            let cy = e ? e.clientY : undefined;
+            if ((cx === undefined || cy === undefined) && e && e.touches && e.touches[0]) {
+                cx = e.touches[0].clientX;
+                cy = e.touches[0].clientY;
+            }
+            if (cx !== undefined && cy !== undefined) {
+                const rect = lockToggleBtn.getBoundingClientRect();
+                if (cx >= rect.left - 14 && cx <= rect.right + 14 && cy >= rect.top - 14 && cy <= rect.bottom + 14) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function handleScreenTap(e) {
-            // If clicking the lock toggle button itself, do not count tasbeeh
-            if (e && e.target && e.target.closest && e.target.closest('#tasbeehLockToggleBtn')) {
+            // If clicking the lock toggle button itself or near it, do not count tasbeeh
+            if (isTapNearLockBtn(e)) {
                 return;
             }
 
@@ -532,18 +728,31 @@
             // Visual touch ripple
             if (e) createTouchRipple(e);
 
+            const prevToday = todayCompleted;
             totalCompleted += 1;
             todayCompleted += 1;
             pendingBatch += 1;
             updateDisplay(true);
 
-            // Vibrate ONLY when reaching 100 (or every 100 milestone) — do not vibrate on normal clicks
+            // Daily Target Completion & Milestone Vibration
+            // 1. Target hit for the first time today: e.g. target is 10 or 100, and today becomes 10 or 100
+            const isDailyTargetHit = (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget);
+            // 2. Repeated cycle of daily target completed: e.g. 10, 20, 30...
+            const isDailyTargetCycle = (dailyTarget > 0 && todayCompleted > 0 && todayCompleted % dailyTarget === 0);
+            // 3. Every 100 milestone
             const isHundredMilestone = (totalCompleted > 0 && totalCompleted % 100 === 0) || (todayCompleted > 0 && todayCompleted % 100 === 0);
-            if (isHundredMilestone && window.navigator && typeof window.navigator.vibrate === 'function') {
+
+            if ((isDailyTargetHit || isDailyTargetCycle || isHundredMilestone) && window.navigator && typeof window.navigator.vibrate === 'function') {
                 try {
-                    window.navigator.vibrate([150, 80, 150]);
+                    if (isDailyTargetHit) {
+                        window.navigator.vibrate([200, 90, 200, 90, 350]);
+                    } else if (isDailyTargetCycle) {
+                        window.navigator.vibrate([180, 80, 220]);
+                    } else {
+                        window.navigator.vibrate([150, 80, 150]);
+                    }
                 } catch (_) {
-                    try { window.navigator.vibrate(200); } catch (__) {}
+                    try { window.navigator.vibrate(250); } catch (__) {}
                 }
             }
 
@@ -560,7 +769,7 @@
         let lastTouchHandled = 0;
         document.addEventListener('pointerdown', function (e) {
             if (e.pointerType === 'touch') {
-                if (e.target && e.target.closest && e.target.closest('#tasbeehLockToggleBtn')) {
+                if (isTapNearLockBtn(e)) {
                     return;
                 }
                 if (!isTasbeehLocked) {
@@ -574,7 +783,7 @@
         }, { passive: true });
 
         document.addEventListener('click', function (e) {
-            if (e.target && e.target.closest && e.target.closest('#tasbeehLockToggleBtn')) {
+            if (isTapNearLockBtn(e)) {
                 return;
             }
             if (Date.now() - lastTouchHandled < 650) {
@@ -604,6 +813,8 @@
                 const submitBtn = manualForm.querySelector('button[type="submit"]');
                 if (submitBtn) submitBtn.disabled = true;
 
+                const prevToday = todayCompleted;
+
                 if (!navigator.onLine) {
                     if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
                         window.PwaSync.saveZikrCount('{{ $tasbeeh->id }}', val);
@@ -611,6 +822,9 @@
                     totalCompleted += val;
                     todayCompleted += val;
                     updateDisplay();
+                    if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget && window.navigator && typeof window.navigator.vibrate === 'function') {
+                        try { window.navigator.vibrate([200, 90, 200, 90, 350]); } catch (_) {}
+                    }
                     const modalEl = document.getElementById('controlsModal');
                     if (modalEl && typeof bootstrap !== 'undefined') {
                         const modal = bootstrap.Modal.getInstance(modalEl);
@@ -647,6 +861,9 @@
                             totalCompleted = baseTotalCompleted;
                             todayCompleted = baseTodayCompleted;
                             updateDisplay();
+                            if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget && window.navigator && typeof window.navigator.vibrate === 'function') {
+                                try { window.navigator.vibrate([200, 90, 200, 90, 350]); } catch (_) {}
+                            }
                         }
                         if (window.PwaSync && typeof window.PwaSync.broadcastZikrCountUpdate === 'function') {
                             window.PwaSync.broadcastZikrCountUpdate('{{ $tasbeeh->id }}', val);
@@ -667,6 +884,9 @@
                             totalCompleted += val;
                             todayCompleted += val;
                             updateDisplay();
+                            if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget && window.navigator && typeof window.navigator.vibrate === 'function') {
+                                try { window.navigator.vibrate([200, 90, 200, 90, 350]); } catch (_) {}
+                            }
                         } else {
                             alert(err?.payload?.message || 'Could not update zikr count.');
                         }
@@ -713,14 +933,34 @@
         const reconcilePending = async (syncedData = null) => {
             try {
                 const currentTasbeehId = '{{ $tasbeeh->id }}';
+                clientToday = getLocalDateStr();
+                let lastActiveDate = null;
+                try {
+                    lastActiveDate = localStorage.getItem('pwa_zikr_active_date');
+                } catch (_) {}
+
+                const isPastDay = Boolean(
+                    (pageRenderDate && pageRenderDate < clientToday) ||
+                    (lastActiveDate && lastActiveDate < clientToday) ||
+                    (!pageRenderDate && !navigator.onLine)
+                );
+
+                if (isPastDay) {
+                    recalculateRequiredForDate(clientToday);
+                    baseTodayCompleted = 0;
+                }
 
                 // 1. If syncedData is provided, update baseline
                 if (syncedData && syncedData.zikr_summary && Array.isArray(syncedData.zikr_summary.tasbeehs)) {
+                    const syncDate = (syncedData.server_time || '').substring(0, 10);
+                    const isSyncToday = !syncDate || syncDate === clientToday;
                     const match = syncedData.zikr_summary.tasbeehs.find(t => String(t.tasbeeh_id) === currentTasbeehId);
                     if (match) {
                         baseTotalCompleted = Number(match.total_completed || 0);
-                        baseTodayCompleted = Number(match.today_completed || 0);
+                        baseTodayCompleted = isSyncToday ? Number(match.today_completed || 0) : 0;
                     }
+                } else if (isPastDay) {
+                    baseTodayCompleted = 0;
                 }
 
                 // 2. Read pending outbox items
@@ -729,7 +969,8 @@
                     items = await window.PwaDB.getPendingOutbox();
                 }
 
-                let pendingCountForThis = 0;
+                let pendingCountToday = 0;
+                let pendingCountTotal = 0;
                 let isCompletedToday = false;
                 let isReset = false;
 
@@ -737,13 +978,19 @@
                     const entity = item.entity || '';
                     const p = item.payload || {};
                     const tId = p.tasbeeh_id ? String(p.tasbeeh_id) : null;
+                    const itemDate = p.date || (item.created_at ? item.created_at.substring(0, 10) : clientToday);
+                    const isTodayItem = (itemDate === clientToday);
 
                     if ((entity === 'tasbeeh_count' || entity === 'zikr_count') && tId === currentTasbeehId) {
-                        pendingCountForThis += (parseInt(p.count, 10) || 0);
+                        const cnt = (parseInt(p.count, 10) || 0);
+                        pendingCountTotal += cnt;
+                        if (isTodayItem) {
+                            pendingCountToday += cnt;
+                        }
                     } else if (entity === 'tasbeeh_complete_today' && tId === currentTasbeehId) {
-                        isCompletedToday = true;
+                        if (isTodayItem) isCompletedToday = true;
                     } else if (entity === 'zikr_complete_all') {
-                        isCompletedToday = true;
+                        if (isTodayItem) isCompletedToday = true;
                     } else if (entity === 'tasbeeh_reset_single' && tId === currentTasbeehId) {
                         isReset = true;
                     } else if (entity === 'zikr_reset_all') {
@@ -756,21 +1003,43 @@
                     todayCompleted = 0 + pendingBatch;
                 } else if (isCompletedToday) {
                     const neededForToday = Math.max(dailyTarget - baseTodayCompleted, 0);
-                    todayCompleted = Math.max(baseTodayCompleted, dailyTarget) + pendingCountForThis + pendingBatch;
-                    totalCompleted = baseTotalCompleted + neededForToday + pendingCountForThis + pendingBatch;
+                    todayCompleted = Math.max(baseTodayCompleted, dailyTarget) + pendingCountToday + pendingBatch;
+                    totalCompleted = baseTotalCompleted + neededForToday + pendingCountTotal + pendingBatch;
                 } else {
-                    totalCompleted = baseTotalCompleted + pendingCountForThis + pendingBatch;
-                    todayCompleted = baseTodayCompleted + pendingCountForThis + pendingBatch;
+                    totalCompleted = baseTotalCompleted + pendingCountTotal + pendingBatch;
+                    todayCompleted = baseTodayCompleted + pendingCountToday + pendingBatch;
                 }
 
                 if (todayCompleted < 0) todayCompleted = 0;
                 if (totalCompleted < 0) totalCompleted = 0;
 
                 updateDisplay();
+                try {
+                    localStorage.setItem('pwa_zikr_active_date', clientToday);
+                } catch (_) {}
             } catch (e) {
                 console.warn('reconcilePending error:', e);
             }
         };
+
+        // Periodic 24-hour / midnight rollover check
+        let lastTrackedDay = getLocalDateStr();
+        const checkMidnightRollover = () => {
+            const currentDay = getLocalDateStr();
+            if (currentDay !== lastTrackedDay) {
+                lastTrackedDay = currentDay;
+                baseTodayCompleted = 0;
+                todayCompleted = 0;
+                pendingBatch = 0;
+                recalculateRequiredForDate(currentDay);
+                reconcilePending();
+            }
+        };
+        setInterval(checkMidnightRollover, 10000);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') checkMidnightRollover();
+        });
+        window.addEventListener('focus', checkMidnightRollover);
 
         reconcilePending();
         window.addEventListener('load', () => reconcilePending());
