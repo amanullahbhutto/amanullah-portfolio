@@ -330,7 +330,7 @@
                                 data-counter-url="{{ route('admin.zikr.counter.show', ['tasbeeh' => $item['tasbeeh_id'], 'user_id' => $selectedUser->id]) }}"
                                 title="View Complete Details & Description"
                             >
-                                <i class="bi bi-eye"></i>
+                                <i class="bi bi-eye-fill"></i>
                             </button>
 
                             {{-- Reset Tracking Cycle --}}

@@ -174,28 +174,6 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
 
         {{-- Islamic Mehrab Arch with Main Counter --}}
         <div class="mehrab-arch" id="mehrabArchBox">
-            {{-- Small Sub-Round Bead Counter (33 / 100 Beads) --}}
-            <div class="tasbeeh-sub-round-bar" id="subRoundBar">
-                <div class="sub-round-badge" id="subRoundBadge" title="Current Round Beads (Click to toggle 33 / 100)">
-                    <i class="bi bi-disc-fill sub-round-icon"></i>
-                    <span class="sub-round-nums font-monospace">
-                        <strong class="sub-round-curr" id="subRoundCurrVal">0</strong>
-                        <span class="sub-round-sep">/</span>
-                        <span class="sub-round-max" id="subRoundMaxVal">33</span>
-                    </span>
-                    <span class="sub-round-cycles ms-1" id="subRoundCyclesBadge" title="Completed Rounds">
-                        <i class="bi bi-arrow-repeat"></i> <span id="subRoundCyclesCount">0</span>
-                    </span>
-                </div>
-                <div class="sub-round-actions" onclick="event.stopPropagation()">
-                    <button type="button" class="sub-mode-btn active" id="btnSubMode33" onclick="setSubCounterMode(33)" title="33 Count Mode">33</button>
-                    <button type="button" class="sub-mode-btn" id="btnSubMode100" onclick="setSubCounterMode(100)" title="100 Count Mode">100</button>
-                    <button type="button" class="sub-mode-btn btn-sub-reset" id="btnSubReset" onclick="resetSubCounter(event)" title="Reset Round Counter">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </button>
-                </div>
-            </div>
-
             {{-- Main Counter Display Number without comma --}}
             <div class="counter-number" id="mainCountDisplay">{{ $stats['total_completed'] }}</div>
 
@@ -593,81 +571,6 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                 }
             } catch (_) {}
         }
-
-        // --- Sub-Round Bead Counter (33 / 100 Beads) State ---
-        const tasbeehIdStr = '{{ $tasbeeh->id }}';
-        let subTarget = parseInt(localStorage.getItem(`sub_target_${tasbeehIdStr}`) || '33', 10);
-        if (subTarget !== 33 && subTarget !== 100) subTarget = 33;
-
-        let subCurrent = parseInt(localStorage.getItem(`sub_curr_${tasbeehIdStr}`) || '0', 10);
-        if (isNaN(subCurrent) || subCurrent < 0) subCurrent = 0;
-
-        let subCycles = parseInt(localStorage.getItem(`sub_cycles_${tasbeehIdStr}`) || '0', 10);
-        if (isNaN(subCycles) || subCycles < 0) subCycles = 0;
-
-        function updateSubDisplay(isMilestone = false) {
-            const currEl = document.getElementById('subRoundCurrVal');
-            const maxEl = document.getElementById('subRoundMaxVal');
-            const cyclesEl = document.getElementById('subRoundCyclesCount');
-            const badgeEl = document.getElementById('subRoundBadge');
-            const btn33 = document.getElementById('btnSubMode33');
-            const btn100 = document.getElementById('btnSubMode100');
-
-            if (currEl) currEl.textContent = String(subCurrent);
-            if (maxEl) maxEl.textContent = String(subTarget);
-            if (cyclesEl) cyclesEl.textContent = String(subCycles);
-
-            if (btn33) btn33.classList.toggle('active', subTarget === 33);
-            if (btn100) btn100.classList.toggle('active', subTarget === 100);
-
-            if (isMilestone && badgeEl) {
-                badgeEl.classList.remove('sub-round-celebrate');
-                void badgeEl.offsetWidth;
-                badgeEl.classList.add('sub-round-celebrate');
-            }
-        }
-
-        window.setSubCounterMode = function(target) {
-            subTarget = (target === 100) ? 100 : 33;
-            if (subCurrent >= subTarget) {
-                subCurrent = 0;
-            }
-            try {
-                localStorage.setItem(`sub_target_${tasbeehIdStr}`, String(subTarget));
-                localStorage.setItem(`sub_curr_${tasbeehIdStr}`, String(subCurrent));
-            } catch (_) {}
-            updateSubDisplay(false);
-            if (window.App && typeof window.App.showToast === 'function') {
-                window.App.showToast('info', `Sub-round counter set to ${subTarget} beads.`);
-            }
-        };
-
-        window.resetSubCounter = function(e) {
-            if (e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            subCurrent = 0;
-            subCycles = 0;
-            try {
-                localStorage.setItem(`sub_curr_${tasbeehIdStr}`, '0');
-                localStorage.setItem(`sub_cycles_${tasbeehIdStr}`, '0');
-            } catch (_) {}
-            updateSubDisplay(false);
-            if (window.App && typeof window.App.showToast === 'function') {
-                window.App.showToast('info', 'Sub-round counter reset to 0.');
-            }
-        };
-
-        const subBadgeEl = document.getElementById('subRoundBadge');
-        if (subBadgeEl) {
-            subBadgeEl.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                window.setSubCounterMode(subTarget === 33 ? 100 : 33);
-            });
-        }
-        updateSubDisplay(false);
 
         const btnTestSound = document.getElementById('btnTestSound');
         if (btnTestSound) {
@@ -1084,24 +987,10 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
             pendingBatch += 1;
             updateDisplay(true);
 
-            // Sub-Round Bead Increment
-            subCurrent += 1;
-            let isSubRoundComplete = false;
-            if (subCurrent >= subTarget) {
-                subCurrent = 0;
-                subCycles += 1;
-                isSubRoundComplete = true;
-            }
-            try {
-                localStorage.setItem(`sub_curr_${tasbeehIdStr}`, String(subCurrent));
-                localStorage.setItem(`sub_cycles_${tasbeehIdStr}`, String(subCycles));
-            } catch (_) {}
-            updateSubDisplay(isSubRoundComplete);
-
             // Daily Target Completion & Milestone Alerts (Single Simple Vibration & Sound)
             const isDailyTargetHit = (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget);
-            const isMilestone100 = (todayCompleted > 0 && todayCompleted % 100 === 0) || (totalCompleted > 0 && totalCompleted % 100 === 0) || (subTarget === 100 && isSubRoundComplete);
-            const isMilestone33 = (todayCompleted > 0 && todayCompleted % 33 === 0) || (totalCompleted > 0 && totalCompleted % 33 === 0) || (subTarget === 33 && isSubRoundComplete);
+            const isMilestone100 = (todayCompleted > 0 && todayCompleted % 100 === 0) || (totalCompleted > 0 && totalCompleted % 100 === 0);
+            const isMilestone33 = (todayCompleted > 0 && todayCompleted % 33 === 0) || (totalCompleted > 0 && totalCompleted % 33 === 0);
 
             // Single vibration and sound: only ONE event triggers per tap to prevent double vibration
             if (isDailyTargetHit) {
