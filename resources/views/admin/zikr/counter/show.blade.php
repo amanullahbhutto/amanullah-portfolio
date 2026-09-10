@@ -259,20 +259,19 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-phone-vibrate text-info" style="font-size: 0.85rem;"></i>
-                            <span class="small fw-bold text-info" style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.5px;">Vibration (وائبریشن)</span>
+                            <span class="small fw-bold text-info" style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.5px;">Vibration</span>
                         </div>
                     </div>
 
-                    {{-- 3 Vibration Options: Chhota (Short), Normal, Bara (Strong) --}}
+                    {{-- 3 Vibration Options: Short, Normal, Strong --}}
                     <div class="mb-3 bg-dark bg-opacity-50 p-2 rounded-2 border border-secondary border-opacity-25">
                         <label class="text-secondary small d-flex align-items-center justify-content-between mb-1" style="font-size: 0.74rem;">
-                            <span>Vibration Size / وائبریشن سائز:</span>
-                            <span class="text-info" style="font-size: 0.72rem;">(چھوٹا، نارمل، بڑا)</span>
+                            <span>Vibration Size:</span>
                         </label>
                         <div class="btn-group w-100 vibration-intensity-group" role="group" aria-label="Vibration Size">
                             <input type="radio" class="btn-check" name="vibrateIntensity" id="vibeShort" value="short" autocomplete="off">
                             <label class="btn btn-outline-info btn-sm py-1 px-1" for="vibeShort" style="font-size: 0.75rem;">
-                                Chhota (Short)
+                                Short
                             </label>
 
                             <input type="radio" class="btn-check" name="vibrateIntensity" id="vibeNormal" value="normal" autocomplete="off" checked>
@@ -282,7 +281,7 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
 
                             <input type="radio" class="btn-check" name="vibrateIntensity" id="vibeStrong" value="strong" autocomplete="off">
                             <label class="btn btn-outline-info btn-sm py-1 px-1" for="vibeStrong" style="font-size: 0.75rem;">
-                                Bara (Strong)
+                                Strong
                             </label>
                         </div>
                     </div>
@@ -290,13 +289,13 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                     <div class="d-flex flex-column gap-2 ps-1">
                         <div class="form-check form-switch d-flex align-items-center justify-content-between ps-0 mb-0">
                             <label class="form-check-label text-white small" for="cfgVibrateTap" style="font-size: 0.82rem; cursor: pointer;">
-                                Every Tap (ہر کلک پر)
+                                Every Tap Vibrate
                             </label>
                             <input class="form-check-input ms-0" type="checkbox" role="switch" id="cfgVibrateTap" style="cursor: pointer;">
                         </div>
                         <div class="form-check form-switch d-flex align-items-center justify-content-between ps-0 mb-0">
                             <label class="form-check-label text-white small" for="cfgVibrateDailyTask" style="font-size: 0.82rem; cursor: pointer;">
-                                Daily Task Complete
+                                Daily Target Complete
                             </label>
                             <input class="form-check-input ms-0" type="checkbox" role="switch" id="cfgVibrateDailyTask" checked style="cursor: pointer;">
                         </div>
@@ -319,12 +318,12 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                 <div>
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <i class="bi bi-volume-up-fill text-warning" style="font-size: 0.85rem;"></i>
-                        <span class="small fw-bold text-warning" style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.5px;">Sound Alert (آواز)</span>
+                        <span class="small fw-bold text-warning" style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.5px;">Sound Alert</span>
                     </div>
                     <div class="d-flex flex-column gap-2 ps-1">
                         <div class="form-check form-switch d-flex align-items-center justify-content-between ps-0 mb-0">
                             <label class="form-check-label text-white small" for="cfgSoundDailyTask" style="font-size: 0.82rem; cursor: pointer;">
-                                Daily Task Complete
+                                Daily Target Complete
                             </label>
                             <input class="form-check-input ms-0" type="checkbox" role="switch" id="cfgSoundDailyTask" checked style="cursor: pointer;">
                         </div>
@@ -624,52 +623,59 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
             try {
                 const ctx = getCounterAudioContext();
                 if (!ctx) return;
-                if (ctx.state === 'suspended') {
-                    ctx.resume().catch(() => {});
-                }
 
-                if (type === '33') {
-                    // Crisp, clear, gentle bell chime (880 Hz - A5) with warm harmonics
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(880, ctx.currentTime);
-                    gain.gain.setValueAtTime(0.28, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.40);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.40);
-                } else if (type === '100') {
-                    // Harmonious dual ascending chime (880 Hz -> 1318.5 Hz - E6)
-                    [880, 1318.51].forEach((freq, i) => {
+                const runSound = () => {
+                    const now = ctx.currentTime;
+                    if (type === '33') {
+                        // Crisp, clear, gentle bell chime (880 Hz - A5) with warm harmonics
                         const osc = ctx.createOscillator();
                         const gain = ctx.createGain();
-                        const start = ctx.currentTime + (i * 0.12);
                         osc.type = 'triangle';
-                        osc.frequency.setValueAtTime(freq, start);
-                        gain.gain.setValueAtTime(0.30, start);
-                        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
+                        osc.frequency.setValueAtTime(880, now);
+                        gain.gain.setValueAtTime(0.32, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
                         osc.connect(gain);
                         gain.connect(ctx.destination);
-                        osc.start(start);
-                        osc.stop(start + 0.45);
-                    });
-                } else if (type === 'daily_task') {
-                    // Harmonious 3-tone melody for daily task completion (523Hz -> 659Hz -> 784Hz)
-                    [523.25, 659.25, 783.99].forEach((freq, i) => {
-                        const osc = ctx.createOscillator();
-                        const gain = ctx.createGain();
-                        const start = ctx.currentTime + (i * 0.12);
-                        osc.type = 'sine';
-                        osc.frequency.setValueAtTime(freq, start);
-                        gain.gain.setValueAtTime(0.25, start);
-                        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
-                        osc.connect(gain);
-                        gain.connect(ctx.destination);
-                        osc.start(start);
-                        osc.stop(start + 0.45);
-                    });
+                        osc.start(now);
+                        osc.stop(now + 0.45);
+                    } else if (type === '100') {
+                        // Harmonious dual ascending chime (880 Hz -> 1318.5 Hz - E6)
+                        [880, 1318.51].forEach((freq, i) => {
+                            const osc = ctx.createOscillator();
+                            const gain = ctx.createGain();
+                            const start = now + (i * 0.12);
+                            osc.type = 'triangle';
+                            osc.frequency.setValueAtTime(freq, start);
+                            gain.gain.setValueAtTime(0.35, start);
+                            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
+                            osc.connect(gain);
+                            gain.connect(ctx.destination);
+                            osc.start(start);
+                            osc.stop(start + 0.45);
+                        });
+                    } else if (type === 'daily_task') {
+                        // Celebratory 4-note ascending chime: C5 (523Hz) -> E5 (659Hz) -> G5 (784Hz) -> C6 (1046.5Hz)
+                        // Uses 'triangle' wave for loud, crystal-clear bell ring on phone speakers
+                        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                            const osc = ctx.createOscillator();
+                            const gain = ctx.createGain();
+                            const start = now + (i * 0.11);
+                            osc.type = 'triangle';
+                            osc.frequency.setValueAtTime(freq, start);
+                            gain.gain.setValueAtTime(0.35, start);
+                            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
+                            osc.connect(gain);
+                            gain.connect(ctx.destination);
+                            osc.start(start);
+                            osc.stop(start + 0.45);
+                        });
+                    }
+                };
+
+                if (ctx.state === 'suspended') {
+                    ctx.resume().then(() => runSound()).catch(() => runSound());
+                } else {
+                    runSound();
                 }
             } catch (_) {}
         }
@@ -1102,8 +1108,8 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
             pendingBatch += 1;
             updateDisplay(true);
 
-            // Daily Target Completion & Milestone Alerts (Single Simple Vibration & Sound)
-            const isDailyTargetHit = (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget);
+            // Daily Target Completion & Milestone Alerts (Triggers on 1st time AND every repeated cycle / baar baar)
+            const isDailyTargetHit = (dailyTarget > 0 && todayCompleted > 0 && Math.floor(todayCompleted / dailyTarget) > Math.floor(Math.max(0, prevToday) / dailyTarget));
             const isMilestone100 = (todayCompleted > 0 && todayCompleted % 100 === 0) || (totalCompleted > 0 && totalCompleted % 100 === 0);
             const isMilestone33 = (todayCompleted > 0 && todayCompleted % 33 === 0) || (totalCompleted > 0 && totalCompleted % 33 === 0);
 
@@ -1199,7 +1205,7 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                     totalCompleted += val;
                     todayCompleted += val;
                     updateDisplay();
-                    if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget) {
+                    if (dailyTarget > 0 && todayCompleted > 0 && Math.floor(todayCompleted / dailyTarget) > Math.floor(Math.max(0, prevToday) / dailyTarget)) {
                         if (feedbackPrefs.vibrateDailyTask) {
                             triggerVibration('daily_task');
                         }
@@ -1243,7 +1249,7 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                             totalCompleted = baseTotalCompleted;
                             todayCompleted = baseTodayCompleted;
                             updateDisplay();
-                            if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget) {
+                            if (dailyTarget > 0 && todayCompleted > 0 && Math.floor(todayCompleted / dailyTarget) > Math.floor(Math.max(0, prevToday) / dailyTarget)) {
                                 if (feedbackPrefs.vibrateDailyTask) {
                                     triggerVibration('daily_task');
                                 }
@@ -1271,7 +1277,7 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                             totalCompleted += val;
                             todayCompleted += val;
                             updateDisplay();
-                            if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget) {
+                            if (dailyTarget > 0 && todayCompleted > 0 && Math.floor(todayCompleted / dailyTarget) > Math.floor(Math.max(0, prevToday) / dailyTarget)) {
                                 if (feedbackPrefs.vibrateDailyTask) {
                                     triggerVibration('daily_task');
                                 }
