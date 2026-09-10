@@ -989,7 +989,7 @@
             const tasbeehId = completeIconBtn.getAttribute('data-tasbeeh-id');
             const completeUrl = completeIconBtn.getAttribute('data-complete-url');
             const urlParams = new URLSearchParams(window.location.search);
-            const userId = completeIconBtn.getAttribute('data-user-id') || urlParams.get('user_id') || '';
+            const userId = urlParams.get('user_id') || completeIconBtn.getAttribute('data-user-id') || '';
             const title = completeIconBtn.getAttribute('data-tasbeeh-title') || 'Tasbeeh';
 
             if (tasbeehId) {
@@ -1026,13 +1026,17 @@
                     }).then(res => res.json()).then(data => {
                         if (data && data.success && card) {
                             if (data.summary && typeof window.reconcileZikrOfflineCounts === 'function') {
-                                window.reconcileZikrOfflineCounts({ zikr_summary: data.summary });
+                                window.reconcileZikrOfflineCounts({ zikr_summary: data.summary, server_time: data.server_time });
                             } else if (data.stats) {
                                 const sToday = data.stats.today_completed !== undefined ? data.stats.today_completed : (data.stats.total_completed ?? 0);
+                                const sTotal = data.stats.total_completed !== undefined ? data.stats.total_completed : 0;
                                 card.dataset.baseTodayCompleted = String(sToday);
-                                card.dataset.baseTotalCompleted = String(data.stats.total_completed ?? 0);
+                                card.dataset.baseTotalCompleted = String(sTotal);
                                 card.dataset.todayCompleted = String(sToday);
-                                card.dataset.totalCompleted = String(data.stats.total_completed ?? 0);
+                                card.dataset.totalCompleted = String(sTotal);
+                                if (typeof window.updateZikrCardDom === 'function') {
+                                    window.updateZikrCardDom(tasbeehId, sTotal, true);
+                                }
                                 if (typeof window.recalculateZikrTopStats === 'function') {
                                     window.recalculateZikrTopStats();
                                 }
@@ -2117,6 +2121,10 @@
                 }
             });
 
+            try {
+                localStorage.setItem('pwa_zikr_active_date', clientToday);
+            } catch (_) {}
+
             // 3. Update all Tasbeeh Cards using absolute baseline + pending mutations
             const cards = document.querySelectorAll('[id^="tasbeeh-card-"]');
             let allCompletesTotalCount = 0;
@@ -2124,10 +2132,9 @@
             cards.forEach(card => {
                 const tId = card.id.replace('tasbeeh-card-', '');
                 const cardRenderDate = card.dataset.renderDate || globalPageDate;
-                const isCardPastDay = Boolean(
+                const isCardPastDay = !pulledServerData && Boolean(
                     (cardRenderDate && cardRenderDate < clientToday) ||
-                    (lastActiveDate && lastActiveDate < clientToday) ||
-                    (!cardRenderDate && !navigator.onLine)
+                    (!cardRenderDate && !navigator.onLine && lastActiveDate && lastActiveDate < clientToday)
                 );
 
                 if (isCardPastDay) {

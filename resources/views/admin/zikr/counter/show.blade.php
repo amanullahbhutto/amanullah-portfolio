@@ -72,6 +72,24 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
     opacity: 1 !important;
     pointer-events: auto !important;
 }
+body.tasbeeh-locked-mode #backToZikrBtn,
+body.tasbeeh-locked-mode #tasbeehControlsBtn,
+body.tasbeeh-locked-mode .card-top-bar .btn-menu-dots,
+body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
 .flash-toast-viewport {
     pointer-events: none !important;
 }
@@ -131,7 +149,7 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
                         Today: <strong class="ms-1 font-monospace" id="liveTodayVal">0</strong>
                     </span>
                 @endif
-                <button class="btn-menu-dots flex-shrink-0" type="button" onclick="event.stopPropagation()" data-bs-toggle="modal" data-bs-target="#controlsModal" title="Controls & Quick Add">
+                <button class="btn-menu-dots flex-shrink-0" type="button" id="tasbeehControlsBtn" onclick="event.stopPropagation()" data-bs-toggle="modal" data-bs-target="#controlsModal" title="Controls & Quick Add">
                     <i class="bi bi-three-dots-vertical fs-5"></i>
                 </button>
             </div>
@@ -156,6 +174,28 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
 
         {{-- Islamic Mehrab Arch with Main Counter --}}
         <div class="mehrab-arch" id="mehrabArchBox">
+            {{-- Small Sub-Round Bead Counter (33 / 100 Beads) --}}
+            <div class="tasbeeh-sub-round-bar" id="subRoundBar">
+                <div class="sub-round-badge" id="subRoundBadge" title="Current Round Beads (Click to toggle 33 / 100)">
+                    <i class="bi bi-disc-fill sub-round-icon"></i>
+                    <span class="sub-round-nums font-monospace">
+                        <strong class="sub-round-curr" id="subRoundCurrVal">0</strong>
+                        <span class="sub-round-sep">/</span>
+                        <span class="sub-round-max" id="subRoundMaxVal">33</span>
+                    </span>
+                    <span class="sub-round-cycles ms-1" id="subRoundCyclesBadge" title="Completed Rounds">
+                        <i class="bi bi-arrow-repeat"></i> <span id="subRoundCyclesCount">0</span>
+                    </span>
+                </div>
+                <div class="sub-round-actions" onclick="event.stopPropagation()">
+                    <button type="button" class="sub-mode-btn active" id="btnSubMode33" onclick="setSubCounterMode(33)" title="33 Count Mode">33</button>
+                    <button type="button" class="sub-mode-btn" id="btnSubMode100" onclick="setSubCounterMode(100)" title="100 Count Mode">100</button>
+                    <button type="button" class="sub-mode-btn btn-sub-reset" id="btnSubReset" onclick="resetSubCounter(event)" title="Reset Round Counter">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                </div>
+            </div>
+
             {{-- Main Counter Display Number without comma --}}
             <div class="counter-number" id="mainCountDisplay">{{ $stats['total_completed'] }}</div>
 
@@ -488,37 +528,52 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
             return counterAudioCtx;
         }
 
+        // Unlock Web Audio Context on first touch or pointer gesture for iOS Safari & Android
+        const unlockCounterAudio = () => {
+            try {
+                const ctx = getCounterAudioContext();
+                if (ctx && ctx.state === 'suspended') {
+                    ctx.resume().catch(() => {});
+                }
+            } catch (_) {}
+        };
+        document.addEventListener('pointerdown', unlockCounterAudio, { passive: true });
+        document.addEventListener('click', unlockCounterAudio, { passive: true });
+
         function playCounterSound(type) {
             try {
                 const ctx = getCounterAudioContext();
                 if (!ctx) return;
+                if (ctx.state === 'suspended') {
+                    ctx.resume().catch(() => {});
+                }
 
                 if (type === '33') {
-                    // Soft gentle bell chime (587.33 Hz - D5)
+                    // Crisp, clear, gentle bell chime (880 Hz - A5) with warm harmonics
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.28, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.40);
                     osc.connect(gain);
                     gain.connect(ctx.destination);
                     osc.start();
-                    osc.stop(ctx.currentTime + 0.35);
+                    osc.stop(ctx.currentTime + 0.40);
                 } else if (type === '100') {
-                    // Clear harmonic dual tone chime (587Hz -> 880Hz)
-                    [587.33, 880].forEach((freq, i) => {
+                    // Harmonious dual ascending chime (880 Hz -> 1318.5 Hz - E6)
+                    [880, 1318.51].forEach((freq, i) => {
                         const osc = ctx.createOscillator();
                         const gain = ctx.createGain();
-                        const start = ctx.currentTime + (i * 0.1);
-                        osc.type = 'sine';
+                        const start = ctx.currentTime + (i * 0.12);
+                        osc.type = 'triangle';
                         osc.frequency.setValueAtTime(freq, start);
-                        gain.gain.setValueAtTime(0.14, start);
-                        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+                        gain.gain.setValueAtTime(0.30, start);
+                        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
                         osc.connect(gain);
                         gain.connect(ctx.destination);
                         osc.start(start);
-                        osc.stop(start + 0.35);
+                        osc.stop(start + 0.45);
                     });
                 } else if (type === 'daily_task') {
                     // Harmonious 3-tone melody for daily task completion (523Hz -> 659Hz -> 784Hz)
@@ -528,7 +583,7 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
                         const start = ctx.currentTime + (i * 0.12);
                         osc.type = 'sine';
                         osc.frequency.setValueAtTime(freq, start);
-                        gain.gain.setValueAtTime(0.16, start);
+                        gain.gain.setValueAtTime(0.25, start);
                         gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
                         osc.connect(gain);
                         gain.connect(ctx.destination);
@@ -538,6 +593,81 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
                 }
             } catch (_) {}
         }
+
+        // --- Sub-Round Bead Counter (33 / 100 Beads) State ---
+        const tasbeehIdStr = '{{ $tasbeeh->id }}';
+        let subTarget = parseInt(localStorage.getItem(`sub_target_${tasbeehIdStr}`) || '33', 10);
+        if (subTarget !== 33 && subTarget !== 100) subTarget = 33;
+
+        let subCurrent = parseInt(localStorage.getItem(`sub_curr_${tasbeehIdStr}`) || '0', 10);
+        if (isNaN(subCurrent) || subCurrent < 0) subCurrent = 0;
+
+        let subCycles = parseInt(localStorage.getItem(`sub_cycles_${tasbeehIdStr}`) || '0', 10);
+        if (isNaN(subCycles) || subCycles < 0) subCycles = 0;
+
+        function updateSubDisplay(isMilestone = false) {
+            const currEl = document.getElementById('subRoundCurrVal');
+            const maxEl = document.getElementById('subRoundMaxVal');
+            const cyclesEl = document.getElementById('subRoundCyclesCount');
+            const badgeEl = document.getElementById('subRoundBadge');
+            const btn33 = document.getElementById('btnSubMode33');
+            const btn100 = document.getElementById('btnSubMode100');
+
+            if (currEl) currEl.textContent = String(subCurrent);
+            if (maxEl) maxEl.textContent = String(subTarget);
+            if (cyclesEl) cyclesEl.textContent = String(subCycles);
+
+            if (btn33) btn33.classList.toggle('active', subTarget === 33);
+            if (btn100) btn100.classList.toggle('active', subTarget === 100);
+
+            if (isMilestone && badgeEl) {
+                badgeEl.classList.remove('sub-round-celebrate');
+                void badgeEl.offsetWidth;
+                badgeEl.classList.add('sub-round-celebrate');
+            }
+        }
+
+        window.setSubCounterMode = function(target) {
+            subTarget = (target === 100) ? 100 : 33;
+            if (subCurrent >= subTarget) {
+                subCurrent = 0;
+            }
+            try {
+                localStorage.setItem(`sub_target_${tasbeehIdStr}`, String(subTarget));
+                localStorage.setItem(`sub_curr_${tasbeehIdStr}`, String(subCurrent));
+            } catch (_) {}
+            updateSubDisplay(false);
+            if (window.App && typeof window.App.showToast === 'function') {
+                window.App.showToast('info', `Sub-round counter set to ${subTarget} beads.`);
+            }
+        };
+
+        window.resetSubCounter = function(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            subCurrent = 0;
+            subCycles = 0;
+            try {
+                localStorage.setItem(`sub_curr_${tasbeehIdStr}`, '0');
+                localStorage.setItem(`sub_cycles_${tasbeehIdStr}`, '0');
+            } catch (_) {}
+            updateSubDisplay(false);
+            if (window.App && typeof window.App.showToast === 'function') {
+                window.App.showToast('info', 'Sub-round counter reset to 0.');
+            }
+        };
+
+        const subBadgeEl = document.getElementById('subRoundBadge');
+        if (subBadgeEl) {
+            subBadgeEl.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.setSubCounterMode(subTarget === 33 ? 100 : 33);
+            });
+        }
+        updateSubDisplay(false);
 
         const btnTestSound = document.getElementById('btnTestSound');
         if (btnTestSound) {
@@ -765,6 +895,19 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
                 const bottomNav = document.querySelector('.pwa-bottom-nav');
                 if (bottomNav) bottomNav.style.setProperty('display', 'none', 'important');
 
+                // Hide Back Button and 3-dot Controls Button when locked
+                const backBtn = document.getElementById('backToZikrBtn');
+                if (backBtn) backBtn.style.setProperty('display', 'none', 'important');
+                const controlsBtn = document.getElementById('tasbeehControlsBtn') || document.querySelector('[data-bs-target="#controlsModal"]');
+                if (controlsBtn) controlsBtn.style.setProperty('display', 'none', 'important');
+
+                // Close controls modal if currently open
+                const modalEl = document.getElementById('controlsModal');
+                if (modalEl && typeof bootstrap !== 'undefined') {
+                    const modalInst = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInst) modalInst.hide();
+                }
+
                 if (lockToggleBtn) {
                     lockToggleBtn.classList.add('is-locked');
                     lockToggleBtn.setAttribute('title', 'Tasbeeh Locked (Double click to Unlock)');
@@ -792,6 +935,12 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
                 if (sidebar) sidebar.style.removeProperty('display');
                 const bottomNav = document.querySelector('.pwa-bottom-nav');
                 if (bottomNav) bottomNav.style.removeProperty('display');
+
+                // Restore Back Button and 3-dot Controls Button when unlocked
+                const backBtn = document.getElementById('backToZikrBtn');
+                if (backBtn) backBtn.style.removeProperty('display');
+                const controlsBtn = document.getElementById('tasbeehControlsBtn') || document.querySelector('[data-bs-target="#controlsModal"]');
+                if (controlsBtn) controlsBtn.style.removeProperty('display');
 
                 if (lockToggleBtn) {
                     lockToggleBtn.classList.remove('is-locked');
@@ -935,10 +1084,24 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
             pendingBatch += 1;
             updateDisplay(true);
 
+            // Sub-Round Bead Increment
+            subCurrent += 1;
+            let isSubRoundComplete = false;
+            if (subCurrent >= subTarget) {
+                subCurrent = 0;
+                subCycles += 1;
+                isSubRoundComplete = true;
+            }
+            try {
+                localStorage.setItem(`sub_curr_${tasbeehIdStr}`, String(subCurrent));
+                localStorage.setItem(`sub_cycles_${tasbeehIdStr}`, String(subCycles));
+            } catch (_) {}
+            updateSubDisplay(isSubRoundComplete);
+
             // Daily Target Completion & Milestone Alerts (Single Simple Vibration & Sound)
             const isDailyTargetHit = (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget);
-            const isMilestone100 = (todayCompleted > 0 && todayCompleted % 100 === 0) || (totalCompleted > 0 && totalCompleted % 100 === 0);
-            const isMilestone33 = (todayCompleted > 0 && todayCompleted % 33 === 0) || (totalCompleted > 0 && totalCompleted % 33 === 0);
+            const isMilestone100 = (todayCompleted > 0 && todayCompleted % 100 === 0) || (totalCompleted > 0 && totalCompleted % 100 === 0) || (subTarget === 100 && isSubRoundComplete);
+            const isMilestone33 = (todayCompleted > 0 && todayCompleted % 33 === 0) || (totalCompleted > 0 && totalCompleted % 33 === 0) || (subTarget === 33 && isSubRoundComplete);
 
             // Single vibration and sound: only ONE event triggers per tap to prevent double vibration
             if (isDailyTargetHit) {
