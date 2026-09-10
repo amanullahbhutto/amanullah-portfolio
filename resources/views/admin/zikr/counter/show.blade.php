@@ -1306,9 +1306,42 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
             }
         };
 
-        window.addEventListener('pagehide', flushImmediate);
+        // Invalidate /admin/zikr and /admin/tasbeehs from SW cache when leaving counter page
+        // This forces a fresh server fetch on next visit so updated counts appear
+        const invalidateListPageCaches = () => {
+            try {
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        const pwaCacheName = names.find(n => n.startsWith('portfolio-pwa-v'));
+                        if (!pwaCacheName) return;
+                        caches.open(pwaCacheName).then(cache => {
+                            const pats = ['/admin/zikr', '/admin/tasbeehs'];
+                            cache.keys().then(reqs => {
+                                reqs.forEach(req => {
+                                    const url = req.url || '';
+                                    const isListPage = pats.some(pat => {
+                                        try {
+                                            const parsed = new URL(url);
+                                            return parsed.pathname === pat ||
+                                                   parsed.pathname.startsWith(pat + '?') ||
+                                                   (parsed.pathname.startsWith(pat + '/') && !url.includes('/admin/zikr/tasbeeh/'));
+                                        } catch (_) { return false; }
+                                    });
+                                    if (isListPage) {
+                                        cache.delete(req).catch(() => {});
+                                    }
+                                });
+                            }).catch(() => {});
+                        }).catch(() => {});
+                    }).catch(() => {});
+                }
+            } catch (_) {}
+        };
+
+        window.addEventListener('pagehide', () => { flushImmediate(); invalidateListPageCaches(); });
         window.addEventListener('beforeunload', () => {
             flushImmediate();
+            invalidateListPageCaches();
             if (navigator.sendBeacon && pendingBatch > 0) {
                 const formData = new FormData();
                 formData.append('count', pendingBatch);

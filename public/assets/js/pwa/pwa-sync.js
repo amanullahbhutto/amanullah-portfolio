@@ -405,6 +405,11 @@ class PwaSync {
                 window.App.showToast('success', 'Data synchronized successfully with server!');
             }
 
+            // After tasbeeh/zikr sync: invalidate cached HTML pages so fresh data loads
+            if (hasTasbeehSync || syncedCount > 0) {
+                this._invalidateZikrPageCaches();
+            }
+
             window.dispatchEvent(new CustomEvent('pwa:sync-completed', {
                 detail: { syncedCount, hasTasbeehSync, hasNamazSync, data: (pullResult && pullResult.data) ? pullResult.data : null }
             }));
@@ -608,6 +613,60 @@ class PwaSync {
             tasbeehId: String(tasbeehId),
             delta: parseInt(delta, 10) || 0
         });
+    }
+
+    /**
+     * Invalidate stale HTML caches for /admin/zikr and /admin/tasbeehs after sync.
+     * Then, if the current page is one of those, reload it so fresh server data appears.
+     */
+    async _invalidateZikrPageCaches() {
+        const zikrPatterns = [
+            '/admin/zikr',
+            '/admin/tasbeehs',
+        ];
+
+        // 1. Delete from Service Worker Cache
+        try {
+            if ('caches' in window) {
+                const names = await caches.keys();
+                const pwaCacheName = names.find(n => n.startsWith('portfolio-pwa-v'));
+                if (pwaCacheName) {
+                    const cache = await caches.open(pwaCacheName);
+                    const cachedReqs = await cache.keys();
+                    for (const req of cachedReqs) {
+                        const url = req.url || '';
+                        const isZikrPage = zikrPatterns.some(pat => {
+                            try {
+                                const parsed = new URL(url);
+                                return parsed.pathname === pat || parsed.pathname.startsWith(pat + '?') || parsed.pathname.startsWith(pat + '/');
+                            } catch (_) { return url.includes(pat); }
+                        });
+                        // Only delete non-counter pages (don't wipe tasbeeh/6 etc.)
+                        const isCounterPage = url.includes('/admin/zikr/tasbeeh/');
+                        if (isZikrPage && !isCounterPage) {
+                            await cache.delete(req).catch(() => {});
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('PwaSync _invalidateZikrPageCaches cache delete error:', e);
+        }
+
+        // 2. If we are currently on /admin/zikr or /admin/tasbeehs — reload the page
+        //    Use a small delay so the toast "synced" message is visible first
+        try {
+            const currentPath = window.location.pathname;
+            const isOnZikrOrTasbeehs = zikrPatterns.some(pat =>
+                currentPath === pat || currentPath.startsWith(pat + '?') || currentPath.startsWith(pat + '/')
+            );
+            const isCounterPage = currentPath.includes('/admin/zikr/tasbeeh/');
+            if (isOnZikrOrTasbeehs && !isCounterPage) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1800); // Wait for success toast to be visible
+            }
+        } catch (e) {}
     }
 }
 

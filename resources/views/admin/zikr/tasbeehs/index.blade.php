@@ -434,6 +434,8 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+
+        // ─── SW Cache Warming (online only) ──────────────────────────────────
         if ('caches' in window && navigator.onLine) {
             caches.keys().then(function (names) {
                 const pwaCacheName = names.find(n => n.startsWith('portfolio-pwa-v'));
@@ -443,7 +445,6 @@
                     cache.add(window.location.pathname).catch(() => {});
                     cache.add('/admin/zikr').catch(() => {});
                     cache.add('/admin/tasbeehs').catch(() => {});
-
                     document.querySelectorAll('a[href*="/admin/zikr/tasbeeh/"]').forEach(function (link) {
                         const href = link.getAttribute('href');
                         if (href) {
@@ -461,6 +462,201 @@
                 });
             }).catch(function () {});
         }
+
+        // ─── Helpers ─────────────────────────────────────────────────────────
+        function getLocalDateStr() {
+            const d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        // ─── Live delta state ─────────────────────────────────────────────────
+        const liveDeltas = {}; // { tasbeehId: { today: N, total: N } }
+
+        // ─── DOM Updater ──────────────────────────────────────────────────────
+        function applyDeltasToDOM() {
+            document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                const tId  = card.id.replace('tasbeeh-card-', '');
+                const delta = liveDeltas[tId];
+                if (!delta) return;
+
+                const baseTotal   = parseInt(card.dataset.baseTotal  || card.dataset.totalCompleted  || '0', 10) || 0;
+                const baseToday   = parseInt(card.dataset.baseToday  || card.dataset.todayCompleted  || '0', 10) || 0;
+                const dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10) || 100;
+                const totalReq    = parseInt(card.dataset.totalRequired || '0', 10) || 0;
+
+                if (!card.dataset.baseTotal) card.dataset.baseTotal = String(baseTotal);
+                if (!card.dataset.baseToday) card.dataset.baseToday = String(baseToday);
+
+                const newTotal = baseTotal + delta.total;
+                const newToday = baseToday + delta.today;
+
+                // Today badge
+                const todayBadge = card.querySelector('.today-status-badge');
+                if (todayBadge) {
+                    const strong = todayBadge.querySelector('strong');
+                    if (strong) strong.textContent = newToday.toLocaleString();
+                    if (newToday >= dailyTarget && dailyTarget > 0) {
+                        todayBadge.style.background  = 'rgba(16, 185, 129, 0.15)';
+                        todayBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                        todayBadge.style.color       = '#34d399';
+                        if (!todayBadge.querySelector('i.bi-check2')) {
+                            todayBadge.innerHTML = `<i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace">${newToday.toLocaleString()}</strong>`;
+                        }
+                    } else if (newToday > 0) {
+                        todayBadge.style.background  = 'rgba(6, 182, 212, 0.15)';
+                        todayBadge.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+                        todayBadge.style.color       = '#38bdf8';
+                    }
+                }
+
+                // "Completed: X / Y" badge
+                const completedBadge = card.querySelector('.badge-completed');
+                if (completedBadge) {
+                    const strong = completedBadge.querySelector('strong');
+                    if (strong) strong.textContent = newTotal.toLocaleString();
+                }
+
+                // Remaining / Extra badge
+                const remainingBadge = card.querySelector('.badge-remaining');
+                if (remainingBadge) {
+                    const diff = newTotal - totalReq;
+                    if (diff > 0) {
+                        remainingBadge.textContent = '+' + diff.toLocaleString() + ' Extra';
+                        remainingBadge.className = remainingBadge.className.replace('completed-badge','').replace('extra','').trim() + ' extra';
+                    } else if (diff === 0) {
+                        remainingBadge.textContent = 'Completed';
+                        remainingBadge.className = remainingBadge.className.replace('extra','').trim() + ' completed-badge';
+                    } else {
+                        remainingBadge.textContent = 'Remaining ' + Math.abs(diff).toLocaleString();
+                        remainingBadge.className = remainingBadge.className.replace('extra','').replace('completed-badge','').trim();
+                    }
+                }
+            });
+        }
+
+        // ─── Add a delta for a tasbeeh ────────────────────────────────────────
+        function addDelta(tasbeehId, countDelta, isTodayItem = true) {
+            const tId = String(tasbeehId);
+            if (!liveDeltas[tId]) liveDeltas[tId] = { today: 0, total: 0 };
+            liveDeltas[tId].total += countDelta;
+            if (isTodayItem) liveDeltas[tId].today += countDelta;
+            applyDeltasToDOM();
+        }
+
+        // ─── Rebuild deltas from IndexedDB outbox ─────────────────────────────
+        async function rebuildDeltasFromOutbox() {
+            try {
+                if (!window.PwaDB || typeof window.PwaDB.getPendingOutbox !== 'function') return;
+                const items = await window.PwaDB.getPendingOutbox();
+                if (!items || items.length === 0) return;
+
+                const clientToday = getLocalDateStr();
+                Object.keys(liveDeltas).forEach(k => delete liveDeltas[k]);
+
+                (items || []).forEach(item => {
+                    const entity = item.entity || '';
+                    const p = item.payload || {};
+                    if (entity !== 'zikr_count' && entity !== 'tasbeeh_count') return;
+                    const tId = p.tasbeeh_id ? String(p.tasbeeh_id) : null;
+                    if (!tId) return;
+                    const cnt = parseInt(p.count, 10) || 0;
+                    const itemDate = p.date || clientToday;
+                    if (!liveDeltas[tId]) liveDeltas[tId] = { today: 0, total: 0 };
+                    liveDeltas[tId].total += cnt;
+                    if (itemDate === clientToday) liveDeltas[tId].today += cnt;
+                });
+
+                applyDeltasToDOM();
+            } catch (e) {
+                console.warn('rebuildDeltasFromOutbox (tasbeehs) error:', e);
+            }
+        }
+
+        // ─── BroadcastChannel: live taps from counter page ────────────────────
+        function handleZikrBroadcast(data) {
+            if (!data || !data.type) return;
+            if (data.type === 'ZIKR_COUNT_INCREMENT') {
+                const tId   = String(data.tasbeehId || '');
+                const delta = parseInt(data.delta, 10) || 0;
+                if (tId && delta !== 0) addDelta(tId, delta, true);
+            } else if (data.type === 'ZIKR_COMPLETE_TODAY') {
+                const tId = String(data.tasbeehId || '');
+                if (tId) {
+                    const card = document.getElementById('tasbeeh-card-' + tId);
+                    if (card) {
+                        const baseToday   = parseInt(card.dataset.baseToday   || card.dataset.todayCompleted   || '0', 10) || 0;
+                        const dailyTarget = parseInt(card.dataset.dailyTarget  || '100', 10) || 100;
+                        const needed = Math.max(0, dailyTarget - baseToday - (liveDeltas[tId] ? liveDeltas[tId].today : 0));
+                        if (needed > 0) addDelta(tId, needed, true);
+                    }
+                }
+            } else if (data.type === 'ZIKR_COMPLETE_ALL') {
+                document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                    const tId2 = card.id.replace('tasbeeh-card-', '');
+                    const baseToday   = parseInt(card.dataset.baseToday  || card.dataset.todayCompleted  || '0', 10) || 0;
+                    const dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10) || 100;
+                    const needed = Math.max(0, dailyTarget - baseToday - (liveDeltas[tId2] ? liveDeltas[tId2].today : 0));
+                    if (needed > 0) addDelta(tId2, needed, true);
+                });
+            } else if (data.type === 'ZIKR_RESET_SINGLE') {
+                const tId = String(data.tasbeehId || '');
+                if (liveDeltas[tId]) delete liveDeltas[tId];
+                const card = document.getElementById('tasbeeh-card-' + tId);
+                if (card) {
+                    card.dataset.baseTotal = '0'; card.dataset.baseToday = '0';
+                    card.dataset.totalCompleted = '0'; card.dataset.todayCompleted = '0';
+                }
+                applyDeltasToDOM();
+            } else if (data.type === 'ZIKR_RESET_ALL') {
+                Object.keys(liveDeltas).forEach(k => delete liveDeltas[k]);
+                document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                    card.dataset.baseTotal = '0'; card.dataset.baseToday = '0';
+                    card.dataset.totalCompleted = '0'; card.dataset.todayCompleted = '0';
+                });
+                applyDeltasToDOM();
+            }
+        }
+
+        if ('BroadcastChannel' in window) {
+            try {
+                const zikrChannel = new BroadcastChannel('portfolio_zikr_channel');
+                zikrChannel.onmessage = function (event) {
+                    if (event.data && event.data.type) handleZikrBroadcast(event.data);
+                };
+            } catch (e) {}
+        }
+
+        // localStorage fallback (Safari cross-tab)
+        window.addEventListener('storage', function (event) {
+            if (event.key === 'pwa_zikr_live_broadcast' && event.newValue) {
+                try { handleZikrBroadcast(JSON.parse(event.newValue)); } catch (e) {}
+            }
+        });
+
+        // On load
+        rebuildDeltasFromOutbox();
+
+        // After sync
+        window.addEventListener('pwa:sync-completed', function (e) {
+            const detail = e.detail || {};
+            if (detail.hasTasbeehSync || detail.syncedCount > 0) rebuildDeltasFromOutbox();
+        });
+
+        // On reconnect
+        window.addEventListener('online', function () {
+            setTimeout(rebuildDeltasFromOutbox, 600);
+        });
+
+        // On tab visibility restore
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') rebuildDeltasFromOutbox();
+        });
+
+        // On back-forward restore
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted) rebuildDeltasFromOutbox();
+        });
     });
 </script>
 @endpush
+
