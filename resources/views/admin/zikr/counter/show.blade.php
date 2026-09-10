@@ -211,6 +211,75 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
                 </button>
             </form>
 
+            {{-- Vibration & Sound Feedback Settings --}}
+            <div class="counter-feedback-box p-3 rounded-3 mb-3" style="background: #0c1728; border: 1px solid #162a45;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small fw-bold text-white d-flex align-items-center gap-2">
+                        <i class="bi bi-sliders text-warning" style="font-size: 0.9rem;"></i>
+                        <span>Alert & Feedback Settings</span>
+                    </span>
+                    <button type="button" class="btn btn-link p-0 text-decoration-none small text-info" id="btnTestSound" style="font-size: 0.75rem;">
+                        <i class="bi bi-volume-up me-1"></i>Test Alert
+                    </button>
+                </div>
+
+                {{-- Vibration Settings Section --}}
+                <div class="mb-3 pb-2 border-bottom border-secondary border-opacity-25">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-phone-vibrate text-info" style="font-size: 0.85rem;"></i>
+                        <span class="small fw-bold text-info" style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.5px;">Vibration (وائبریشن)</span>
+                    </div>
+                    <div class="d-flex flex-column gap-2 ps-1">
+                        <div class="form-check form-switch d-flex align-items-center justify-content-between ps-0 mb-0">
+                            <label class="form-check-label text-white small" for="cfgVibrateDailyTask" style="font-size: 0.82rem; cursor: pointer;">
+                                Daily Task Complete
+                            </label>
+                            <input class="form-check-input ms-0" type="checkbox" role="switch" id="cfgVibrateDailyTask" checked style="cursor: pointer;">
+                        </div>
+                        <div class="form-check form-switch d-flex align-items-center justify-content-between ps-0 mb-0">
+                            <label class="form-check-label text-white small" for="cfgVibrate33" style="font-size: 0.82rem; cursor: pointer;">
+                                Every 33 Count
+                            </label>
+                            <input class="form-check-input ms-0" type="checkbox" role="switch" id="cfgVibrate33" checked style="cursor: pointer;">
+                        </div>
+                        <div class="form-check form-switch d-flex align-items-center justify-content-between ps-0 mb-0">
+                            <label class="form-check-label text-white small" for="cfgVibrate100" style="font-size: 0.82rem; cursor: pointer;">
+                                Every 100 Count
+                            </label>
+                            <input class="form-check-input ms-0" type="checkbox" role="switch" id="cfgVibrate100" checked style="cursor: pointer;">
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Sound Settings Section --}}
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-volume-up-fill text-warning" style="font-size: 0.85rem;"></i>
+                        <span class="small fw-bold text-warning" style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.5px;">Sound Alert (آواز)</span>
+                    </div>
+                    <div class="d-flex flex-column gap-2 ps-1">
+                        <div class="form-check form-switch d-flex align-items-center justify-content-between ps-0 mb-0">
+                            <label class="form-check-label text-white small" for="cfgSoundDailyTask" style="font-size: 0.82rem; cursor: pointer;">
+                                Daily Task Complete
+                            </label>
+                            <input class="form-check-input ms-0" type="checkbox" role="switch" id="cfgSoundDailyTask" checked style="cursor: pointer;">
+                        </div>
+                        <div class="form-check form-switch d-flex align-items-center justify-content-between ps-0 mb-0">
+                            <label class="form-check-label text-white small" for="cfgSound33" style="font-size: 0.82rem; cursor: pointer;">
+                                Every 33 Count
+                            </label>
+                            <input class="form-check-input ms-0" type="checkbox" role="switch" id="cfgSound33" checked style="cursor: pointer;">
+                        </div>
+                        <div class="form-check form-switch d-flex align-items-center justify-content-between ps-0 mb-0">
+                            <label class="form-check-label text-white small" for="cfgSound100" style="font-size: 0.82rem; cursor: pointer;">
+                                Every 100 Count
+                            </label>
+                            <input class="form-check-input ms-0" type="checkbox" role="switch" id="cfgSound100" checked style="cursor: pointer;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- Extra Navigation & Management Links --}}
             <div class="d-flex flex-wrap gap-2 pt-2 border-top border-secondary border-opacity-25">
                 <button type="button" class="btn btn-outline-theme btn-sm flex-fill" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#zikrSettingsModal">
@@ -342,6 +411,145 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
 
         const liveTodayValEl = document.getElementById('liveTodayVal');
         const liveTodayBadgeEl = document.getElementById('liveTodayBadge');
+
+        // =========================================================================
+        // Feedback (Vibration & Sound) Preferences Management
+        // =========================================================================
+        const FEEDBACK_PREFS_KEY = 'zikr_counter_feedback_prefs';
+        const defaultFeedbackPrefs = {
+            vibrateDailyTask: true,
+            vibrate33: true,
+            vibrate100: true,
+            soundDailyTask: true,
+            sound33: true,
+            sound100: true
+        };
+
+        function getFeedbackPrefs() {
+            try {
+                const stored = localStorage.getItem(FEEDBACK_PREFS_KEY);
+                if (stored) {
+                    return Object.assign({}, defaultFeedbackPrefs, JSON.parse(stored));
+                }
+            } catch (_) {}
+            return Object.assign({}, defaultFeedbackPrefs);
+        }
+
+        function saveFeedbackPrefs(prefs) {
+            try {
+                localStorage.setItem(FEEDBACK_PREFS_KEY, JSON.stringify(prefs));
+            } catch (_) {}
+        }
+
+        let feedbackPrefs = getFeedbackPrefs();
+
+        const cfgVibrateDailyTask = document.getElementById('cfgVibrateDailyTask');
+        const cfgVibrate33 = document.getElementById('cfgVibrate33');
+        const cfgVibrate100 = document.getElementById('cfgVibrate100');
+        const cfgSoundDailyTask = document.getElementById('cfgSoundDailyTask');
+        const cfgSound33 = document.getElementById('cfgSound33');
+        const cfgSound100 = document.getElementById('cfgSound100');
+
+        function syncFeedbackCheckboxes() {
+            if (cfgVibrateDailyTask) cfgVibrateDailyTask.checked = Boolean(feedbackPrefs.vibrateDailyTask);
+            if (cfgVibrate33) cfgVibrate33.checked = Boolean(feedbackPrefs.vibrate33);
+            if (cfgVibrate100) cfgVibrate100.checked = Boolean(feedbackPrefs.vibrate100);
+            if (cfgSoundDailyTask) cfgSoundDailyTask.checked = Boolean(feedbackPrefs.soundDailyTask);
+            if (cfgSound33) cfgSound33.checked = Boolean(feedbackPrefs.sound33);
+            if (cfgSound100) cfgSound100.checked = Boolean(feedbackPrefs.sound100);
+        }
+        syncFeedbackCheckboxes();
+
+        [cfgVibrateDailyTask, cfgVibrate33, cfgVibrate100, cfgSoundDailyTask, cfgSound33, cfgSound100].forEach(cb => {
+            if (!cb) return;
+            cb.addEventListener('change', () => {
+                feedbackPrefs = {
+                    vibrateDailyTask: cfgVibrateDailyTask ? cfgVibrateDailyTask.checked : true,
+                    vibrate33: cfgVibrate33 ? cfgVibrate33.checked : true,
+                    vibrate100: cfgVibrate100 ? cfgVibrate100.checked : true,
+                    soundDailyTask: cfgSoundDailyTask ? cfgSoundDailyTask.checked : true,
+                    sound33: cfgSound33 ? cfgSound33.checked : true,
+                    sound100: cfgSound100 ? cfgSound100.checked : true
+                };
+                saveFeedbackPrefs(feedbackPrefs);
+            });
+        });
+
+        // Web Audio API Sound Chimes (Zero-latency, soothing tones without external files)
+        let counterAudioCtx = null;
+        function getCounterAudioContext() {
+            if (!counterAudioCtx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) counterAudioCtx = new AudioCtx();
+            }
+            if (counterAudioCtx && counterAudioCtx.state === 'suspended') {
+                counterAudioCtx.resume().catch(() => {});
+            }
+            return counterAudioCtx;
+        }
+
+        function playCounterSound(type) {
+            try {
+                const ctx = getCounterAudioContext();
+                if (!ctx) return;
+
+                if (type === '33') {
+                    // Soft gentle bell chime (587.33 Hz - D5)
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } else if (type === '100') {
+                    // Clear harmonic dual tone chime (587Hz -> 880Hz)
+                    [587.33, 880].forEach((freq, i) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        const start = ctx.currentTime + (i * 0.1);
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, start);
+                        gain.gain.setValueAtTime(0.14, start);
+                        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(start);
+                        osc.stop(start + 0.35);
+                    });
+                } else if (type === 'daily_task') {
+                    // Harmonious 3-tone melody for daily task completion (523Hz -> 659Hz -> 784Hz)
+                    [523.25, 659.25, 783.99].forEach((freq, i) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        const start = ctx.currentTime + (i * 0.12);
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, start);
+                        gain.gain.setValueAtTime(0.16, start);
+                        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(start);
+                        osc.stop(start + 0.45);
+                    });
+                }
+            } catch (_) {}
+        }
+
+        const btnTestSound = document.getElementById('btnTestSound');
+        if (btnTestSound) {
+            btnTestSound.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                playCounterSound('daily_task');
+                if (feedbackPrefs.vibrateDailyTask && window.navigator && typeof window.navigator.vibrate === 'function') {
+                    try { window.navigator.vibrate(120); } catch (_) {}
+                }
+            });
+        }
 
         function recalculateRequiredForDate(targetDateStr) {
             const startStr = container.dataset.trackingStartDate;
@@ -620,9 +828,6 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
                 clearTimeout(lockHintTimeout);
                 lastLockTapTime = 0;
                 if (lockToggleBtn) lockToggleBtn.classList.remove('lock-hint-active');
-                if (window.navigator && typeof window.navigator.vibrate === 'function') {
-                    try { window.navigator.vibrate(100); } catch (_) {}
-                }
                 toggleTasbeehLock(e);
             } else {
                 // First tap / click: NO blocking toast popup
@@ -632,10 +837,6 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
                 }
                 const lockTextEl = document.getElementById('tasbeehLockText');
                 if (lockTextEl) lockTextEl.textContent = 'Tap Again!';
-
-                if (window.navigator && typeof window.navigator.vibrate === 'function') {
-                    try { window.navigator.vibrate(40); } catch (_) {}
-                }
 
                 clearTimeout(lockHintTimeout);
                 lockHintTimeout = setTimeout(() => {
@@ -734,25 +935,32 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
             pendingBatch += 1;
             updateDisplay(true);
 
-            // Daily Target Completion & Milestone Vibration
-            // 1. Target hit for the first time today: e.g. target is 10 or 100, and today becomes 10 or 100
+            // Daily Target Completion & Milestone Alerts (Single Simple Vibration & Sound)
             const isDailyTargetHit = (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget);
-            // 2. Repeated cycle of daily target completed: e.g. 10, 20, 30...
-            const isDailyTargetCycle = (dailyTarget > 0 && todayCompleted > 0 && todayCompleted % dailyTarget === 0);
-            // 3. Every 100 milestone
-            const isHundredMilestone = (totalCompleted > 0 && totalCompleted % 100 === 0) || (todayCompleted > 0 && todayCompleted % 100 === 0);
+            const isMilestone100 = (todayCompleted > 0 && todayCompleted % 100 === 0) || (totalCompleted > 0 && totalCompleted % 100 === 0);
+            const isMilestone33 = (todayCompleted > 0 && todayCompleted % 33 === 0) || (totalCompleted > 0 && totalCompleted % 33 === 0);
 
-            if ((isDailyTargetHit || isDailyTargetCycle || isHundredMilestone) && window.navigator && typeof window.navigator.vibrate === 'function') {
-                try {
-                    if (isDailyTargetHit) {
-                        window.navigator.vibrate([200, 90, 200, 90, 350]);
-                    } else if (isDailyTargetCycle) {
-                        window.navigator.vibrate([180, 80, 220]);
-                    } else {
-                        window.navigator.vibrate([150, 80, 150]);
-                    }
-                } catch (_) {
-                    try { window.navigator.vibrate(250); } catch (__) {}
+            // Single vibration and sound: only ONE event triggers per tap to prevent double vibration
+            if (isDailyTargetHit) {
+                if (feedbackPrefs.vibrateDailyTask && window.navigator && typeof window.navigator.vibrate === 'function') {
+                    try { window.navigator.vibrate(120); } catch (_) {}
+                }
+                if (feedbackPrefs.soundDailyTask) {
+                    playCounterSound('daily_task');
+                }
+            } else if (isMilestone100) {
+                if (feedbackPrefs.vibrate100 && window.navigator && typeof window.navigator.vibrate === 'function') {
+                    try { window.navigator.vibrate(90); } catch (_) {}
+                }
+                if (feedbackPrefs.sound100) {
+                    playCounterSound('100');
+                }
+            } else if (isMilestone33) {
+                if (feedbackPrefs.vibrate33 && window.navigator && typeof window.navigator.vibrate === 'function') {
+                    try { window.navigator.vibrate(60); } catch (_) {}
+                }
+                if (feedbackPrefs.sound33) {
+                    playCounterSound('33');
                 }
             }
 
@@ -822,8 +1030,13 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
                     totalCompleted += val;
                     todayCompleted += val;
                     updateDisplay();
-                    if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget && window.navigator && typeof window.navigator.vibrate === 'function') {
-                        try { window.navigator.vibrate([200, 90, 200, 90, 350]); } catch (_) {}
+                    if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget) {
+                        if (feedbackPrefs.vibrateDailyTask && window.navigator && typeof window.navigator.vibrate === 'function') {
+                            try { window.navigator.vibrate(120); } catch (_) {}
+                        }
+                        if (feedbackPrefs.soundDailyTask) {
+                            playCounterSound('daily_task');
+                        }
                     }
                     const modalEl = document.getElementById('controlsModal');
                     if (modalEl && typeof bootstrap !== 'undefined') {
@@ -861,8 +1074,13 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
                             totalCompleted = baseTotalCompleted;
                             todayCompleted = baseTodayCompleted;
                             updateDisplay();
-                            if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget && window.navigator && typeof window.navigator.vibrate === 'function') {
-                                try { window.navigator.vibrate([200, 90, 200, 90, 350]); } catch (_) {}
+                            if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget) {
+                                if (feedbackPrefs.vibrateDailyTask && window.navigator && typeof window.navigator.vibrate === 'function') {
+                                    try { window.navigator.vibrate(120); } catch (_) {}
+                                }
+                                if (feedbackPrefs.soundDailyTask) {
+                                    playCounterSound('daily_task');
+                                }
                             }
                         }
                         if (window.PwaSync && typeof window.PwaSync.broadcastZikrCountUpdate === 'function') {
@@ -884,8 +1102,13 @@ body.tasbeeh-locked-mode .btn-tasbeeh-lock-fixed {
                             totalCompleted += val;
                             todayCompleted += val;
                             updateDisplay();
-                            if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget && window.navigator && typeof window.navigator.vibrate === 'function') {
-                                try { window.navigator.vibrate([200, 90, 200, 90, 350]); } catch (_) {}
+                            if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget) {
+                                if (feedbackPrefs.vibrateDailyTask && window.navigator && typeof window.navigator.vibrate === 'function') {
+                                    try { window.navigator.vibrate(120); } catch (_) {}
+                                }
+                                if (feedbackPrefs.soundDailyTask) {
+                                    playCounterSound('daily_task');
+                                }
                             }
                         } else {
                             alert(err?.payload?.message || 'Could not update zikr count.');

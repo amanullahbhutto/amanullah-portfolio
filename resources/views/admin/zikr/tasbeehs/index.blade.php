@@ -208,7 +208,7 @@
                                     data-update-url="{{ route('admin.tasbeehs.update', $t) }}"
                                     title="View Complete Details & Description"
                                 >
-                                    <i class="bi bi-file-earmark-text"></i>
+                                    <i class="bi bi-eye"></i>
                                 </button>
 
                                 {{-- Edit Tasbeeh --}}

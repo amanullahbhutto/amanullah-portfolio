@@ -5,7 +5,7 @@
             <div class="modal-header border-secondary border-opacity-25 pb-3">
                 <div class="d-flex align-items-center gap-3">
                     <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 40px; height: 40px; background: rgba(168, 85, 247, 0.15); color: #c084fc; font-size: 1.25rem; border: 1px solid rgba(168, 85, 247, 0.35);">
-                        <i class="bi bi-file-earmark-text"></i>
+                        <i class="bi bi-eye"></i>
                     </div>
                     <div>
                         <div class="d-flex align-items-center gap-2 flex-wrap">

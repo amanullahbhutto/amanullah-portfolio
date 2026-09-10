@@ -2220,17 +2220,17 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
 }
 
-/* Description & Details Info Icon */
+/* Description & Details Info / View Icon */
 .action-icon-btn.btn-desc-icon {
-    background: rgba(168, 85, 247, 0.1);
+    background: rgba(168, 85, 247, 0.12);
     border-color: rgba(168, 85, 247, 0.45);
     color: #c084fc;
 }
 .action-icon-btn.btn-desc-icon:hover {
-    background: rgba(168, 85, 247, 0.22);
+    background: rgba(168, 85, 247, 0.25);
     border-color: #c084fc;
-    color: #f3e8ff;
-    box-shadow: 0 4px 16px rgba(168, 85, 247, 0.4);
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(168, 85, 247, 0.45);
 }
 
 /* Edit & Delete in Manage Tasbeehs */
@@ -2424,6 +2424,25 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     color: #f87171;
     border-color: #ef4444;
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+}
+.action-btn-top.purple {
+    color: #c084fc;
+    border-color: rgba(168, 85, 247, 0.35);
+}
+.action-btn-top.purple:hover {
+    background: rgba(168, 85, 247, 0.18);
+    color: #f3e8ff;
+    border-color: #c084fc;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.35);
+}
+
+.counter-feedback-box {
+    background: #0c1728;
+    border: 1px solid #162a45;
+}
+.counter-feedback-box .form-check-input:checked {
+    background-color: #06b6d4;
+    border-color: #06b6d4;
 }
 
 /* ========================================================================== */
@@ -3853,6 +3872,17 @@ body.is-standalone-pwa .admin-main {
     background: rgba(248, 113, 113, 0.2) !important;
     border-color: #f87171 !important;
 }
+[data-theme="light"] .action-btn-top.purple {
+    color: #c084fc !important;
+    background: rgba(192, 132, 252, 0.15) !important;
+    border-color: rgba(192, 132, 252, 0.35) !important;
+}
+[data-theme="light"] .action-btn-top.purple:hover {
+    background: #9333ea !important;
+    border-color: #c084fc !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(192, 132, 252, 0.5) !important;
+}
 [data-theme="light"] .action-btn-top.accent {
     background: #10b981 !important;
     border-color: #10b981 !important;
@@ -3875,6 +3905,9 @@ body.is-standalone-pwa .admin-main {
 }
 [data-theme="light"] .zikr-stat-card .text-muted-custom {
     color: #84aba6 !important;
+}
+[data-theme="light"] .zikr-stat-eye-btn {
+    color: #a7f3d0 !important;
 }
 
 /* Light Mode Zikr Item Cards (Matching Screenshot) */
@@ -4018,27 +4051,28 @@ body.is-standalone-pwa .admin-main {
     transform: translateY(-2px);
 }
 [data-theme="light"] .action-icon-btn.btn-desc-icon {
-    background: rgba(147, 51, 234, 0.15) !important;
-    border-color: rgba(147, 51, 234, 0.45) !important;
-    color: #9333ea !important;
+    background: rgba(192, 132, 252, 0.16) !important;
+    border-color: rgba(192, 132, 252, 0.48) !important;
+    color: #c084fc !important;
+    box-shadow: 0 2px 8px rgba(168, 85, 247, 0.25) !important;
 }
 [data-theme="light"] .action-icon-btn.btn-desc-icon:hover {
     background: #9333ea !important;
-    border-color: #a855f7 !important;
+    border-color: #c084fc !important;
     color: #ffffff !important;
-    box-shadow: 0 0 16px rgba(147, 51, 234, 0.5) !important;
+    box-shadow: 0 0 16px rgba(192, 132, 252, 0.6) !important;
     transform: translateY(-2px);
 }
 [data-theme="light"] .action-icon-btn.btn-edit-icon {
-    background: rgba(168, 85, 247, 0.18) !important;
-    border-color: rgba(168, 85, 247, 0.45) !important;
-    color: #c084fc !important;
+    background: rgba(20, 184, 166, 0.18) !important;
+    border-color: rgba(20, 184, 166, 0.45) !important;
+    color: #2dd4bf !important;
 }
 [data-theme="light"] .action-icon-btn.btn-edit-icon:hover {
-    background: #9333ea !important;
-    border-color: #c084fc !important;
+    background: #0d9488 !important;
+    border-color: #2dd4bf !important;
     color: #ffffff !important;
-    box-shadow: 0 0 16px rgba(168, 85, 247, 0.5) !important;
+    box-shadow: 0 0 16px rgba(20, 184, 166, 0.5) !important;
     transform: translateY(-2px);
 }
 [data-theme="light"] .action-icon-btn.btn-reset-icon,
@@ -4123,6 +4157,17 @@ body.is-standalone-pwa .admin-main {
     background: #03201d !important;
     border-color: rgba(255, 255, 255, 0.12) !important;
     color: #ffffff !important;
+}
+[data-theme="light"] .counter-feedback-box {
+    background: #03201d !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="light"] .counter-feedback-box .text-white {
+    color: #ffffff !important;
+}
+[data-theme="light"] .counter-feedback-box .form-check-input:checked {
+    background-color: #2dd4bf !important;
+    border-color: #2dd4bf !important;
 }
 [data-theme="light"] .finance-modal .modal-content {
     background: #073531 !important;

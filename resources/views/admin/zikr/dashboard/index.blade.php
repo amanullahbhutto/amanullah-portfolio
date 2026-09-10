@@ -44,7 +44,7 @@
         </button>
 
         {{-- Global Stats Visibility Eye Trigger --}}
-        <button class="action-btn-top" type="button" id="toggleAllStatsEyeBtn" title="Toggle Stats Visibility (Show/Hide Numbers)">
+        <button class="action-btn-top purple" type="button" id="toggleAllStatsEyeBtn" title="Toggle Stats Visibility (Show/Hide Numbers)">
             <i class="bi bi-eye" id="toggleAllStatsEyeIcon"></i>
         </button>
 
@@ -330,7 +330,7 @@
                                 data-counter-url="{{ route('admin.zikr.counter.show', ['tasbeeh' => $item['tasbeeh_id'], 'user_id' => $selectedUser->id]) }}"
                                 title="View Complete Details & Description"
                             >
-                                <i class="bi bi-file-earmark-text"></i>
+                                <i class="bi bi-eye"></i>
                             </button>
 
                             {{-- Reset Tracking Cycle --}}
