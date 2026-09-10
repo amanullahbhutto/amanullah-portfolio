@@ -2180,6 +2180,20 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     color: #34d399;
     box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
 }
+.action-icon-btn.btn-complete-icon.is-completed,
+.action-icon-btn.btn-complete-icon.active {
+    background: rgba(16, 185, 129, 0.3) !important;
+    border-color: #10b981 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.5) !important;
+}
+.action-icon-btn.btn-complete-icon.is-completed:hover,
+.action-icon-btn.btn-complete-icon.active:hover {
+    background: rgba(239, 68, 68, 0.25) !important;
+    border-color: #ef4444 !important;
+    color: #f87171 !important;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.45) !important;
+}
 
 /* Button 2: Quick Add Plus (Sky Cyan) */
 .action-icon-btn.btn-plus-icon {
@@ -4043,6 +4057,20 @@ body.is-standalone-pwa .admin-main {
     color: #ffffff !important;
     box-shadow: 0 0 16px rgba(16, 185, 129, 0.5) !important;
     transform: translateY(-2px);
+}
+[data-theme="light"] .action-icon-btn.btn-complete-icon.is-completed,
+[data-theme="light"] .action-icon-btn.btn-complete-icon.active {
+    background: #10b981 !important;
+    border-color: #059669 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.6) !important;
+}
+[data-theme="light"] .action-icon-btn.btn-complete-icon.is-completed:hover,
+[data-theme="light"] .action-icon-btn.btn-complete-icon.active:hover {
+    background: #ef4444 !important;
+    border-color: #dc2626 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.6) !important;
 }
 [data-theme="light"] .action-icon-btn.btn-plus-icon {
     background: rgba(56, 189, 248, 0.18) !important;

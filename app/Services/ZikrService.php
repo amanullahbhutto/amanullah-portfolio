@@ -525,39 +525,103 @@ class ZikrService
     }
 
     /**
-     * Marks a single Tasbeeh as completed for today for the user by adding its Daily Target.
+     * Toggles a single Tasbeeh's completion for today:
+     * - If today is not completed: adds remaining count to reach daily target.
+     * - If today is already completed: removes / minuses the completed count for today.
      */
     public function completeSingleForToday(User $user, Tasbeeh $tasbeeh): array
     {
         $progress = $this->getOrCreateProgress($user, $tasbeeh);
-        $countToAdd = max((int) $tasbeeh->daily_target, 1);
+        $dailyTarget = max((int) $tasbeeh->daily_target, 1);
+        $todayDate = $this->now()->format('Y-m-d');
 
-        DB::transaction(function () use ($user, $progress, $tasbeeh, $countToAdd) {
-            $progress->increment('total_completed', $countToAdd);
-            $progress->update(['last_zikr_at' => $this->now()]);
+        $dailyRecord = Schema::hasTable('user_daily_zikrs')
+            ? UserDailyZikr::where('user_id', $user->id)
+                ->where('tasbeeh_id', $tasbeeh->id)
+                ->where('date', $todayDate)
+                ->first()
+            : null;
 
-            $lifetime = $this->getOrCreateLifetimeRecord($user);
-            if ($lifetime->exists) {
-                $lifetime->increment('lifetime_count', $countToAdd);
-                $lifetime->update(['last_zikr_at' => $this->now()]);
+        $currentTodayCount = $dailyRecord ? (int) $dailyRecord->count : 0;
+        $isAlreadyComplete = $currentTodayCount >= $dailyTarget && $dailyTarget > 0;
+
+        $delta = 0;
+        $action = 'added';
+
+        if ($isAlreadyComplete) {
+            // Remove / Minus mode: undo today's completion
+            $action = 'removed';
+            $removeCount = min($currentTodayCount, $dailyTarget);
+            if ($removeCount <= 0) {
+                $removeCount = $dailyTarget;
             }
+            $delta = -$removeCount;
 
-            if (Schema::hasTable('user_daily_zikrs')) {
-                $today = $this->now()->format('Y-m-d');
-                $daily = UserDailyZikr::firstOrCreate(
-                    ['user_id' => $user->id, 'tasbeeh_id' => $tasbeeh->id, 'date' => $today],
-                    ['count' => 0]
-                );
-                $daily->increment('count', $countToAdd);
-            }
-        });
+            DB::transaction(function () use ($user, $progress, $removeCount, $dailyRecord) {
+                $newTotal = max(0, (int) $progress->total_completed - $removeCount);
+                $progress->update([
+                    'total_completed' => $newTotal,
+                    'last_zikr_at' => $this->now(),
+                ]);
+
+                $lifetime = $this->getOrCreateLifetimeRecord($user);
+                if ($lifetime->exists) {
+                    $newLifetime = max(0, (int) $lifetime->lifetime_count - $removeCount);
+                    $lifetime->update([
+                        'lifetime_count' => $newLifetime,
+                        'last_zikr_at' => $this->now(),
+                    ]);
+                }
+
+                if ($dailyRecord) {
+                    $newDaily = max(0, (int) $dailyRecord->count - $removeCount);
+                    $dailyRecord->update(['count' => $newDaily]);
+                }
+            });
+        } else {
+            // Add mode: complete remaining quota for today
+            $action = 'added';
+            $addCount = max($dailyTarget - $currentTodayCount, 1);
+            $delta = $addCount;
+
+            DB::transaction(function () use ($user, $progress, $tasbeeh, $addCount, $todayDate, $dailyRecord) {
+                $progress->increment('total_completed', $addCount);
+                $progress->update(['last_zikr_at' => $this->now()]);
+
+                $lifetime = $this->getOrCreateLifetimeRecord($user);
+                if ($lifetime->exists) {
+                    $lifetime->increment('lifetime_count', $addCount);
+                    $lifetime->update(['last_zikr_at' => $this->now()]);
+                }
+
+                if (Schema::hasTable('user_daily_zikrs')) {
+                    if ($dailyRecord) {
+                        $dailyRecord->increment('count', $addCount);
+                    } else {
+                        UserDailyZikr::create([
+                            'user_id' => $user->id,
+                            'tasbeeh_id' => $tasbeeh->id,
+                            'date' => $todayDate,
+                            'count' => $addCount,
+                        ]);
+                    }
+                }
+            });
+        }
 
         $updatedStats = $this->calculateTasbeehStats($user, $tasbeeh, $progress->fresh());
 
+        $message = $delta > 0
+            ? "+{$delta} completed for '{$tasbeeh->title}'!"
+            : "{$delta} removed for '{$tasbeeh->title}'!";
+
         return [
             'success' => true,
-            'added_count' => $countToAdd,
-            'message' => "+{$countToAdd} completed for '{$tasbeeh->title}'!",
+            'action' => $action,
+            'delta' => $delta,
+            'added_count' => $delta > 0 ? $delta : 0,
+            'removed_count' => $delta < 0 ? abs($delta) : 0,
+            'message' => $message,
             'stats' => $updatedStats,
         ];
     }

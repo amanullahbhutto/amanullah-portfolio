@@ -271,8 +271,11 @@
                         {{-- Action Icons Group --}}
                         <div class="badge-actions-group">
                             {{-- Mark This Tasbeeh Complete for Today (Direct 1-Click Complete) --}}
+                            @php
+                                $isItemDoneToday = (($item['today_completed'] ?? 0) >= ($item['daily_target'] ?? 100) && ($item['daily_target'] ?? 100) > 0);
+                            @endphp
                             <button
-                                class="action-icon-btn btn-complete-icon"
+                                class="action-icon-btn btn-complete-icon {{ $isItemDoneToday ? 'is-completed active' : '' }}"
                                 type="button"
                                 data-tasbeeh-id="{{ $item['tasbeeh_id'] }}"
                                 data-tasbeeh-title="{{ $item['title'] }}"

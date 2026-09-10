@@ -449,54 +449,66 @@ class ZikrTrackingTest extends TestCase
         $this->assertNotNull($lifetime);
         $this->assertSame(100, (int) $lifetime->lifetime_count);
 
-        // Clicking complete-today again adds another daily target (+100)
+        // Clicking complete-today again toggles it off (removes/minus the daily target: -100)
         $secondResponse = $this->postJson(route('admin.zikr.counter.complete-today', $t1), [
             'user_id' => $user->id,
         ]);
-        $secondResponse->assertOk()->assertJson(['success' => true, 'added_count' => 100]);
-        $this->assertSame(200, (int) $p1->fresh()->total_completed);
+        $secondResponse->assertOk()->assertJson([
+            'success' => true,
+            'action' => 'removed',
+            'removed_count' => 100,
+            'delta' => -100,
+        ]);
+        $this->assertSame(0, (int) $p1->fresh()->total_completed);
+        $this->assertSame(0, (int) $lifetime->fresh()->lifetime_count);
+
+        // Clicking a 3rd time completes it again (+100)
+        $thirdResponse = $this->postJson(route('admin.zikr.counter.complete-today', $t1), [
+            'user_id' => $user->id,
+        ]);
+        $thirdResponse->assertOk()->assertJson([
+            'success' => true,
+            'action' => 'added',
+            'added_count' => 100,
+            'delta' => 100,
+        ]);
+        $this->assertSame(100, (int) $p1->fresh()->total_completed);
+        $this->assertSame(100, (int) $lifetime->fresh()->lifetime_count);
     }
 
-    public function test_complete_today_advances_day_by_day_when_backlog_exists(): void
+    public function test_complete_today_toggles_add_and_remove_for_today(): void
     {
         $user = $this->muslimUser;
         $this->actingAs($user);
 
         $t = Tasbeeh::create([
-            'title' => 'Backlog Day-by-Day Tasbeeh',
+            'title' => 'Toggle Complete Tasbeeh',
             'arabic_text' => 'سُبْحَانَ اللَّهِ',
             'daily_target' => 100,
             'is_active' => true,
         ]);
 
-        // Started 3 days ago (total required = 300)
-        $threeDaysAgo = Carbon::now()->subDays(2)->format('Y-m-d');
         $progress = UserTasbeehProgress::create([
             'user_id' => $user->id,
             'tasbeeh_id' => $t->id,
             'total_completed' => 0,
-            'tracking_start_date' => $threeDaysAgo,
+            'tracking_start_date' => Carbon::now()->format('Y-m-d'),
         ]);
 
-        // 1st Click: Advances 1 day's target (+100) -> completed = 100, remaining = 200
+        // 1st Click: Completes today (+100)
         $res1 = $this->postJson(route('admin.zikr.counter.complete-today', $t), ['user_id' => $user->id]);
-        $res1->assertOk()->assertJson(['success' => true, 'added_count' => 100]);
+        $res1->assertOk()->assertJson(['success' => true, 'action' => 'added', 'added_count' => 100, 'delta' => 100]);
         $this->assertSame(100, (int) $progress->fresh()->total_completed);
 
-        // 2nd Click: Advances another day's target (+100) -> completed = 200, remaining = 100
+        // 2nd Click: Toggles off (-100)
         $res2 = $this->postJson(route('admin.zikr.counter.complete-today', $t), ['user_id' => $user->id]);
-        $res2->assertOk()->assertJson(['success' => true, 'added_count' => 100]);
-        $this->assertSame(200, (int) $progress->fresh()->total_completed);
+        $res2->assertOk()->assertJson(['success' => true, 'action' => 'removed', 'removed_count' => 100, 'delta' => -100]);
+        $this->assertSame(0, (int) $progress->fresh()->total_completed);
 
-        // 3rd Click: Completes the remaining 100 -> completed = 300, remaining = 0
+        // 3rd Click: Completes today again (+100)
         $res3 = $this->postJson(route('admin.zikr.counter.complete-today', $t), ['user_id' => $user->id]);
-        $res3->assertOk()->assertJson(['success' => true, 'added_count' => 100]);
-        $this->assertSame(300, (int) $progress->fresh()->total_completed);
-
-        // 4th Click: Adds daily target (+100) -> completed = 400
-        $res4 = $this->postJson(route('admin.zikr.counter.complete-today', $t), ['user_id' => $user->id]);
-        $res4->assertOk()->assertJson(['success' => true, 'added_count' => 100]);
-        $this->assertSame(400, (int) $progress->fresh()->total_completed);
+        $res3->assertOk()->assertJson(['success' => true, 'action' => 'added', 'added_count' => 100, 'delta' => 100]);
+        $this->assertSame(100, (int) $progress->fresh()->total_completed);
     }
 
     public function test_read_today_24_hour_log_resets_to_zero_on_new_day(): void

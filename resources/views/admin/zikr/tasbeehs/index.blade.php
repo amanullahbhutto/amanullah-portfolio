@@ -148,8 +148,11 @@
                             <!-- Action Buttons -->
                             <div class="badge-actions-group">
                                 {{-- Mark This Tasbeeh Complete for Today (Direct 1-Click Complete) --}}
+                                @php
+                                    $isDoneToday = ($todayComp >= $dTarget && $dTarget > 0);
+                                @endphp
                                 <button
-                                    class="action-icon-btn btn-complete-icon"
+                                    class="action-icon-btn btn-complete-icon {{ $isDoneToday ? 'is-completed active' : '' }}"
                                     type="button"
                                     data-tasbeeh-id="{{ $t->id }}"
                                     data-tasbeeh-title="{{ $t->title }}"

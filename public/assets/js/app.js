@@ -994,18 +994,38 @@
 
             if (tasbeehId) {
                 const card = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
-                let countToAdd = parseInt(card?.dataset?.dailyTarget || '100', 10);
-                if (countToAdd <= 0) countToAdd = 100;
+                let dailyTarget = parseInt(card?.dataset?.dailyTarget || '100', 10);
+                if (dailyTarget <= 0) dailyTarget = 100;
+
+                let currentToday = parseInt(card?.dataset?.todayCompleted || '0', 10);
+                const isAlreadyComplete = currentToday >= dailyTarget && dailyTarget > 0;
+
+                let countDelta = 0;
+                let toastMsg = '';
+
+                if (isAlreadyComplete) {
+                    // Toggle Off: Remove / Minus today's completed count
+                    const removeCount = Math.min(currentToday, dailyTarget) || dailyTarget;
+                    countDelta = -removeCount;
+                    toastMsg = `-${removeCount.toLocaleString()} removed for '${title}'!`;
+                    completeIconBtn.classList.remove('is-completed', 'active');
+                } else {
+                    // Toggle On: Add remaining count to complete today
+                    const addCount = Math.max(1, dailyTarget - currentToday);
+                    countDelta = addCount;
+                    toastMsg = `+${addCount.toLocaleString()} completed for '${title}'!`;
+                    completeIconBtn.classList.add('is-completed', 'active');
+                }
 
                 // Immediate 0ms local visual update on screen
                 if (typeof window.updateZikrCardDom === 'function') {
-                    window.updateZikrCardDom(tasbeehId, countToAdd, false);
+                    window.updateZikrCardDom(tasbeehId, countDelta, false);
                 }
 
                 if (typeof window.showFlashToast === 'function') {
-                    window.showFlashToast(`+${countToAdd.toLocaleString()} completed for '${title}'!`, 'success');
+                    window.showFlashToast(toastMsg, isAlreadyComplete ? 'info' : 'success');
                 } else if (window.App && typeof window.App.showToast === 'function') {
-                    window.App.showToast('success', `+${countToAdd.toLocaleString()} completed for '${title}'!`);
+                    window.App.showToast(isAlreadyComplete ? 'info' : 'success', toastMsg);
                 }
 
                 if (!navigator.onLine) {
@@ -1023,7 +1043,11 @@
                             'X-CSRF-TOKEN': csrfToken || ''
                         },
                         body: JSON.stringify({ user_id: userId })
-                    }).then(res => res.json()).then(data => {
+                    }).then(async (res) => {
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok) throw Object.assign(new Error('Complete failed'), { data });
+                        return data;
+                    }).then(data => {
                         if (data && data.success && card) {
                             if (data.summary && typeof window.reconcileZikrOfflineCounts === 'function') {
                                 window.reconcileZikrOfflineCounts({ zikr_summary: data.summary, server_time: data.server_time });
@@ -1040,6 +1064,11 @@
                                 if (typeof window.recalculateZikrTopStats === 'function') {
                                     window.recalculateZikrTopStats();
                                 }
+                            }
+                            if (data.stats && data.stats.today_completed !== undefined) {
+                                const isDone = data.stats.today_completed >= (data.stats.daily_target || dailyTarget);
+                                completeIconBtn.classList.toggle('is-completed', isDone);
+                                completeIconBtn.classList.toggle('active', isDone);
                             }
                         }
                         if (window.PwaSync && typeof window.PwaSync.broadcastEvent === 'function') {
@@ -1994,8 +2023,15 @@
             }
         }
 
-        // Live Real-Time Lifetime Total Counter Update (Only increments on new zikr additions, NEVER on resets)
-        if (!isAbsolute && deltaAdded > 0) {
+        let completeIconBtn = cardCol.querySelector('.btn-complete-icon');
+        if (completeIconBtn) {
+            const isDone = nextTodayCompleted >= dailyTarget && dailyTarget > 0;
+            completeIconBtn.classList.toggle('is-completed', isDone);
+            completeIconBtn.classList.toggle('active', isDone);
+        }
+
+        // Live Real-Time Lifetime Total Counter Update (Only increments/decrements on zikr additions/removals, NEVER on resets)
+        if (!isAbsolute && deltaAdded !== 0) {
             let lifetimeEl = document.getElementById('top-stat-lifetime-total');
             if (lifetimeEl) {
                 let currentLifetime = parseInt((lifetimeEl.dataset.rawVal || lifetimeEl.textContent).replace(/,/g, ''), 10) || 0;
@@ -2253,6 +2289,13 @@
                         todayStatusBadgeEl.style.color = '#f87171';
                         todayStatusBadgeEl.innerHTML = `Today: <strong class="ms-1 font-monospace">0</strong>`;
                     }
+                }
+
+                let completeIconBtn = card.querySelector('.btn-complete-icon');
+                if (completeIconBtn) {
+                    const isDone = finalToday >= dailyTarget && dailyTarget > 0;
+                    completeIconBtn.classList.toggle('is-completed', isDone);
+                    completeIconBtn.classList.toggle('active', isDone);
                 }
 
                 let remainingEl = card.querySelector('.badge-remaining');
