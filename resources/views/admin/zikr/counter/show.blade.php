@@ -93,6 +93,19 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
 .flash-toast-viewport {
     pointer-events: none !important;
 }
+.vibration-intensity-group .btn-outline-info {
+    border-color: rgba(56, 189, 248, 0.35);
+    color: #93c5fd;
+    background: rgba(15, 23, 42, 0.6);
+    transition: all 0.2s ease;
+}
+.vibration-intensity-group .btn-check:checked + .btn-outline-info {
+    background: #0284c7 !important;
+    border-color: #38bdf8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    font-weight: 600;
+}
 </style>
 @endpush
 
@@ -243,11 +256,44 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
 
                 {{-- Vibration Settings Section --}}
                 <div class="mb-3 pb-2 border-bottom border-secondary border-opacity-25">
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <i class="bi bi-phone-vibrate text-info" style="font-size: 0.85rem;"></i>
-                        <span class="small fw-bold text-info" style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.5px;">Vibration (وائبریشن)</span>
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-phone-vibrate text-info" style="font-size: 0.85rem;"></i>
+                            <span class="small fw-bold text-info" style="font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.5px;">Vibration (وائبریشن)</span>
+                        </div>
                     </div>
+
+                    {{-- 3 Vibration Options: Chhota (Short), Normal, Bara (Strong) --}}
+                    <div class="mb-3 bg-dark bg-opacity-50 p-2 rounded-2 border border-secondary border-opacity-25">
+                        <label class="text-secondary small d-flex align-items-center justify-content-between mb-1" style="font-size: 0.74rem;">
+                            <span>Vibration Size / وائبریشن سائز:</span>
+                            <span class="text-info" style="font-size: 0.72rem;">(چھوٹا، نارمل، بڑا)</span>
+                        </label>
+                        <div class="btn-group w-100 vibration-intensity-group" role="group" aria-label="Vibration Size">
+                            <input type="radio" class="btn-check" name="vibrateIntensity" id="vibeShort" value="short" autocomplete="off">
+                            <label class="btn btn-outline-info btn-sm py-1 px-1" for="vibeShort" style="font-size: 0.75rem;">
+                                Chhota (Short)
+                            </label>
+
+                            <input type="radio" class="btn-check" name="vibrateIntensity" id="vibeNormal" value="normal" autocomplete="off" checked>
+                            <label class="btn btn-outline-info btn-sm py-1 px-1" for="vibeNormal" style="font-size: 0.75rem;">
+                                Normal
+                            </label>
+
+                            <input type="radio" class="btn-check" name="vibrateIntensity" id="vibeStrong" value="strong" autocomplete="off">
+                            <label class="btn btn-outline-info btn-sm py-1 px-1" for="vibeStrong" style="font-size: 0.75rem;">
+                                Bara (Strong)
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="d-flex flex-column gap-2 ps-1">
+                        <div class="form-check form-switch d-flex align-items-center justify-content-between ps-0 mb-0">
+                            <label class="form-check-label text-white small" for="cfgVibrateTap" style="font-size: 0.82rem; cursor: pointer;">
+                                Every Tap (ہر کلک پر)
+                            </label>
+                            <input class="form-check-input ms-0" type="checkbox" role="switch" id="cfgVibrateTap" style="cursor: pointer;">
+                        </div>
                         <div class="form-check form-switch d-flex align-items-center justify-content-between ps-0 mb-0">
                             <label class="form-check-label text-white small" for="cfgVibrateDailyTask" style="font-size: 0.82rem; cursor: pointer;">
                                 Daily Task Complete
@@ -387,8 +433,8 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
         const container = document.getElementById('tasbeehContainer');
         if (!container) return;
 
-        function getLocalDateStr() {
-            const d = new Date();
+        function getLocalDateStr(dateObj = null) {
+            const d = (dateObj instanceof Date && !isNaN(dateObj.getTime())) ? dateObj : new Date();
             const y = d.getFullYear();
             const m = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
@@ -407,6 +453,9 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
             (lastActiveDate && lastActiveDate < clientToday) ||
             (!pageRenderDate && !navigator.onLine)
         );
+        if (isPastDayRender) {
+            container.dataset.renderDate = clientToday;
+        }
 
         const dailyTarget = parseInt(container.dataset.dailyTarget || '100', 10) || 100;
         let baseTotalCompleted = parseInt(container.dataset.totalCompleted, 10) || 0;
@@ -435,6 +484,8 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
         // =========================================================================
         const FEEDBACK_PREFS_KEY = 'zikr_counter_feedback_prefs';
         const defaultFeedbackPrefs = {
+            vibrateIntensity: 'normal', // 'short', 'normal', 'strong'
+            vibrateTap: false,
             vibrateDailyTask: true,
             vibrate33: true,
             vibrate100: true,
@@ -461,27 +512,78 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
 
         let feedbackPrefs = getFeedbackPrefs();
 
+        function getVibrationDuration(type) {
+            const intensity = feedbackPrefs.vibrateIntensity || 'normal';
+            if (intensity === 'short') { // Chhota (Short)
+                if (type === 'tap') return 25;
+                if (type === '33') return 40;
+                if (type === '100') return 70;
+                if (type === 'daily_task') return 100;
+                return 35; // preview
+            } else if (intensity === 'strong') { // Bara (Strong)
+                if (type === 'tap') return 75;
+                if (type === '33') return 120;
+                if (type === '100') return 180;
+                if (type === 'daily_task') return 240;
+                return 150; // preview
+            } else { // Normal
+                if (type === 'tap') return 45;
+                if (type === '33') return 65;
+                if (type === '100') return 100;
+                if (type === 'daily_task') return 140;
+                return 75; // preview
+            }
+        }
+
+        function triggerVibration(type) {
+            if (!window.navigator || typeof window.navigator.vibrate !== 'function') return;
+            const ms = getVibrationDuration(type);
+            try {
+                window.navigator.vibrate(ms);
+            } catch (_) {}
+        }
+
+        const cfgVibrateTap = document.getElementById('cfgVibrateTap');
         const cfgVibrateDailyTask = document.getElementById('cfgVibrateDailyTask');
         const cfgVibrate33 = document.getElementById('cfgVibrate33');
         const cfgVibrate100 = document.getElementById('cfgVibrate100');
         const cfgSoundDailyTask = document.getElementById('cfgSoundDailyTask');
         const cfgSound33 = document.getElementById('cfgSound33');
         const cfgSound100 = document.getElementById('cfgSound100');
+        const vibeIntensityRadios = document.querySelectorAll('input[name="vibrateIntensity"]');
 
         function syncFeedbackCheckboxes() {
+            if (cfgVibrateTap) cfgVibrateTap.checked = Boolean(feedbackPrefs.vibrateTap);
             if (cfgVibrateDailyTask) cfgVibrateDailyTask.checked = Boolean(feedbackPrefs.vibrateDailyTask);
             if (cfgVibrate33) cfgVibrate33.checked = Boolean(feedbackPrefs.vibrate33);
             if (cfgVibrate100) cfgVibrate100.checked = Boolean(feedbackPrefs.vibrate100);
             if (cfgSoundDailyTask) cfgSoundDailyTask.checked = Boolean(feedbackPrefs.soundDailyTask);
             if (cfgSound33) cfgSound33.checked = Boolean(feedbackPrefs.sound33);
             if (cfgSound100) cfgSound100.checked = Boolean(feedbackPrefs.sound100);
+
+            const activeIntensity = feedbackPrefs.vibrateIntensity || 'normal';
+            vibeIntensityRadios.forEach(radio => {
+                radio.checked = (radio.value === activeIntensity);
+            });
         }
         syncFeedbackCheckboxes();
 
-        [cfgVibrateDailyTask, cfgVibrate33, cfgVibrate100, cfgSoundDailyTask, cfgSound33, cfgSound100].forEach(cb => {
+        vibeIntensityRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.checked) {
+                    feedbackPrefs.vibrateIntensity = radio.value;
+                    saveFeedbackPrefs(feedbackPrefs);
+                    triggerVibration('preview');
+                }
+            });
+        });
+
+        [cfgVibrateTap, cfgVibrateDailyTask, cfgVibrate33, cfgVibrate100, cfgSoundDailyTask, cfgSound33, cfgSound100].forEach(cb => {
             if (!cb) return;
             cb.addEventListener('change', () => {
                 feedbackPrefs = {
+                    vibrateIntensity: feedbackPrefs.vibrateIntensity || 'normal',
+                    vibrateTap: cfgVibrateTap ? cfgVibrateTap.checked : false,
                     vibrateDailyTask: cfgVibrateDailyTask ? cfgVibrateDailyTask.checked : true,
                     vibrate33: cfgVibrate33 ? cfgVibrate33.checked : true,
                     vibrate100: cfgVibrate100 ? cfgVibrate100.checked : true,
@@ -578,8 +680,10 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                 e.preventDefault();
                 e.stopPropagation();
                 playCounterSound('daily_task');
-                if (feedbackPrefs.vibrateDailyTask && window.navigator && typeof window.navigator.vibrate === 'function') {
-                    try { window.navigator.vibrate(120); } catch (_) {}
+                if (feedbackPrefs.vibrateDailyTask) {
+                    triggerVibration('daily_task');
+                } else {
+                    triggerVibration('preview');
                 }
             });
         }
@@ -978,6 +1082,17 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
             }
             lastTapTimestamp = now;
 
+            // 24-hour / midnight rollover check before tap calculation
+            const currentDayNow = getLocalDateStr();
+            const currentRenderDate = container.dataset.renderDate || document.querySelector('meta[name="page-rendered-date"]')?.getAttribute('content');
+            if (currentDayNow !== lastTrackedDay || (currentRenderDate && currentRenderDate < currentDayNow)) {
+                lastTrackedDay = currentDayNow;
+                baseTodayCompleted = 0;
+                todayCompleted = 0;
+                container.dataset.renderDate = currentDayNow;
+                recalculateRequiredForDate(currentDayNow);
+            }
+
             // Visual touch ripple
             if (e) createTouchRipple(e);
 
@@ -994,26 +1109,28 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
 
             // Single vibration and sound: only ONE event triggers per tap to prevent double vibration
             if (isDailyTargetHit) {
-                if (feedbackPrefs.vibrateDailyTask && window.navigator && typeof window.navigator.vibrate === 'function') {
-                    try { window.navigator.vibrate(120); } catch (_) {}
+                if (feedbackPrefs.vibrateDailyTask) {
+                    triggerVibration('daily_task');
                 }
                 if (feedbackPrefs.soundDailyTask) {
                     playCounterSound('daily_task');
                 }
             } else if (isMilestone100) {
-                if (feedbackPrefs.vibrate100 && window.navigator && typeof window.navigator.vibrate === 'function') {
-                    try { window.navigator.vibrate(90); } catch (_) {}
+                if (feedbackPrefs.vibrate100) {
+                    triggerVibration('100');
                 }
                 if (feedbackPrefs.sound100) {
                     playCounterSound('100');
                 }
             } else if (isMilestone33) {
-                if (feedbackPrefs.vibrate33 && window.navigator && typeof window.navigator.vibrate === 'function') {
-                    try { window.navigator.vibrate(60); } catch (_) {}
+                if (feedbackPrefs.vibrate33) {
+                    triggerVibration('33');
                 }
                 if (feedbackPrefs.sound33) {
                     playCounterSound('33');
                 }
+            } else if (feedbackPrefs.vibrateTap) {
+                triggerVibration('tap');
             }
 
             // Broadcast real-time tap to other tabs/pages immediately
@@ -1083,8 +1200,8 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                     todayCompleted += val;
                     updateDisplay();
                     if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget) {
-                        if (feedbackPrefs.vibrateDailyTask && window.navigator && typeof window.navigator.vibrate === 'function') {
-                            try { window.navigator.vibrate(120); } catch (_) {}
+                        if (feedbackPrefs.vibrateDailyTask) {
+                            triggerVibration('daily_task');
                         }
                         if (feedbackPrefs.soundDailyTask) {
                             playCounterSound('daily_task');
@@ -1127,8 +1244,8 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                             todayCompleted = baseTodayCompleted;
                             updateDisplay();
                             if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget) {
-                                if (feedbackPrefs.vibrateDailyTask && window.navigator && typeof window.navigator.vibrate === 'function') {
-                                    try { window.navigator.vibrate(120); } catch (_) {}
+                                if (feedbackPrefs.vibrateDailyTask) {
+                                    triggerVibration('daily_task');
                                 }
                                 if (feedbackPrefs.soundDailyTask) {
                                     playCounterSound('daily_task');
@@ -1155,8 +1272,8 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                             todayCompleted += val;
                             updateDisplay();
                             if (dailyTarget > 0 && prevToday < dailyTarget && todayCompleted >= dailyTarget) {
-                                if (feedbackPrefs.vibrateDailyTask && window.navigator && typeof window.navigator.vibrate === 'function') {
-                                    try { window.navigator.vibrate(120); } catch (_) {}
+                                if (feedbackPrefs.vibrateDailyTask) {
+                                    triggerVibration('daily_task');
                                 }
                                 if (feedbackPrefs.soundDailyTask) {
                                     playCounterSound('daily_task');
@@ -1214,15 +1331,17 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                     lastActiveDate = localStorage.getItem('pwa_zikr_active_date');
                 } catch (_) {}
 
+                const currentRenderDate = container.dataset.renderDate || pageRenderDate;
                 const isPastDay = Boolean(
-                    (pageRenderDate && pageRenderDate < clientToday) ||
+                    (currentRenderDate && currentRenderDate < clientToday) ||
                     (lastActiveDate && lastActiveDate < clientToday) ||
-                    (!pageRenderDate && !navigator.onLine)
+                    (!currentRenderDate && !navigator.onLine)
                 );
 
                 if (isPastDay) {
                     recalculateRequiredForDate(clientToday);
                     baseTodayCompleted = 0;
+                    container.dataset.renderDate = clientToday;
                 }
 
                 // 1. If syncedData is provided, update baseline
@@ -1244,6 +1363,22 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                     items = await window.PwaDB.getPendingOutbox();
                 }
 
+                const getItemLocalDate = (item) => {
+                    const p = item.payload || {};
+                    if (p.date && typeof p.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.date.trim())) {
+                        return p.date.trim();
+                    }
+                    if (item.created_at) {
+                        try {
+                            const parsed = new Date(item.created_at);
+                            if (!isNaN(parsed.getTime())) {
+                                return getLocalDateStr(parsed);
+                            }
+                        } catch (_) {}
+                    }
+                    return null;
+                };
+
                 let pendingCountToday = 0;
                 let pendingCountTotal = 0;
                 let isCompletedToday = false;
@@ -1253,8 +1388,8 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                     const entity = item.entity || '';
                     const p = item.payload || {};
                     const tId = p.tasbeeh_id ? String(p.tasbeeh_id) : null;
-                    const itemDate = p.date || (item.created_at ? item.created_at.substring(0, 10) : clientToday);
-                    const isTodayItem = (itemDate === clientToday);
+                    const itemDate = getItemLocalDate(item);
+                    const isTodayItem = Boolean(itemDate && itemDate === clientToday);
 
                     if ((entity === 'tasbeeh_count' || entity === 'zikr_count') && tId === currentTasbeehId) {
                         const cnt = (parseInt(p.count, 10) || 0);
@@ -1301,8 +1436,10 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
         let lastTrackedDay = getLocalDateStr();
         const checkMidnightRollover = () => {
             const currentDay = getLocalDateStr();
-            if (currentDay !== lastTrackedDay) {
+            const currentRenderDate = container.dataset.renderDate || document.querySelector('meta[name="page-rendered-date"]')?.getAttribute('content');
+            if (currentDay !== lastTrackedDay || (currentRenderDate && currentRenderDate < currentDay)) {
                 lastTrackedDay = currentDay;
+                container.dataset.renderDate = currentDay;
                 baseTodayCompleted = 0;
                 todayCompleted = 0;
                 pendingBatch = 0;
@@ -1310,11 +1447,12 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                 reconcilePending();
             }
         };
-        setInterval(checkMidnightRollover, 10000);
+        setInterval(checkMidnightRollover, 5000);
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') checkMidnightRollover();
         });
         window.addEventListener('focus', checkMidnightRollover);
+        window.addEventListener('pageshow', checkMidnightRollover);
 
         reconcilePending();
         window.addEventListener('load', () => reconcilePending());
@@ -1331,6 +1469,17 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
                 return; // Never process broadcast triggered by this exact same tab
             }
             const currentTasbeehId = '{{ $tasbeeh->id }}';
+
+            // Check day rollover before handling broadcast
+            const currentDayNow = getLocalDateStr();
+            const currentRenderDate = container.dataset.renderDate || document.querySelector('meta[name="page-rendered-date"]')?.getAttribute('content');
+            if (currentDayNow !== lastTrackedDay || (currentRenderDate && currentRenderDate < currentDayNow)) {
+                lastTrackedDay = currentDayNow;
+                baseTodayCompleted = 0;
+                todayCompleted = 0;
+                container.dataset.renderDate = currentDayNow;
+                recalculateRequiredForDate(currentDayNow);
+            }
 
             if (data.type === 'ZIKR_COUNT_INCREMENT' && String(data.tasbeehId) === currentTasbeehId) {
                 const delta = parseInt(data.delta, 10) || 0;

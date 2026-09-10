@@ -1953,9 +1953,22 @@
         let dailyTarget = parseInt(cardCol.dataset.dailyTarget || '100', 10);
         let nextTodayCompleted = 0;
 
-        const currentTodayCompleted = parseInt(cardCol.dataset.todayCompleted || '0', 10) || 0;
+        // Ensure date rollover is respected before modifying today's count
+        const todayStr = (function () {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        })();
+        const cardDate = cardCol.dataset.renderDate;
+        let currentTodayCompleted = parseInt(cardCol.dataset.todayCompleted || '0', 10) || 0;
+        if (cardDate && cardDate < todayStr) {
+            currentTodayCompleted = 0;
+            cardCol.dataset.baseTodayCompleted = '0';
+            cardCol.dataset.renderDate = todayStr;
+        }
+
         nextTodayCompleted = Math.max(isAbsolute ? (countDelta === 0 ? 0 : currentTodayCompleted) : currentTodayCompleted + deltaAdded, 0);
         cardCol.dataset.todayCompleted = String(nextTodayCompleted);
+        cardCol.dataset.renderDate = todayStr;
 
         if (todayMetaEl) {
             todayMetaEl.textContent = nextTodayCompleted.toLocaleString();
@@ -2033,8 +2046,8 @@
     // Absolute Offline Reconciliation for Dashboard & Counter Cards
     window.reconcileZikrOfflineCounts = async function (pulledServerData = null) {
         try {
-            function getLocalDateStr() {
-                const d = new Date();
+            function getLocalDateStr(dateObj = new Date()) {
+                const d = (dateObj instanceof Date && !isNaN(dateObj)) ? dateObj : new Date();
                 const y = d.getFullYear();
                 const m = String(d.getMonth() + 1).padStart(2, '0');
                 const day = String(d.getDate()).padStart(2, '0');
@@ -2046,6 +2059,12 @@
             try {
                 lastActiveDate = localStorage.getItem('pwa_zikr_active_date');
             } catch (_) {}
+
+            // Robust check: Did a 24-hour day rollover occur since the user last interacted or since page was rendered?
+            const isDateRolledOver = Boolean(
+                (lastActiveDate && lastActiveDate < clientToday) ||
+                (globalPageDate && globalPageDate < clientToday)
+            );
 
             // 1. If fresh server data was passed (e.g. from pull sync), update baseline values
             if (pulledServerData && pulledServerData.zikr_summary) {
@@ -2064,6 +2083,7 @@
                             card.dataset.totalCompleted = String(t.total_completed || 0);
                             card.dataset.dailyTarget = String(t.daily_target || card.dataset.dailyTarget || 100);
                             card.dataset.totalRequired = String(t.total_required || card.dataset.totalRequired || 100);
+                            card.dataset.renderDate = clientToday;
                         }
                     });
                 }
@@ -2081,6 +2101,22 @@
                 items = await window.PwaDB.getPendingOutbox();
             }
 
+            function getItemLocalDate(item) {
+                if (!item) return null;
+                const p = item.payload || {};
+                if (p.date && typeof p.date === 'string') {
+                    return p.date.substring(0, 10);
+                }
+                if (item.created_at) {
+                    try {
+                        return getLocalDateStr(new Date(item.created_at));
+                    } catch (_) {
+                        return String(item.created_at).substring(0, 10);
+                    }
+                }
+                return null;
+            }
+
             const countTodayByTasbeeh = {};
             const countTotalByTasbeeh = {};
             const completedTodayByTasbeeh = {};
@@ -2093,8 +2129,8 @@
                 const entity = item.entity || '';
                 const p = item.payload || {};
                 const tId = p.tasbeeh_id ? String(p.tasbeeh_id) : null;
-                const itemDate = p.date || (item.created_at ? item.created_at.substring(0, 10) : clientToday);
-                const isTodayItem = (itemDate === clientToday);
+                const itemDate = getItemLocalDate(item);
+                const isTodayItem = Boolean(itemDate && itemDate === clientToday);
 
                 if (entity === 'zikr_count' || entity === 'tasbeeh_count') {
                     if (tId) {
@@ -2121,10 +2157,6 @@
                 }
             });
 
-            try {
-                localStorage.setItem('pwa_zikr_active_date', clientToday);
-            } catch (_) {}
-
             // 3. Update all Tasbeeh Cards using absolute baseline + pending mutations
             const cards = document.querySelectorAll('[id^="tasbeeh-card-"]');
             let allCompletesTotalCount = 0;
@@ -2133,12 +2165,13 @@
                 const tId = card.id.replace('tasbeeh-card-', '');
                 const cardRenderDate = card.dataset.renderDate || globalPageDate;
                 const isCardPastDay = !pulledServerData && Boolean(
-                    (cardRenderDate && cardRenderDate < clientToday) ||
-                    (!cardRenderDate && !navigator.onLine && lastActiveDate && lastActiveDate < clientToday)
+                    isDateRolledOver ||
+                    (cardRenderDate && cardRenderDate < clientToday)
                 );
 
                 if (isCardPastDay) {
                     card.dataset.baseTodayCompleted = '0';
+                    card.dataset.renderDate = clientToday;
                 } else if (!card.dataset.baseTodayCompleted) {
                     card.dataset.baseTodayCompleted = card.dataset.todayCompleted || '0';
                 }
@@ -2190,6 +2223,7 @@
                 // Apply to Card DOM
                 card.dataset.todayCompleted = String(finalToday);
                 card.dataset.totalCompleted = String(finalTotal);
+                card.dataset.renderDate = clientToday;
 
                 let completedEl = card.querySelector('.badge-completed strong');
                 if (completedEl) completedEl.textContent = finalTotal.toLocaleString();
@@ -2276,6 +2310,11 @@
             if (typeof window.recalculateZikrTopStats === 'function') {
                 window.recalculateZikrTopStats();
             }
+
+            // Update page meta rendered date so future checks in this session know it's clientToday
+            const metaRenderDateEl = document.querySelector('meta[name="page-rendered-date"]');
+            if (metaRenderDateEl) metaRenderDateEl.setAttribute('content', clientToday);
+
             try {
                 localStorage.setItem('pwa_zikr_active_date', clientToday);
             } catch (_) {}
@@ -2462,14 +2501,16 @@
     const checkDayRollover = () => {
         const d = new Date();
         const curDayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        if (curDayStr !== lastKnownDayStr) {
+        const pageRenderDate = document.querySelector('meta[name="page-rendered-date"]')?.getAttribute('content');
+        if (curDayStr !== lastKnownDayStr || (pageRenderDate && pageRenderDate < curDayStr)) {
             lastKnownDayStr = curDayStr;
             runAllOfflineReconciliations();
         }
     };
 
-    setInterval(checkDayRollover, 10000);
+    setInterval(checkDayRollover, 5000);
     window.addEventListener('focus', checkDayRollover);
+    window.addEventListener('pageshow', checkDayRollover);
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') checkDayRollover();
     });
