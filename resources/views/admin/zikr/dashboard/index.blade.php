@@ -832,6 +832,31 @@
                 // Reset deltas, rebuild fully from outbox
                 Object.keys(liveDeltas).forEach(k => delete liveDeltas[k]);
 
+                // First pass: identify complete_all and resets
+                let hasZikrCompleteAll = false;
+                let hasZikrResetAll = false;
+                const completedTodayByTasbeeh = {};
+                const resetByTasbeeh = {};
+
+                (items || []).forEach(item => {
+                    const entity = item.entity || '';
+                    const p = item.payload || {};
+                    const tId = p.tasbeeh_id ? String(p.tasbeeh_id) : null;
+                    const itemDate = getItemDate(item);
+                    const isTodayItem = Boolean(itemDate && itemDate === clientToday);
+
+                    if (entity === 'zikr_complete_all' && isTodayItem) {
+                        hasZikrCompleteAll = true;
+                    } else if (entity === 'tasbeeh_complete_today' && tId && isTodayItem) {
+                        completedTodayByTasbeeh[tId] = (completedTodayByTasbeeh[tId] || 0) + 1;
+                    } else if (entity === 'tasbeeh_reset_single' && tId) {
+                        resetByTasbeeh[tId] = true;
+                    } else if (entity === 'zikr_reset_all') {
+                        hasZikrResetAll = true;
+                    }
+                });
+
+                // Second pass: accumulate zikr_count deltas
                 (items || []).forEach(item => {
                     const entity = item.entity || '';
                     const p = item.payload || {};
@@ -839,12 +864,37 @@
                     const tId = p.tasbeeh_id ? String(p.tasbeeh_id) : null;
                     if (!tId) return;
                     const cnt = parseInt(p.count, 10) || 0;
-                    const itemDate = getItemDate(item);  // ← uses created_at fallback, NOT today
+                    const itemDate = getItemDate(item);
                     if (!liveDeltas[tId]) liveDeltas[tId] = { today: 0, total: 0 };
                     liveDeltas[tId].total += cnt;
-                    // Only count as "today" if itemDate is EXACTLY today
                     if (itemDate && itemDate === clientToday) liveDeltas[tId].today += cnt;
                 });
+
+                // Third pass: apply complete_today deltas on top of zikr_count deltas
+                if (hasZikrResetAll) {
+                    // Reset all — clear everything
+                    Object.keys(liveDeltas).forEach(k => delete liveDeltas[k]);
+                } else {
+                    document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                        const tId = card.id.replace('tasbeeh-card-', '');
+                        if (resetByTasbeeh[tId]) {
+                            delete liveDeltas[tId];
+                            return;
+                        }
+                        const completesCount = (completedTodayByTasbeeh[tId] || 0) + (hasZikrCompleteAll ? 1 : 0);
+                        if (completesCount > 0) {
+                            const baseToday = parseInt(card.dataset.todayCompleted || card.dataset.baseToday || '0', 10) || 0;
+                            const dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10) || 100;
+                            const currentTodayDelta = liveDeltas[tId] ? liveDeltas[tId].today : 0;
+                            const needed = Math.max(0, dailyTarget - baseToday - currentTodayDelta);
+                            if (needed > 0) {
+                                if (!liveDeltas[tId]) liveDeltas[tId] = { today: 0, total: 0 };
+                                liveDeltas[tId].today += needed;
+                                liveDeltas[tId].total += needed;
+                            }
+                        }
+                    });
+                }
 
                 applyDeltasToDOM();
             } catch (e) {

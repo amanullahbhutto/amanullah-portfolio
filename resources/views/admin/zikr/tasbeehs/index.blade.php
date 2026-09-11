@@ -553,6 +553,31 @@
                 const clientToday = getLocalDateStr();
                 Object.keys(liveDeltas).forEach(k => delete liveDeltas[k]);
 
+                // First pass: identify complete_today, complete_all and resets
+                let hasZikrCompleteAll = false;
+                let hasZikrResetAll = false;
+                const completedTodayByTasbeeh = {};
+                const resetByTasbeeh = {};
+
+                (items || []).forEach(item => {
+                    const entity = item.entity || '';
+                    const p = item.payload || {};
+                    const tId = p.tasbeeh_id ? String(p.tasbeeh_id) : null;
+                    const itemDate = p.date || clientToday;
+                    const isTodayItem = (itemDate === clientToday);
+
+                    if (entity === 'zikr_complete_all' && isTodayItem) {
+                        hasZikrCompleteAll = true;
+                    } else if (entity === 'tasbeeh_complete_today' && tId && isTodayItem) {
+                        completedTodayByTasbeeh[tId] = (completedTodayByTasbeeh[tId] || 0) + 1;
+                    } else if (entity === 'tasbeeh_reset_single' && tId) {
+                        resetByTasbeeh[tId] = true;
+                    } else if (entity === 'zikr_reset_all') {
+                        hasZikrResetAll = true;
+                    }
+                });
+
+                // Second pass: accumulate zikr_count deltas
                 (items || []).forEach(item => {
                     const entity = item.entity || '';
                     const p = item.payload || {};
@@ -565,6 +590,31 @@
                     liveDeltas[tId].total += cnt;
                     if (itemDate === clientToday) liveDeltas[tId].today += cnt;
                 });
+
+                // Third pass: apply complete_today deltas
+                if (hasZikrResetAll) {
+                    Object.keys(liveDeltas).forEach(k => delete liveDeltas[k]);
+                } else {
+                    document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
+                        const tId = card.id.replace('tasbeeh-card-', '');
+                        if (resetByTasbeeh[tId]) {
+                            delete liveDeltas[tId];
+                            return;
+                        }
+                        const completesCount = (completedTodayByTasbeeh[tId] || 0) + (hasZikrCompleteAll ? 1 : 0);
+                        if (completesCount > 0) {
+                            const baseToday = parseInt(card.dataset.todayCompleted || '0', 10) || 0;
+                            const dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10) || 100;
+                            const currentTodayDelta = liveDeltas[tId] ? liveDeltas[tId].today : 0;
+                            const needed = Math.max(0, dailyTarget - baseToday - currentTodayDelta);
+                            if (needed > 0) {
+                                if (!liveDeltas[tId]) liveDeltas[tId] = { today: 0, total: 0 };
+                                liveDeltas[tId].today += needed;
+                                liveDeltas[tId].total += needed;
+                            }
+                        }
+                    });
+                }
 
                 applyDeltasToDOM();
             } catch (e) {
