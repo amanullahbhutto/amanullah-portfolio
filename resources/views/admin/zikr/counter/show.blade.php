@@ -129,6 +129,10 @@ body.tasbeeh-locked-mode [data-bs-target="#controlsModal"] {
         data-daily-target="{{ $stats['daily_target'] }}"
         data-tracking-start-date="{{ $stats['tracking_start_date'] }}"
         data-render-date="{{ now()->format('Y-m-d') }}"
+        data-base-today-completed="{{ $stats['today_completed'] }}"
+        data-base-today="{{ $stats['today_completed'] }}"
+        data-base-total-completed="{{ $stats['total_completed'] }}"
+        data-base-total="{{ $stats['total_completed'] }}"
     >
         {{-- Card Top Header Bar --}}
         <div class="card-top-bar">
