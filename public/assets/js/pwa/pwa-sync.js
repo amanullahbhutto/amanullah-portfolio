@@ -276,6 +276,11 @@ class PwaSync {
                     this.appState.isAppActive = statusData.is_active;
                     this.appState.appVersion = statusData.app_version;
 
+                    // Persist max_offline_days so cached pages can enforce the setting
+                    if (statusData.max_offline_days && parseInt(statusData.max_offline_days, 10) > 0) {
+                        try { localStorage.setItem('pwa_max_offline_days', String(parseInt(statusData.max_offline_days, 10))); } catch (_) {}
+                    }
+
                     if (!statusData.is_active) {
                         this.updateBadge('disabled');
                         window.dispatchEvent(new CustomEvent('pwa:app-disabled', { detail: statusData }));

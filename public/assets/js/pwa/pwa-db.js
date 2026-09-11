@@ -160,19 +160,53 @@ class PwaDB {
     async getPendingOutbox() {
         const backupItems = this._getLocalStorageBackup().filter(item => item.status === 'pending' || item.status === 'failed');
 
+        // ── Enforce max_offline_days: purge items older than the configured limit ──
+        const getMaxOfflineDays = () => {
+            // 1. Read from page meta tag (most current value)
+            const metaEl = document.querySelector('meta[name="pwa-max-offline-days"]');
+            if (metaEl) {
+                const val = parseInt(metaEl.getAttribute('content'), 10);
+                if (val > 0) {
+                    // Cache to localStorage for use on cached/offline pages
+                    try { localStorage.setItem('pwa_max_offline_days', String(val)); } catch (_) {}
+                    return val;
+                }
+            }
+            // 2. Fallback to localStorage (for cached pages where meta may be stale)
+            try {
+                const cached = parseInt(localStorage.getItem('pwa_max_offline_days'), 10);
+                if (cached > 0) return cached;
+            } catch (_) {}
+            // 3. Default: 365 days
+            return 365;
+        };
+        const maxDays = getMaxOfflineDays();
+        const cutoffMs = maxDays * 24 * 60 * 60 * 1000;
+        const nowMs = Date.now();
+
+        const isItemExpired = (item) => {
+            if (!item.created_at) return false; // Keep items without a date
+            try {
+                const itemMs = new Date(item.created_at).getTime();
+                return !isNaN(itemMs) && (nowMs - itemMs) > cutoffMs;
+            } catch (_) { return false; }
+        };
+
         return new Promise(async (resolve) => {
             try {
                 if (!this.db) await this.init();
                 const store = this._tx('outbox', 'readonly');
                 const req = store.getAll();
                 req.onsuccess = () => {
-                    const dbPending = (req.result || []).filter(item => item.status === 'pending' || item.status === 'failed');
+                    const dbPending = (req.result || []).filter(item =>
+                        (item.status === 'pending' || item.status === 'failed') && !isItemExpired(item)
+                    );
                     
                     // Merge unique records from IndexedDB and localStorage
                     const itemMap = new Map();
                     dbPending.forEach(item => itemMap.set(item.uuid, item));
                     backupItems.forEach(item => {
-                        if (!itemMap.has(item.uuid)) {
+                        if (!itemMap.has(item.uuid) && !isItemExpired(item)) {
                             itemMap.set(item.uuid, item);
                         }
                     });
@@ -182,10 +216,10 @@ class PwaDB {
                     resolve(merged);
                 };
                 req.onerror = () => {
-                    resolve(backupItems);
+                    resolve(backupItems.filter(item => !isItemExpired(item)));
                 };
             } catch (e) {
-                resolve(backupItems);
+                resolve(backupItems.filter(item => !isItemExpired(item)));
             }
         });
     }

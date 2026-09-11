@@ -15,6 +15,7 @@
     <meta name="pwa-status-url" content="{{ route('pwa.status') }}">
     <meta name="pwa-sync-push-url" content="{{ route('pwa.sync.push') }}">
     <meta name="pwa-sync-pull-url" content="{{ route('pwa.sync.pull') }}">
+    <meta name="pwa-max-offline-days" content="{{ $pwaSettings?->max_offline_days ?? 365 }}">
     <meta name="theme-color" content="{{ $pwaSettings?->theme_color ?? '#070d18' }}">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
