@@ -668,8 +668,8 @@ class PwaSync {
             console.warn('PwaSync _invalidateZikrPageCaches cache delete error:', e);
         }
 
-        // 2. If we are currently on /admin/zikr or /admin/tasbeehs — reload the page
-        //    Use a small delay so the toast "synced" message is visible first
+        // 2. If we are currently on /admin/zikr or /admin/tasbeehs — update DOM in-place instead of reloading.
+        //    Reloading causes a flash and loses any visual context. Use reconcile with pulled server data instead.
         try {
             const currentPath = window.location.pathname;
             const isOnZikrOrTasbeehs = zikrPatterns.some(pat =>
@@ -677,9 +677,15 @@ class PwaSync {
             );
             const isCounterPage = currentPath.includes('/admin/zikr/tasbeeh/');
             if (isOnZikrOrTasbeehs && !isCounterPage) {
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1800); // Wait for success toast to be visible
+                // The pwa:sync-completed event already triggers reconcileZikrOfflineCounts(data).
+                // No reload needed — data is updated smoothly via DOM reconcile.
+                // Only reload as a last resort if no tasbeeh cards are present on the page.
+                const hasCards = document.querySelectorAll('[id^="tasbeeh-card-"]').length > 0;
+                if (!hasCards) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1800);
+                }
             }
         } catch (e) {}
     }

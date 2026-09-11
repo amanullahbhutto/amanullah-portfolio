@@ -1019,11 +1019,15 @@
                 }
 
                 if (!navigator.onLine) {
-                    // Offline PWA Queue: Save count locally and broadcast
+                    // Offline PWA Queue: Save count locally (no broadcast to self since UI already updated)
                     if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
-                        window.PwaSync.saveZikrCount(tasbeehId, countDelta);
+                        window.PwaSync.saveZikrCount(tasbeehId, countDelta, null, false);
                     } else if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
                         window.PwaSync.completeTasbeehToday(tasbeehId, countDelta);
+                    }
+                    // Immediately reconcile so today badge stays current from IndexedDB
+                    if (typeof window.reconcileZikrOfflineCounts === 'function') {
+                        window.reconcileZikrOfflineCounts();
                     }
                 } else if (completeUrl) {
                     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -1049,6 +1053,7 @@
                             } else if (data.stats) {
                                 const sToday = data.stats.today_completed !== undefined ? data.stats.today_completed : 0;
                                 const sTotal = data.stats.total_completed !== undefined ? data.stats.total_completed : 0;
+                                // Update BOTH base and display with confirmed server values
                                 card.dataset.baseTodayCompleted = String(sToday);
                                 card.dataset.baseTotalCompleted = String(sTotal);
                                 card.dataset.baseToday = String(sToday);
@@ -1069,9 +1074,13 @@
                     }).catch(err => {
                         console.warn('Online sync background request failed, saving offline:', err);
                         if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
-                            window.PwaSync.saveZikrCount(tasbeehId, countDelta);
+                            window.PwaSync.saveZikrCount(tasbeehId, countDelta, null, false);
                         } else if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
                             window.PwaSync.completeTasbeehToday(tasbeehId, countDelta);
+                        }
+                        // Reconcile after fallback offline save
+                        if (typeof window.reconcileZikrOfflineCounts === 'function') {
+                            window.reconcileZikrOfflineCounts();
                         }
                     });
                 }
@@ -1966,8 +1975,7 @@
         if (newCompleted < 0) newCompleted = 0;
 
         cardCol.dataset.totalCompleted = String(newCompleted);
-        cardCol.dataset.baseTotalCompleted = String(newCompleted);
-        cardCol.dataset.baseTotal = String(newCompleted);
+        // NOTE: Do NOT overwrite baseTotalCompleted here — it stays as server baseline for reconcile.
 
         if (completedEl) {
             completedEl.textContent = newCompleted.toLocaleString();
@@ -1998,9 +2006,9 @@
             nextTodayCompleted = Math.max(isAbsolute ? (countDelta === 0 ? 0 : currentTodayCompleted) : currentTodayCompleted + deltaAdded, 0);
         }
 
+        // Only update the DISPLAY (todayCompleted) value, NOT the baseline.
+        // baseTodayCompleted stays frozen as the server-synced value so reconcile doesn't double-count.
         cardCol.dataset.todayCompleted = String(nextTodayCompleted);
-        cardCol.dataset.baseTodayCompleted = String(nextTodayCompleted);
-        cardCol.dataset.baseToday = String(nextTodayCompleted);
         cardCol.dataset.renderDate = todayStr;
 
         if (todayMetaEl) {
@@ -2281,13 +2289,11 @@
                 if (finalToday < 0) finalToday = 0;
                 if (finalTotal < 0) finalTotal = 0;
 
-                // Apply to Card DOM
+                // Apply DISPLAY values only — do NOT overwrite base values.
+                // baseTodayCompleted/baseTotalCompleted must stay frozen at the server-synced baseline
+                // so that each reconcile call re-adds pending items cleanly (no double-count).
                 card.dataset.todayCompleted = String(finalToday);
                 card.dataset.totalCompleted = String(finalTotal);
-                card.dataset.baseTodayCompleted = String(finalToday);
-                card.dataset.baseTotalCompleted = String(finalTotal);
-                card.dataset.baseToday = String(finalToday);
-                card.dataset.baseTotal = String(finalTotal);
                 card.dataset.renderDate = clientToday;
 
                 let completedEl = card.querySelector('.badge-completed strong');
@@ -2760,7 +2766,11 @@
 
             if (!navigator.onLine) {
                 if (window.PwaSync && tasbeehId) {
-                    await window.PwaSync.saveZikrCount(tasbeehId, countVal, null, true);
+                    await window.PwaSync.saveZikrCount(tasbeehId, countVal, null, false); // false = don't broadcast to other tabs (UI already updated above)
+                }
+                // Immediately reconcile so the today badge is always accurate from IndexedDB
+                if (typeof window.reconcileZikrOfflineCounts === 'function') {
+                    window.reconcileZikrOfflineCounts();
                 }
                 if (modal && window.bootstrap) {
                     window.bootstrap.Modal.getInstance(modal)?.hide();
@@ -2791,8 +2801,19 @@
                 if (tasbeehId && payload.stats) {
                     const cardCol = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
                     if (cardCol) {
-                        cardCol.dataset.baseTodayCompleted = String(payload.stats.today_completed ?? payload.stats.total_completed ?? 0);
-                        cardCol.dataset.baseTotalCompleted = String(payload.stats.total_completed ?? 0);
+                        const serverToday = parseInt(payload.stats.today_completed ?? payload.stats.total_completed ?? 0, 10);
+                        const serverTotal = parseInt(payload.stats.total_completed ?? 0, 10);
+                        // Update BOTH base and display with confirmed server values
+                        cardCol.dataset.baseTodayCompleted = String(serverToday);
+                        cardCol.dataset.baseTotalCompleted = String(serverTotal);
+                        cardCol.dataset.baseToday = String(serverToday);
+                        cardCol.dataset.baseTotal = String(serverTotal);
+                        cardCol.dataset.todayCompleted = String(serverToday);
+                        cardCol.dataset.totalCompleted = String(serverTotal);
+                        // Refresh badge UI with exact server value
+                        if (typeof window.updateZikrCardDom === 'function') {
+                            window.updateZikrCardDom(tasbeehId, serverTotal, true, serverToday);
+                        }
                     }
                 }
                 if (window.PwaSync && typeof window.PwaSync.broadcastZikrCountUpdate === 'function' && tasbeehId) {
