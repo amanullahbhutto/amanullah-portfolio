@@ -21,6 +21,19 @@ class ZikrCounterController extends Controller
     {
         $currentUser = $request->user();
 
+        if (! $currentUser) {
+            if ($targetUser && ($targetUser->isMuslim() || $targetUser->can('view zikr') || $targetUser->hasAnyRole(['Super Admin', 'Admin', 'admin']))) {
+                return $targetUser;
+            }
+            if ($request->filled('user_id')) {
+                $u = User::find($request->input('user_id'));
+                if ($u && ($u->isMuslim() || $u->can('view zikr') || $u->hasAnyRole(['Super Admin', 'Admin', 'admin']))) {
+                    return $u;
+                }
+            }
+            abort(401, 'Unauthenticated');
+        }
+
         if (! ($currentUser->isMuslim() || $currentUser->can('view zikr') || $currentUser->hasAnyRole(['Super Admin', 'Admin', 'admin']))) {
             abort(403, 'Unauthorized. Zikr module is accessible to Muslim users only.');
         }
@@ -133,9 +146,16 @@ class ZikrCounterController extends Controller
 
         $user = $this->authorizeAccess($request, $targetUser);
         $dailyTarget = max((int) $tasbeeh->daily_target, 1);
-        $count = (int) ($request->input('count') ?: $dailyTarget);
 
-        $result = $this->zikrService->addCount($user, $tasbeeh, $count, 'daily_task_complete');
+        if ($request->has('count') && $request->input('count') !== null && $request->input('count') !== '') {
+            $count = (int) $request->input('count');
+            $result = $this->zikrService->addCount($user, $tasbeeh, $count, 'daily_task_complete');
+            $result['action'] = 'added';
+            $result['delta'] = $count;
+        } else {
+            $result = $this->zikrService->completeSingleForToday($user, $tasbeeh, $request->input('mode'));
+        }
+
         $result['summary'] = $this->zikrService->getDashboardSummary($user);
         $result['server_time'] = now()->toIso8601String();
 

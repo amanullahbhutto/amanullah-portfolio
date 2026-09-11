@@ -966,30 +966,31 @@
         pill.innerHTML = html;
     }
 
-    // Universal Micro-Animation Handler for Action Icon Buttons (0ms Instant Tactile Feedback)
-    document.addEventListener('pointerdown', (e) => {
-        const btn = e.target.closest?.('.action-icon-btn');
-        if (!btn) return;
-        btn.classList.remove('btn-click-anim');
-        void btn.offsetWidth; // Reflow to restart keyframe animation on rapid repeated clicks
-        btn.classList.add('btn-click-anim');
-    }, { passive: true });
-
+    // Animation cleanup handler
     document.addEventListener('animationend', (e) => {
         if (e.target?.classList?.contains('btn-click-anim')) {
             e.target.classList.remove('btn-click-anim');
         }
     });
 
-    document.addEventListener('click', (event) => {
+    let lastCompleteIconTap = 0;
+    document.addEventListener('click', async (event) => {
         // Direct 1-Click Add Daily Task for Individual Tasbeeh (e.g. +33, +100 on every click)
         const completeIconBtn = event.target.closest?.('.btn-complete-icon');
         if (completeIconBtn) {
             event.preventDefault();
+            // Prevent duplicate clicks from rapid multi-touch / synthesized click
+            const now = Date.now();
+            if (now - lastCompleteIconTap < 250) return;
+            lastCompleteIconTap = now;
+
             const tasbeehId = completeIconBtn.getAttribute('data-tasbeeh-id');
             const completeUrl = completeIconBtn.getAttribute('data-complete-url');
             const urlParams = new URLSearchParams(window.location.search);
-            const userId = urlParams.get('user_id') || completeIconBtn.getAttribute('data-user-id') || '';
+            const userId = completeIconBtn.getAttribute('data-user-id') ||
+                           urlParams.get('user_id') ||
+                           document.querySelector('meta[name="selected-user-id"]')?.getAttribute('content') ||
+                           document.querySelector('meta[name="auth-user-id"]')?.getAttribute('content') || '';
             const title = completeIconBtn.getAttribute('data-tasbeeh-title') || 'Tasbeeh';
 
             if (tasbeehId) {
@@ -1005,7 +1006,7 @@
                 completeIconBtn.classList.remove('btn-click-anim');
                 void completeIconBtn.offsetWidth; // trigger reflow
                 completeIconBtn.classList.add('btn-click-anim');
-                setTimeout(() => completeIconBtn.classList.remove('btn-click-anim'), 350);
+                setTimeout(() => completeIconBtn.classList.remove('btn-click-anim'), 400);
 
                 // Immediate 0ms local visual update on screen
                 if (typeof window.updateZikrCardDom === 'function') {
@@ -1018,41 +1019,55 @@
                     window.App.showToast('success', toastMsg);
                 }
 
+                // Resolve normalized URL to ensure mobile devices always fetch same-origin even if rendered with localhost
+                let fetchUrl = completeUrl;
+                if (completeUrl) {
+                    try {
+                        const parsed = new URL(completeUrl, window.location.origin);
+                        fetchUrl = window.location.origin + parsed.pathname + parsed.search;
+                    } catch (_) {
+                        fetchUrl = completeUrl;
+                    }
+                }
+
                 if (!navigator.onLine) {
                     // Offline PWA Queue: Save count locally (no broadcast to self since UI already updated)
                     if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
-                        window.PwaSync.saveZikrCount(tasbeehId, countDelta, null, false);
+                        await window.PwaSync.saveZikrCount(tasbeehId, countDelta, null, false);
                     } else if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
-                        window.PwaSync.completeTasbeehToday(tasbeehId, countDelta);
+                        await window.PwaSync.completeTasbeehToday(tasbeehId, countDelta);
                     }
                     // Immediately reconcile so today badge stays current from IndexedDB
                     if (typeof window.reconcileZikrOfflineCounts === 'function') {
-                        window.reconcileZikrOfflineCounts();
+                        await window.reconcileZikrOfflineCounts();
                     }
-                } else if (completeUrl) {
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                    fetch(completeUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken || ''
-                        },
-                        body: JSON.stringify({
-                            user_id: userId,
-                            count: countDelta
-                        })
-                    }).then(async (res) => {
+                } else if (fetchUrl) {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || financeCsrf || '';
+                    try {
+                        const res = await fetch(fetchUrl, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({
+                                user_id: userId,
+                                count: countDelta
+                            })
+                        });
+
                         const data = await res.json().catch(() => ({}));
                         if (!res.ok) throw Object.assign(new Error('Add daily task failed'), { data });
-                        return data;
-                    }).then(data => {
+
                         if (data && data.success && card) {
-                            if (data.summary && typeof window.reconcileZikrOfflineCounts === 'function') {
-                                window.reconcileZikrOfflineCounts({ zikr_summary: data.summary, server_time: data.server_time });
-                            } else if (data.stats) {
-                                const sToday = data.stats.today_completed !== undefined ? data.stats.today_completed : 0;
-                                const sTotal = data.stats.total_completed !== undefined ? data.stats.total_completed : 0;
+                            if (data.stats) {
+                                const sToday = parseInt(data.stats.today_completed !== undefined ? data.stats.today_completed : (data.stats.total_completed || 0), 10);
+                                const sTotal = parseInt(data.stats.total_completed !== undefined ? data.stats.total_completed : 0, 10);
+                                const sTarget = parseInt(data.stats.daily_target || dailyTarget, 10);
+
                                 // Update BOTH base and display with confirmed server values
                                 card.dataset.baseTodayCompleted = String(sToday);
                                 card.dataset.baseTotalCompleted = String(sTotal);
@@ -1060,29 +1075,38 @@
                                 card.dataset.baseTotal = String(sTotal);
                                 card.dataset.todayCompleted = String(sToday);
                                 card.dataset.totalCompleted = String(sTotal);
+
                                 if (typeof window.updateZikrCardDom === 'function') {
                                     window.updateZikrCardDom(tasbeehId, sTotal, true, sToday);
                                 }
-                                if (typeof window.recalculateZikrTopStats === 'function') {
-                                    window.recalculateZikrTopStats();
-                                }
+
+                                const isDone = sToday >= sTarget && sTarget > 0;
+                                completeIconBtn.classList.toggle('is-completed', isDone);
+                                completeIconBtn.classList.toggle('active', isDone);
+                            }
+
+                            if (data.summary && typeof window.reconcileZikrOfflineCounts === 'function') {
+                                await window.reconcileZikrOfflineCounts({ zikr_summary: data.summary, server_time: data.server_time });
+                            } else if (typeof window.recalculateZikrTopStats === 'function') {
+                                window.recalculateZikrTopStats();
                             }
                         }
+
                         if (window.PwaSync && typeof window.PwaSync.broadcastZikrCountUpdate === 'function') {
                             window.PwaSync.broadcastZikrCountUpdate(tasbeehId, countDelta);
                         }
-                    }).catch(err => {
+                    } catch (err) {
                         console.warn('Online sync background request failed, saving offline:', err);
                         if (window.PwaSync && typeof window.PwaSync.saveZikrCount === 'function') {
-                            window.PwaSync.saveZikrCount(tasbeehId, countDelta, null, false);
+                            await window.PwaSync.saveZikrCount(tasbeehId, countDelta, null, false);
                         } else if (window.PwaSync && typeof window.PwaSync.completeTasbeehToday === 'function') {
-                            window.PwaSync.completeTasbeehToday(tasbeehId, countDelta);
+                            await window.PwaSync.completeTasbeehToday(tasbeehId, countDelta);
                         }
                         // Reconcile after fallback offline save
                         if (typeof window.reconcileZikrOfflineCounts === 'function') {
-                            window.reconcileZikrOfflineCounts();
+                            await window.reconcileZikrOfflineCounts();
                         }
-                    });
+                    }
                 }
             }
             return;

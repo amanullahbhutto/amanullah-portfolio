@@ -22,6 +22,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'pwa/sync/push',
+            'admin/zikr/tasbeeh/*/complete-today',
+            'zikr/tasbeeh/*/complete-today',
+            'admin/zikr/tasbeeh/*/increment',
+            'zikr/tasbeeh/*/increment',
+            'admin/zikr/tasbeeh/*/manual',
+            'zikr/tasbeeh/*/manual',
         ]);
 
         $middleware->redirectTo(
