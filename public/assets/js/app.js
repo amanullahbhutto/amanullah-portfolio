@@ -1,6 +1,53 @@
 (() => {
     'use strict';
 
+    if (!window.resolveAppUrl) {
+        window.resolveAppUrl = function (urlOrPath, fallbackPath) {
+            const pathname = window.location.pathname || '';
+            let basePath = '';
+            const metaBasePath = document.querySelector('meta[name="app-base-path"]')?.getAttribute('content');
+            if (metaBasePath && metaBasePath.trim() !== '') {
+                basePath = metaBasePath.trim().replace(/\/+$/, '');
+            } else {
+                const adminMatch = pathname.match(/^(.*?)\/admin(?:\/|$)/);
+                if (adminMatch && adminMatch[1]) {
+                    basePath = adminMatch[1].replace(/\/+$/, '');
+                } else {
+                    const pwaMatch = pathname.match(/^(.*?)\/pwa(?:\/|$)/);
+                    if (pwaMatch && pwaMatch[1]) {
+                        basePath = pwaMatch[1].replace(/\/+$/, '');
+                    }
+                }
+            }
+
+            if (!urlOrPath && fallbackPath) {
+                return window.location.origin + basePath + (fallbackPath.startsWith('/') ? fallbackPath : '/' + fallbackPath);
+            }
+
+            if (!urlOrPath) return '';
+
+            try {
+                const parsed = new URL(urlOrPath, window.location.origin);
+                if (parsed.origin === window.location.origin) {
+                    if (basePath && !parsed.pathname.startsWith(basePath)) {
+                        return window.location.origin + basePath + parsed.pathname + parsed.search;
+                    }
+                    return parsed.href;
+                }
+
+                let subPath = parsed.pathname;
+                if (subPath.includes('/admin/')) {
+                    subPath = subPath.substring(subPath.indexOf('/admin/'));
+                } else if (subPath.includes('/pwa/')) {
+                    subPath = subPath.substring(subPath.indexOf('/pwa/'));
+                }
+                return window.location.origin + basePath + subPath + parsed.search;
+            } catch (_) {
+                return window.location.origin + basePath + (urlOrPath.startsWith('/') ? urlOrPath : '/' + urlOrPath);
+            }
+        };
+    }
+
     const root = document.documentElement;
     const storedTheme = localStorage.getItem('portfolio-theme');
     root.dataset.theme = storedTheme === 'light' ? 'light' : 'dark';
@@ -1019,16 +1066,10 @@
                     window.App.showToast('success', toastMsg);
                 }
 
-                // Resolve normalized URL to ensure mobile devices always fetch same-origin even if rendered with localhost
-                let fetchUrl = completeUrl;
-                if (completeUrl) {
-                    try {
-                        const parsed = new URL(completeUrl, window.location.origin);
-                        fetchUrl = window.location.origin + parsed.pathname + parsed.search;
-                    } catch (_) {
-                        fetchUrl = completeUrl;
-                    }
-                }
+                // Universal URL resolution: supports localhost, LAN IP, Apache subfolder, and production domain
+                const fetchUrl = (typeof window.resolveAppUrl === 'function')
+                    ? window.resolveAppUrl(completeUrl, `/admin/zikr/tasbeeh/${tasbeehId}/complete-today`)
+                    : (completeUrl || `/admin/zikr/tasbeeh/${tasbeehId}/complete-today`);
 
                 if (!navigator.onLine) {
                     // Offline PWA Queue: Save count locally (no broadcast to self since UI already updated)
@@ -1105,6 +1146,10 @@
                         // Reconcile after fallback offline save
                         if (typeof window.reconcileZikrOfflineCounts === 'function') {
                             await window.reconcileZikrOfflineCounts();
+                        }
+                        // Trigger immediate background sync retry if online
+                        if (navigator.onLine && window.PwaSync && typeof window.PwaSync.syncNow === 'function') {
+                            window.PwaSync.syncNow().catch(() => {});
                         }
                     }
                 }
@@ -1798,7 +1843,7 @@
                     todaySubtextEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check2"></i> Target Done</span>';
                 } else {
                     const rem = Math.max(numTarget - numToday, 0);
-                    todaySubtextEl.innerHTML = `Rem: <strong class="text-white">${rem.toLocaleString()}</strong>`;
+                    todaySubtextEl.innerHTML = `Rem: <strong>${rem.toLocaleString()}</strong>`;
                 }
             }
 
@@ -1905,12 +1950,13 @@
         }
 
         if (todayCompletedStatEl) {
+            todayCompletedStatEl.dataset.baseVal = String(overallTodayCompleted);
             todayCompletedStatEl.dataset.rawVal = overallTodayCompleted.toLocaleString();
             todayCompletedStatEl.textContent = overallTodayCompleted.toLocaleString();
         }
 
         if (todayPercentStatEl) {
-            let todayPercent = overallTodayRequired > 0 ? Math.min(100, Math.round((overallTodayCompleted / overallTodayRequired) * 100)) : 100;
+            let todayPercent = overallTodayRequired > 0 ? Math.min(100, Math.round((overallTodayCompleted / overallTodayRequired) * 100)) : (overallTodayCompleted > 0 ? 100 : 0);
             todayPercentStatEl.dataset.rawSubtext = `${todayPercent}% of daily target`;
             todayPercentStatEl.dataset.maskedSubtext = '•••% of daily target';
             todayPercentStatEl.textContent = `${todayPercent}% of daily target`;

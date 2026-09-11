@@ -101,6 +101,9 @@ class ZikrTrackingTest extends TestCase
         $response->assertSee('Daily Zikr Tracking');
         $response->assertSee('Tasbeeh-e-Fatima');
         $response->assertSee('Read Today');
+        $response->assertSee('id="top-stat-today-completed"', false);
+        $response->assertSee('data-render-date="'.now()->format('Y-m-d').'"', false);
+        $response->assertSee('id="top-stat-today-percentage"', false);
     }
 
     public function test_non_muslim_user_is_forbidden_from_zikr(): void

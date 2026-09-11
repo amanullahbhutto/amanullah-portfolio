@@ -120,8 +120,8 @@
                         <i class="bi bi-eye"></i>
                     </button>
                 </div>
-                <strong class="fs-3 fs-md-2 d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-today-completed" data-raw-val="{{ number_format($summary['overall_today_completed']) }}" data-stat-card="read_today" style="color: #10b981 !important; line-height: 1.2;" title="Click to show/hide">{{ number_format($summary['overall_today_completed']) }}</strong>
-                <small class="text-muted-custom d-block text-truncate zikr-stat-maskable" id="top-stat-today-percentage" data-raw-subtext="{{ $summary['overall_today_percentage'] }}% of daily target" data-masked-subtext="•••% of daily target" data-stat-card="read_today" style="font-size: 0.72rem;">{{ $summary['overall_today_percentage'] }}% of daily target</small>
+                <strong class="fs-3 fs-md-2 d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-today-completed" data-render-date="{{ now()->format('Y-m-d') }}" data-base-val="{{ (int) $summary['overall_today_completed'] }}" data-raw-val="{{ number_format($summary['overall_today_completed']) }}" data-stat-card="read_today" style="color: #10b981 !important; line-height: 1.2;" title="Click to show/hide">{{ number_format($summary['overall_today_completed']) }}</strong>
+                <small class="text-muted-custom d-block text-truncate zikr-stat-maskable" id="top-stat-today-percentage" data-render-date="{{ now()->format('Y-m-d') }}" data-raw-subtext="{{ $summary['overall_today_percentage'] }}% of daily target" data-masked-subtext="•••% of daily target" data-stat-card="read_today" style="font-size: 0.72rem;">{{ $summary['overall_today_percentage'] }}% of daily target</small>
             </div>
         </div>
 
@@ -720,39 +720,47 @@
             });
 
             // ─── Top Stat Cards ───────────────────────────────────────────────
-
-            // Read Today (overall_today_completed)
-            const todayStatEl = document.getElementById('top-stat-today-completed');
-            if (todayStatEl && grandTodayDelta !== 0) {
-                const base = parseInt(todayStatEl.dataset.baseVal || '', 10);
-                if (isNaN(parseInt(todayStatEl.dataset.baseVal, 10))) {
-                    todayStatEl.dataset.baseVal = String(parseRawNum(todayStatEl.dataset.rawVal));
+            // Recalculate all top stats using the canonical function (dynamically sums Read Today from card totals)
+            if (typeof window.recalculateZikrTopStats === 'function') {
+                window.recalculateZikrTopStats();
+            } else {
+                // Fallback if recalculateZikrTopStats is not yet loaded
+                let sumToday = 0;
+                let sumTotal = 0;
+                let sumDailyTarget = 0;
+                document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(c => {
+                    sumToday += parseInt(c.dataset.todayCompleted || '0', 10) || 0;
+                    sumTotal += parseInt(c.dataset.totalCompleted || '0', 10) || 0;
+                    sumDailyTarget += parseInt(c.dataset.dailyTarget || '100', 10) || 100;
+                });
+                const todayStatEl = document.getElementById('top-stat-today-completed');
+                if (todayStatEl) {
+                    todayStatEl.dataset.baseVal = String(sumToday);
+                    todayStatEl.dataset.rawVal = sumToday.toLocaleString();
+                    todayStatEl.textContent = sumToday.toLocaleString();
                 }
-                const newVal = (parseInt(todayStatEl.dataset.baseVal, 10) || 0) + grandTodayDelta;
-                todayStatEl.dataset.rawVal = newVal.toLocaleString();
-                todayStatEl.textContent = newVal.toLocaleString();
+                const todayPercentEl = document.getElementById('top-stat-today-percentage');
+                if (todayPercentEl) {
+                    const todayPct = sumDailyTarget > 0 ? Math.min(100, Math.round((sumToday / sumDailyTarget) * 100)) : 0;
+                    todayPercentEl.dataset.rawSubtext = `${todayPct}% of daily target`;
+                    todayPercentEl.dataset.maskedSubtext = '•••% of daily target';
+                    todayPercentEl.textContent = `${todayPct}% of daily target`;
+                }
+                const totalCompEl = document.getElementById('top-stat-total-completed');
+                if (totalCompEl) {
+                    totalCompEl.dataset.rawVal = sumTotal.toLocaleString();
+                    totalCompEl.textContent = sumTotal.toLocaleString();
+                }
             }
 
-            // Total Completed (overall_total_completed)
-            const totalCompEl = document.getElementById('top-stat-total-completed');
-            if (totalCompEl && grandTotalDelta !== 0) {
-                if (!totalCompEl.dataset.baseVal) {
-                    totalCompEl.dataset.baseVal = String(parseRawNum(totalCompEl.dataset.rawVal));
-                }
-                const newVal = (parseInt(totalCompEl.dataset.baseVal, 10) || 0) + grandTotalDelta;
-                totalCompEl.dataset.rawVal = newVal.toLocaleString();
-                totalCompEl.textContent = newVal.toLocaleString();
-            }
-
-            // Lifetime Total
+            // Lifetime Total (idempotent: persisted baseLifetime + current grandTotalDelta)
             const lifetimeEl = document.getElementById('top-stat-lifetime-total');
-            if (lifetimeEl && grandTotalDelta !== 0) {
-                const baseLifetime = parseInt(lifetimeEl.dataset.baseLifetime || '0', 10) || 0;
-                if (!lifetimeEl.dataset.liveBase) {
-                    lifetimeEl.dataset.liveBase = String(baseLifetime);
+            if (lifetimeEl) {
+                const baseLifetime = parseInt(lifetimeEl.dataset.baseLifetime || String(parseRawNum(lifetimeEl.dataset.rawVal)), 10) || 0;
+                if (!lifetimeEl.dataset.baseLifetime) {
+                    lifetimeEl.dataset.baseLifetime = String(baseLifetime);
                 }
-                const newLifetime = (parseInt(lifetimeEl.dataset.liveBase, 10) || 0) + grandTotalDelta;
-                lifetimeEl.dataset.liveBase = String(newLifetime); // keep accumulating
+                const newLifetime = baseLifetime + grandTotalDelta;
                 lifetimeEl.dataset.rawVal = newLifetime.toLocaleString();
                 lifetimeEl.textContent = newLifetime.toLocaleString();
             }
@@ -798,36 +806,71 @@
         // ─── Check if the cached page HTML is stale (from a previous day) ─────
         function applyStalenessResetIfNeeded() {
             const today = getLocalDateStr();
+            const globalPageDate = document.querySelector('meta[name="page-rendered-date"]')?.getAttribute('content');
+            let isStale = Boolean(globalPageDate && globalPageDate < today);
+
             document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
-                const renderDate = card.dataset.renderDate || '';
-                if (renderDate && renderDate < today) {
+                const renderDate = card.dataset.renderDate || globalPageDate || '';
+                if (isStale || (renderDate && renderDate < today)) {
+                    isStale = true;
                     // Cached page is from a previous day — zero the today baseline
                     card.dataset.todayCompleted = '0';
                     card.dataset.baseToday = '0';
+                    card.dataset.baseTodayCompleted = '0';
                     card.dataset.renderDate = today;
+
+                    // Update active days & total required if start date is available
+                    const startDateStr = card.dataset.trackingStartDate;
+                    const dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10) || 100;
+                    if (startDateStr) {
+                        const start = new Date(startDateStr + 'T00:00:00');
+                        const cur = new Date(today + 'T00:00:00');
+                        const activeDays = Math.max(1, Math.floor((cur - start) / 86400000) + 1);
+                        card.dataset.activeDays = String(activeDays);
+                        card.dataset.totalRequired = String(activeDays * dailyTarget);
+                    }
 
                     // Reset the today badge visually to 0
                     const todayBadge = card.querySelector('.today-status-badge');
                     if (todayBadge) {
-                        const strong = todayBadge.querySelector('strong');
-                        if (strong) strong.textContent = '0';
                         todayBadge.style.background   = 'rgba(239, 68, 68, 0.12)';
                         todayBadge.style.borderColor  = 'rgba(239, 68, 68, 0.3)';
                         todayBadge.style.color        = '#f87171';
+                        todayBadge.innerHTML = 'Today: <strong class="ms-1 font-monospace">0</strong>';
+                    }
+
+                    const todayMeta = card.querySelector('.today-meta-count');
+                    if (todayMeta) {
+                        todayMeta.textContent = '0';
+                        todayMeta.className = 'today-meta-count font-monospace text-danger';
+                    }
+
+                    const completeBtn = card.querySelector('.btn-complete-icon');
+                    if (completeBtn) {
+                        completeBtn.classList.remove('is-completed', 'active');
                     }
                 }
             });
 
-            // Also reset top stat "Read Today" if page is stale
+            // Also reset top stat "Read Today" & percentage if page is stale
             const todayStatEl = document.getElementById('top-stat-today-completed');
-            if (todayStatEl) {
-                const statRenderDate = todayStatEl.dataset.renderDate || '';
-                if (statRenderDate && statRenderDate < today) {
+            const statRenderDate = todayStatEl?.dataset.renderDate || globalPageDate || '';
+            if (isStale || (statRenderDate && statRenderDate < today)) {
+                if (todayStatEl) {
                     todayStatEl.dataset.renderDate = today;
                     todayStatEl.dataset.baseVal = '0';
                     todayStatEl.dataset.rawVal  = '0';
                     todayStatEl.textContent = '0';
                 }
+                const todayPercentEl = document.getElementById('top-stat-today-percentage');
+                if (todayPercentEl) {
+                    todayPercentEl.dataset.renderDate = today;
+                    todayPercentEl.dataset.rawSubtext = '0% of daily target';
+                    todayPercentEl.dataset.maskedSubtext = '•••% of daily target';
+                    todayPercentEl.textContent = '0% of daily target';
+                }
+                const metaRenderDateEl = document.querySelector('meta[name="page-rendered-date"]');
+                if (metaRenderDateEl) metaRenderDateEl.setAttribute('content', today);
             }
         }
 
@@ -935,83 +978,6 @@
             }
         }
 
-        // ─── BroadcastChannel: live taps from counter page ───────────────────
-        const clientToday = getLocalDateStr();
-
-        function handleZikrBroadcast(data) {
-            if (!data || !data.type) return;
-
-            if (data.type === 'ZIKR_COUNT_INCREMENT') {
-                const tId   = String(data.tasbeehId || '');
-                const delta = parseInt(data.delta, 10) || 0;
-                if (tId && delta !== 0) {
-                    addDelta(tId, delta, true); // increments always today
-                }
-            } else if (data.type === 'ZIKR_COMPLETE_TODAY') {
-                const tId = String(data.tasbeehId || '');
-                const mode = data.mode || 'complete';
-                if (tId) {
-                    const card = document.getElementById('tasbeeh-card-' + tId);
-                    if (card) {
-                        const dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10) || 100;
-                        const curToday = parseInt(card.dataset.todayCompleted || '0', 10) || 0;
-                        if (mode === 'uncomplete') {
-                            const removeAmount = Math.min(curToday, dailyTarget) || dailyTarget;
-                            addDelta(tId, -removeAmount, true);
-                        } else {
-                            const baseToday  = parseInt(card.dataset.baseToday   || card.dataset.todayCompleted   || '0', 10) || 0;
-                            const needed = Math.max(0, dailyTarget - baseToday - (liveDeltas[tId] ? liveDeltas[tId].today : 0));
-                            if (needed > 0) addDelta(tId, needed, true);
-                        }
-                    }
-                }
-            } else if (data.type === 'ZIKR_COMPLETE_ALL') {
-                document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
-                    const tId2 = card.id.replace('tasbeeh-card-', '');
-                    const baseToday  = parseInt(card.dataset.baseToday   || card.dataset.todayCompleted   || '0', 10) || 0;
-                    const dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10) || 100;
-                    const needed = Math.max(0, dailyTarget - baseToday - (liveDeltas[tId2] ? liveDeltas[tId2].today : 0));
-                    if (needed > 0) addDelta(tId2, needed, true);
-                });
-            } else if (data.type === 'ZIKR_RESET_SINGLE') {
-                const tId = String(data.tasbeehId || '');
-                if (liveDeltas[tId]) delete liveDeltas[tId];
-                // Reset card dataset so DOM re-reads 0
-                const card = document.getElementById('tasbeeh-card-' + tId);
-                if (card) {
-                    card.dataset.baseTotal = '0';
-                    card.dataset.baseToday = '0';
-                    card.dataset.totalCompleted = '0';
-                    card.dataset.todayCompleted = '0';
-                }
-                applyDeltasToDOM();
-            } else if (data.type === 'ZIKR_RESET_ALL') {
-                Object.keys(liveDeltas).forEach(k => delete liveDeltas[k]);
-                document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
-                    card.dataset.baseTotal = '0'; card.dataset.baseToday = '0';
-                    card.dataset.totalCompleted = '0'; card.dataset.todayCompleted = '0';
-                });
-                applyDeltasToDOM();
-            }
-        }
-
-        // BroadcastChannel listener
-        if ('BroadcastChannel' in window) {
-            try {
-                const zikrChannel = new BroadcastChannel('portfolio_zikr_channel');
-                zikrChannel.onmessage = function (event) {
-                    if (event.data && event.data.type) handleZikrBroadcast(event.data);
-                };
-            } catch (e) {}
-        }
-
-        // localStorage fallback for broadcast (cross-tab in Safari)
-        window.addEventListener('storage', function (event) {
-            if (event.key === 'pwa_zikr_live_broadcast' && event.newValue) {
-                try { handleZikrBroadcast(JSON.parse(event.newValue)); } catch (e) {}
-            }
-        });
-
         // ─── On load: read outbox and apply ──────────────────────────────────
         rebuildDeltasFromOutbox();
 
@@ -1042,37 +1008,26 @@
             if (e.persisted) rebuildDeltasFromOutbox();
         });
 
-        // ─── Midnight rollover: check every 30s, reset today if date changed ──
+        // ─── Midnight rollover: check every 5s, reset today if date changed ──
         let _lastTrackedDay = getLocalDateStr();
-        setInterval(function () {
+        function checkDashboardMidnightRollover() {
             const today = getLocalDateStr();
-            if (today !== _lastTrackedDay) {
+            const pageRenderDate = document.querySelector('meta[name="page-rendered-date"]')?.getAttribute('content');
+            if (today !== _lastTrackedDay || (pageRenderDate && pageRenderDate < today)) {
                 _lastTrackedDay = today;
-                // Zero all today baselines
-                Object.keys(liveDeltas).forEach(k => { liveDeltas[k].today = 0; });
-                document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
-                    card.dataset.todayCompleted = '0';
-                    card.dataset.baseToday = '0';
-                    card.dataset.renderDate = today;
-                    const todayBadge = card.querySelector('.today-status-badge');
-                    if (todayBadge) {
-                        const strong = todayBadge.querySelector('strong');
-                        if (strong) strong.textContent = '0';
-                        todayBadge.style.background  = 'rgba(239, 68, 68, 0.12)';
-                        todayBadge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-                        todayBadge.style.color       = '#f87171';
-                    }
-                });
-                const todayStatEl = document.getElementById('top-stat-today-completed');
-                if (todayStatEl) {
-                    todayStatEl.dataset.baseVal = '0';
-                    todayStatEl.dataset.rawVal  = '0';
-                    todayStatEl.textContent = '0';
-                }
+                // Zero all today deltas while preserving total deltas
+                Object.keys(liveDeltas).forEach(k => { if (liveDeltas[k]) liveDeltas[k].today = 0; });
+                applyStalenessResetIfNeeded();
                 // Re-read outbox (today's pending items only from new date)
                 rebuildDeltasFromOutbox();
             }
-        }, 30000);
+        }
+        setInterval(checkDashboardMidnightRollover, 5000);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') checkDashboardMidnightRollover();
+        });
+        window.addEventListener('focus', checkDashboardMidnightRollover);
+        window.addEventListener('pageshow', checkDashboardMidnightRollover);
     });
 </script>
 @endpush

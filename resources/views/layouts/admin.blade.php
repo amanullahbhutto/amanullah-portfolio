@@ -21,6 +21,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="{{ $pwaSettings?->short_name ?? 'Amanullah' }}">
+    <meta name="app-base-path" content="{{ request()->getBaseUrl() }}">
     <link rel="apple-touch-icon" href="{{ $pwaSettings?->icon_192_url ?? asset('assets/pwa-icons/icon-192x192.png') }}">
     
     <script>

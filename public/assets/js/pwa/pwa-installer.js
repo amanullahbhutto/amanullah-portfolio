@@ -22,12 +22,14 @@ class PwaInstaller {
 
     getSwUrl() {
         const meta = document.querySelector('meta[name="pwa-sw-url"]');
-        return meta ? meta.getAttribute('content') : '/sw.js';
+        const raw = meta ? meta.getAttribute('content') : '/sw.js';
+        return window.resolveAppUrl ? window.resolveAppUrl(raw, '/sw.js') : raw;
     }
 
     getStatusUrl() {
         const meta = document.querySelector('meta[name="pwa-status-url"]');
-        return meta ? meta.getAttribute('content') : '/pwa/status';
+        const raw = meta ? meta.getAttribute('content') : '/pwa/status';
+        return window.resolveAppUrl ? window.resolveAppUrl(raw, '/pwa/status') : raw;
     }
 
     initInstallButtons() {
@@ -46,16 +48,28 @@ class PwaInstaller {
                 const registration = await navigator.serviceWorker.register(swUrl);
                 console.log('PWA Service Worker registered with scope:', registration.scope);
 
+                // Actively check for updates immediately on boot when online
+                if (navigator.onLine && typeof registration.update === 'function') {
+                    registration.update().catch(() => {});
+                }
+
                 // Listen for updates
                 registration.addEventListener('updatefound', () => {
                     const newWorker = registration.installing;
                     if (newWorker) {
                         newWorker.addEventListener('statechange', () => {
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                console.log('PWA: New version available. Reloading recommended.');
+                                console.log('PWA: New version available. Applying updates.');
                             }
                         });
                     }
+                });
+
+                // When new controller takes over, log or refresh if needed
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (refreshing) return;
+                    console.log('PWA Service Worker controller changed.');
                 });
             } catch (err) {
                 console.warn('PWA Service Worker registration failed:', err);

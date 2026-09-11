@@ -2,13 +2,63 @@
  * PwaSync: Real-time Synchronization Engine for Progressive Web App
  * Handles online/offline transitions, queued outbox push, delta pulls, idempotency and UI badges.
  */
+/**
+ * Universal application URL resolver: handles localhost, LAN IPs, subfolders (e.g. XAMPP htdocs), and production domains.
+ */
+window.resolveAppUrl = function (urlOrPath, fallbackPath) {
+    const pathname = window.location.pathname || '';
+    let basePath = '';
+    const metaBasePath = document.querySelector('meta[name="app-base-path"]')?.getAttribute('content');
+    if (metaBasePath && metaBasePath.trim() !== '') {
+        basePath = metaBasePath.trim().replace(/\/+$/, '');
+    } else {
+        const adminMatch = pathname.match(/^(.*?)\/admin(?:\/|$)/);
+        if (adminMatch && adminMatch[1]) {
+            basePath = adminMatch[1].replace(/\/+$/, '');
+        } else {
+            const pwaMatch = pathname.match(/^(.*?)\/pwa(?:\/|$)/);
+            if (pwaMatch && pwaMatch[1]) {
+                basePath = pwaMatch[1].replace(/\/+$/, '');
+            }
+        }
+    }
+
+    if (!urlOrPath && fallbackPath) {
+        return window.location.origin + basePath + (fallbackPath.startsWith('/') ? fallbackPath : '/' + fallbackPath);
+    }
+
+    if (!urlOrPath) return '';
+
+    try {
+        const parsed = new URL(urlOrPath, window.location.origin);
+        // If the URL is already same-origin and already contains basePath, return it
+        if (parsed.origin === window.location.origin) {
+            if (basePath && !parsed.pathname.startsWith(basePath)) {
+                return window.location.origin + basePath + parsed.pathname + parsed.search;
+            }
+            return parsed.href;
+        }
+
+        // If the URL has different origin (e.g. localhost:8000 when mobile is on 192.168.x.x)
+        let subPath = parsed.pathname;
+        if (subPath.includes('/admin/')) {
+            subPath = subPath.substring(subPath.indexOf('/admin/'));
+        } else if (subPath.includes('/pwa/')) {
+            subPath = subPath.substring(subPath.indexOf('/pwa/'));
+        }
+        return window.location.origin + basePath + subPath + parsed.search;
+    } catch (_) {
+        return window.location.origin + basePath + (urlOrPath.startsWith('/') ? urlOrPath : '/' + urlOrPath);
+    }
+};
+
 class PwaSync {
     constructor() {
         this.isSyncing = false;
         this.csrfToken = null;
-        this.statusEndpoint = '/pwa/status';
-        this.pushEndpoint = '/pwa/sync/push';
-        this.pullEndpoint = '/pwa/sync/pull';
+        this.statusEndpoint = window.resolveAppUrl(null, '/pwa/status');
+        this.pushEndpoint = window.resolveAppUrl(null, '/pwa/sync/push');
+        this.pullEndpoint = window.resolveAppUrl(null, '/pwa/sync/pull');
         this.clientId = (typeof crypto !== 'undefined' && crypto.randomUUID)
             ? crypto.randomUUID()
             : 'client_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -26,19 +76,15 @@ class PwaSync {
         this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         const userId = document.querySelector('meta[name="auth-user-id"]')?.getAttribute('content') || 'guest';
 
-        // Read dynamic endpoint URLs from meta tags if available
+        // Read dynamic endpoint URLs from meta tags if available and normalize them
         const statusMeta = document.querySelector('meta[name="pwa-status-url"]');
-        if (statusMeta && statusMeta.getAttribute('content')) {
-            this.statusEndpoint = statusMeta.getAttribute('content');
-        }
+        this.statusEndpoint = window.resolveAppUrl(statusMeta?.getAttribute('content'), '/pwa/status');
+
         const pushMeta = document.querySelector('meta[name="pwa-sync-push-url"]');
-        if (pushMeta && pushMeta.getAttribute('content')) {
-            this.pushEndpoint = pushMeta.getAttribute('content');
-        }
+        this.pushEndpoint = window.resolveAppUrl(pushMeta?.getAttribute('content'), '/pwa/sync/push');
+
         const pullMeta = document.querySelector('meta[name="pwa-sync-pull-url"]');
-        if (pullMeta && pullMeta.getAttribute('content')) {
-            this.pullEndpoint = pullMeta.getAttribute('content');
-        }
+        this.pullEndpoint = window.resolveAppUrl(pullMeta?.getAttribute('content'), '/pwa/sync/pull');
 
         await window.PwaDB.init(userId);
 
@@ -650,12 +696,7 @@ class PwaSync {
                     const cachedReqs = await cache.keys();
                     for (const req of cachedReqs) {
                         const url = req.url || '';
-                        const isZikrPage = zikrPatterns.some(pat => {
-                            try {
-                                const parsed = new URL(url);
-                                return parsed.pathname === pat || parsed.pathname.startsWith(pat + '?') || parsed.pathname.startsWith(pat + '/');
-                            } catch (_) { return url.includes(pat); }
-                        });
+                        const isZikrPage = url.includes('/admin/zikr') || url.includes('/admin/tasbeehs');
                         // Only delete non-counter pages (don't wipe tasbeeh/6 etc.)
                         const isCounterPage = url.includes('/admin/zikr/tasbeeh/');
                         if (isZikrPage && !isCounterPage) {
@@ -672,9 +713,7 @@ class PwaSync {
         //    Reloading causes a flash and loses any visual context. Use reconcile with pulled server data instead.
         try {
             const currentPath = window.location.pathname;
-            const isOnZikrOrTasbeehs = zikrPatterns.some(pat =>
-                currentPath === pat || currentPath.startsWith(pat + '?') || currentPath.startsWith(pat + '/')
-            );
+            const isOnZikrOrTasbeehs = currentPath.includes('/admin/zikr') || currentPath.includes('/admin/tasbeehs');
             const isCounterPage = currentPath.includes('/admin/zikr/tasbeeh/');
             if (isOnZikrOrTasbeehs && !isCounterPage) {
                 // The pwa:sync-completed event already triggers reconcileZikrOfflineCounts(data).

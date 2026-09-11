@@ -121,25 +121,13 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// Activate Event: Preserve & Migrate Cache Without Data Loss
+// Activate Event: Clean Purge Old Versions & Claim Clients Immediately
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then(async (cacheNames) => {
-            const currentCache = await caches.open(CACHE_NAME);
             for (const name of cacheNames) {
                 if (name !== CACHE_NAME && name.startsWith('portfolio-pwa-')) {
                     try {
-                        const oldCache = await caches.open(name);
-                        const oldKeys = await oldCache.keys();
-                        for (const key of oldKeys) {
-                            const alreadyExists = await currentCache.match(key);
-                            if (!alreadyExists) {
-                                const oldResp = await oldCache.match(key);
-                                if (oldResp) {
-                                    await currentCache.put(key, oldResp);
-                                }
-                            }
-                        }
                         await caches.delete(name);
                     } catch (e) {}
                 }
@@ -175,27 +163,42 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 1. Static Asset Strategy (CSS, JS, Fonts, Images, Icons) -> Cache First
+    // 1. Application Scripts & Styles (app.js, app.css, pwa-*.js) -> Network-First with Cache Fallback
+    const isAppScriptOrStyle = (
+        (request.destination === 'style' || request.destination === 'script') &&
+        (url.pathname.includes('/assets/js/') || url.pathname.includes('/assets/css/'))
+    );
+
+    if (isAppScriptOrStyle) {
+        event.respondWith(
+            fetch(request)
+                .then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200 && !networkResponse.bodyUsed && isCacheable(request)) {
+                        try {
+                            const clone = networkResponse.clone();
+                            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone).catch(() => {})).catch(() => {});
+                        } catch (e) {}
+                    }
+                    return networkResponse;
+                })
+                .catch(() => {
+                    return caches.match(request, { ignoreSearch: true });
+                })
+        );
+        return;
+    }
+
+    // 2. Static Assets (Fonts, Images, Icons, CDN) -> Cache First
     if (
-        request.destination === 'style' ||
-        request.destination === 'script' ||
         request.destination === 'font' ||
         request.destination === 'image' ||
-        url.pathname.startsWith('/assets/') ||
+        url.pathname.startsWith('/assets/pwa-icons/') ||
+        url.pathname.startsWith('/assets/images/') ||
         url.hostname.includes('cdn.jsdelivr.net')
     ) {
         event.respondWith(
             caches.match(request, { ignoreSearch: true }).then((cachedResponse) => {
                 if (cachedResponse) {
-                    // Refresh in background if online
-                    fetch(request).then((networkResponse) => {
-                        if (networkResponse && networkResponse.status === 200 && !networkResponse.bodyUsed && isCacheable(request)) {
-                            try {
-                                const clone = networkResponse.clone();
-                                caches.open(CACHE_NAME).then((cache) => cache.put(request, clone).catch(() => {})).catch(() => {});
-                            } catch (e) {}
-                        }
-                    }).catch(() => {});
                     return cachedResponse;
                 }
 
