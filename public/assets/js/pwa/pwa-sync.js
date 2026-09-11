@@ -227,10 +227,20 @@ class PwaSync {
         }
     }
 
+    _generateUUID() {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            try { return crypto.randomUUID(); } catch (_) {}
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
     async enqueueAction(entity, action, payload = {}, tempId = null) {
         const item = {
-            uuid: crypto.randomUUID(),
-            idempotency_key: crypto.randomUUID(),
+            uuid: this._generateUUID(),
+            idempotency_key: this._generateUUID(),
             entity,
             action,
             payload,
@@ -488,14 +498,14 @@ class PwaSync {
         return actionItem;
     }
 
-    async completeTasbeehToday(tasbeehId) {
+    async completeTasbeehToday(tasbeehId, count = null) {
         const todayStr = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
-        const actionItem = await this.enqueueAction('tasbeeh_complete_today', 'update', {
-            tasbeeh_id: parseInt(tasbeehId, 10),
-            date: todayStr
-        });
-        this.broadcastEvent('ZIKR_COMPLETE_TODAY', { tasbeehId: String(tasbeehId), date: todayStr });
-        return actionItem;
+        let addCount = count ? parseInt(count, 10) : 0;
+        if (!addCount || isNaN(addCount)) {
+            const card = document.getElementById(`tasbeeh-card-${tasbeehId}`) || document.querySelector(`[data-tasbeeh-card="${tasbeehId}"]`);
+            addCount = parseInt(card?.dataset?.dailyTarget || '100', 10) || 100;
+        }
+        return this.saveZikrCount(tasbeehId, addCount, todayStr, true);
     }
 
     async completeAllTasbeehsToday() {

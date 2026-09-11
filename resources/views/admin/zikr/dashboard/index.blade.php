@@ -279,9 +279,10 @@
                                 type="button"
                                 data-tasbeeh-id="{{ $item['tasbeeh_id'] }}"
                                 data-tasbeeh-title="{{ $item['title'] }}"
+                                data-daily-target="{{ $item['daily_target'] ?? 100 }}"
                                 data-user-id="{{ $selectedUser->id }}"
                                 data-complete-url="{{ route('admin.zikr.counter.complete-today', $item['tasbeeh_id']) }}"
-                                title="Complete Today for this Tasbeeh"
+                                title="Add Daily Task (+{{ number_format($item['daily_target'] ?? 100) }}) for this Tasbeeh"
                             >
                                 <i class="bi bi-check2-all"></i>
                             </button>
@@ -638,7 +639,6 @@
             document.querySelectorAll('[id^="tasbeeh-card-"]').forEach(card => {
                 const tId = card.id.replace('tasbeeh-card-', '');
                 const delta = liveDeltas[tId];
-                if (!delta) return;
 
                 // Read original server baseline from data attributes (set once at render)
                 const baseTotal   = parseInt(card.dataset.baseTotal   || card.dataset.totalCompleted   || '0', 10) || 0;
@@ -650,8 +650,20 @@
                 if (!card.dataset.baseTotal) card.dataset.baseTotal = String(baseTotal);
                 if (!card.dataset.baseToday) card.dataset.baseToday = String(baseToday);
 
-                const newTotal = baseTotal + delta.total;
-                const newToday = baseToday + delta.today;
+                const newTotal = delta ? Math.max(0, baseTotal + delta.total) : baseTotal;
+                const newToday = delta ? Math.max(0, baseToday + delta.today) : baseToday;
+
+                card.dataset.todayCompleted = String(newToday);
+                card.dataset.totalCompleted = String(newTotal);
+
+                const completeBtn = card.querySelector('.btn-complete-icon');
+                if (completeBtn) {
+                    const isDone = newToday >= dailyTarget && dailyTarget > 0;
+                    completeBtn.classList.toggle('is-completed', isDone);
+                    completeBtn.classList.toggle('active', isDone);
+                }
+
+                if (!delta) return;
 
                 grandTotalDelta += delta.total;
                 grandTodayDelta += delta.today;
@@ -836,6 +848,7 @@
                 let hasZikrCompleteAll = false;
                 let hasZikrResetAll = false;
                 const completedTodayByTasbeeh = {};
+                const uncompletedTodayByTasbeeh = {};
                 const resetByTasbeeh = {};
 
                 (items || []).forEach(item => {
@@ -848,7 +861,16 @@
                     if (entity === 'zikr_complete_all' && isTodayItem) {
                         hasZikrCompleteAll = true;
                     } else if (entity === 'tasbeeh_complete_today' && tId && isTodayItem) {
-                        completedTodayByTasbeeh[tId] = (completedTodayByTasbeeh[tId] || 0) + 1;
+                        if (p.mode === 'uncomplete') {
+                            uncompletedTodayByTasbeeh[tId] = true;
+                            delete completedTodayByTasbeeh[tId];
+                        } else {
+                            completedTodayByTasbeeh[tId] = (completedTodayByTasbeeh[tId] || 0) + 1;
+                            delete uncompletedTodayByTasbeeh[tId];
+                        }
+                    } else if (entity === 'tasbeeh_uncomplete_today' && tId && isTodayItem) {
+                        uncompletedTodayByTasbeeh[tId] = true;
+                        delete completedTodayByTasbeeh[tId];
                     } else if (entity === 'tasbeeh_reset_single' && tId) {
                         resetByTasbeeh[tId] = true;
                     } else if (entity === 'zikr_reset_all') {
@@ -879,6 +901,17 @@
                         const tId = card.id.replace('tasbeeh-card-', '');
                         if (resetByTasbeeh[tId]) {
                             delete liveDeltas[tId];
+                            return;
+                        }
+                        if (uncompletedTodayByTasbeeh[tId]) {
+                            const baseToday = parseInt(card.dataset.baseToday || card.dataset.todayCompleted || '0', 10) || 0;
+                            const dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10) || 100;
+                            const removeCount = Math.min(baseToday, dailyTarget) || dailyTarget;
+                            if (removeCount > 0) {
+                                if (!liveDeltas[tId]) liveDeltas[tId] = { today: 0, total: 0 };
+                                liveDeltas[tId].today -= removeCount;
+                                liveDeltas[tId].total -= removeCount;
+                            }
                             return;
                         }
                         const completesCount = (completedTodayByTasbeeh[tId] || 0) + (hasZikrCompleteAll ? 1 : 0);
@@ -916,13 +949,20 @@
                 }
             } else if (data.type === 'ZIKR_COMPLETE_TODAY') {
                 const tId = String(data.tasbeehId || '');
+                const mode = data.mode || 'complete';
                 if (tId) {
                     const card = document.getElementById('tasbeeh-card-' + tId);
                     if (card) {
-                        const baseToday  = parseInt(card.dataset.baseToday   || card.dataset.todayCompleted   || '0', 10) || 0;
                         const dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10) || 100;
-                        const needed = Math.max(0, dailyTarget - baseToday - (liveDeltas[tId] ? liveDeltas[tId].today : 0));
-                        if (needed > 0) addDelta(tId, needed, true);
+                        const curToday = parseInt(card.dataset.todayCompleted || '0', 10) || 0;
+                        if (mode === 'uncomplete') {
+                            const removeAmount = Math.min(curToday, dailyTarget) || dailyTarget;
+                            addDelta(tId, -removeAmount, true);
+                        } else {
+                            const baseToday  = parseInt(card.dataset.baseToday   || card.dataset.todayCompleted   || '0', 10) || 0;
+                            const needed = Math.max(0, dailyTarget - baseToday - (liveDeltas[tId] ? liveDeltas[tId].today : 0));
+                            if (needed > 0) addDelta(tId, needed, true);
+                        }
                     }
                 }
             } else if (data.type === 'ZIKR_COMPLETE_ALL') {

@@ -2189,10 +2189,11 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
 }
 .action-icon-btn.btn-complete-icon.is-completed:hover,
 .action-icon-btn.btn-complete-icon.active:hover {
-    background: rgba(239, 68, 68, 0.25) !important;
-    border-color: #ef4444 !important;
-    color: #f87171 !important;
-    box-shadow: 0 0 14px rgba(239, 68, 68, 0.45) !important;
+    background: rgba(16, 185, 129, 0.45) !important;
+    border-color: #34d399 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.6) !important;
+    transform: translateY(-2px);
 }
 
 /* Button 2: Quick Add Plus (Sky Cyan) */
@@ -4067,10 +4068,11 @@ body.is-standalone-pwa .admin-main {
 }
 [data-theme="light"] .action-icon-btn.btn-complete-icon.is-completed:hover,
 [data-theme="light"] .action-icon-btn.btn-complete-icon.active:hover {
-    background: #ef4444 !important;
-    border-color: #dc2626 !important;
+    background: #059669 !important;
+    border-color: #047857 !important;
     color: #ffffff !important;
-    box-shadow: 0 0 14px rgba(239, 68, 68, 0.6) !important;
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.6) !important;
+    transform: translateY(-2px);
 }
 [data-theme="light"] .action-icon-btn.btn-plus-icon {
     background: rgba(56, 189, 248, 0.18) !important;

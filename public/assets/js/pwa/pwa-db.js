@@ -126,11 +126,21 @@ class PwaDB {
         }
     }
 
+    _generateUUID() {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            try { return crypto.randomUUID(); } catch (_) {}
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
     // Outbox Operations
     async addOutbox(item) {
         const record = {
-            uuid: item.uuid || crypto.randomUUID(),
-            idempotency_key: item.idempotency_key || crypto.randomUUID(),
+            uuid: item.uuid || this._generateUUID(),
+            idempotency_key: item.idempotency_key || this._generateUUID(),
             user_id: this.userId || document.querySelector('meta[name="auth-user-id"]')?.getAttribute('content') || 'guest',
             entity: item.entity,
             action: item.action || 'create', // create, update, delete

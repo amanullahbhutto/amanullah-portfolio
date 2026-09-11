@@ -182,7 +182,20 @@ class PwaService
                             $tasbeehId = $payload['tasbeeh_id'] ?? null;
                             $tasbeeh = Tasbeeh::find($tasbeehId);
                             if ($tasbeeh) {
-                                $this->zikrService->completeSingleForToday($user, $tasbeeh);
+                                $mode = $payload['mode'] ?? 'complete';
+                                $this->zikrService->completeSingleForToday($user, $tasbeeh, $mode);
+                                $serverId = $tasbeeh->id;
+                            } else {
+                                $status = 'failed';
+                                $errorMessage = "Tasbeeh #{$tasbeehId} not found.";
+                            }
+                            break;
+
+                        case 'tasbeeh_uncomplete_today':
+                            $tasbeehId = $payload['tasbeeh_id'] ?? null;
+                            $tasbeeh = Tasbeeh::find($tasbeehId);
+                            if ($tasbeeh) {
+                                $this->zikrService->completeSingleForToday($user, $tasbeeh, 'uncomplete');
                                 $serverId = $tasbeeh->id;
                             } else {
                                 $status = 'failed';

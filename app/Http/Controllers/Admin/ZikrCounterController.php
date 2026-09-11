@@ -132,8 +132,12 @@ class ZikrCounterController extends Controller
         }
 
         $user = $this->authorizeAccess($request, $targetUser);
-        $result = $this->zikrService->completeSingleForToday($user, $tasbeeh);
+        $dailyTarget = max((int) $tasbeeh->daily_target, 1);
+        $count = (int) ($request->input('count') ?: $dailyTarget);
+
+        $result = $this->zikrService->addCount($user, $tasbeeh, $count, 'daily_task_complete');
         $result['summary'] = $this->zikrService->getDashboardSummary($user);
+        $result['server_time'] = now()->toIso8601String();
 
         return response()->json($result);
     }

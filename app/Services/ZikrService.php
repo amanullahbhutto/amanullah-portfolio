@@ -528,8 +528,9 @@ class ZikrService
      * Toggles a single Tasbeeh's completion for today:
      * - If today is not completed: adds remaining count to reach daily target.
      * - If today is already completed: removes / minuses the completed count for today.
+     * - Accepts optional $mode ('complete' or 'uncomplete' or null for toggle).
      */
-    public function completeSingleForToday(User $user, Tasbeeh $tasbeeh): array
+    public function completeSingleForToday(User $user, Tasbeeh $tasbeeh, ?string $mode = null): array
     {
         $progress = $this->getOrCreateProgress($user, $tasbeeh);
         $dailyTarget = max((int) $tasbeeh->daily_target, 1);
@@ -545,10 +546,47 @@ class ZikrService
         $currentTodayCount = $dailyRecord ? (int) $dailyRecord->count : 0;
         $isAlreadyComplete = $currentTodayCount >= $dailyTarget && $dailyTarget > 0;
 
+        if ($mode === 'complete') {
+            if ($isAlreadyComplete) {
+                // Idempotent: already complete, no changes needed
+                $updatedStats = $this->calculateTasbeehStats($user, $tasbeeh, $progress);
+                return [
+                    'success' => true,
+                    'action' => 'none',
+                    'delta' => 0,
+                    'added_count' => 0,
+                    'removed_count' => 0,
+                    'message' => "'{$tasbeeh->title}' is already completed for today!",
+                    'stats' => $updatedStats,
+                    'server_time' => $this->now()->toIso8601String(),
+                ];
+            }
+            $shouldRemove = false;
+        } elseif ($mode === 'uncomplete') {
+            if (! $isAlreadyComplete && $currentTodayCount <= 0) {
+                // Idempotent: already not completed, no changes needed
+                $updatedStats = $this->calculateTasbeehStats($user, $tasbeeh, $progress);
+                return [
+                    'success' => true,
+                    'action' => 'none',
+                    'delta' => 0,
+                    'added_count' => 0,
+                    'removed_count' => 0,
+                    'message' => "'{$tasbeeh->title}' is not completed for today.",
+                    'stats' => $updatedStats,
+                    'server_time' => $this->now()->toIso8601String(),
+                ];
+            }
+            $shouldRemove = true;
+        } else {
+            // Default toggle behavior
+            $shouldRemove = $isAlreadyComplete;
+        }
+
         $delta = 0;
         $action = 'added';
 
-        if ($isAlreadyComplete) {
+        if ($shouldRemove) {
             // Remove / Minus mode: undo today's completion
             $action = 'removed';
             $removeCount = min($currentTodayCount, $dailyTarget);
@@ -623,6 +661,7 @@ class ZikrService
             'removed_count' => $delta < 0 ? abs($delta) : 0,
             'message' => $message,
             'stats' => $updatedStats,
+            'server_time' => $this->now()->toIso8601String(),
         ];
     }
 
