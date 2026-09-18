@@ -2004,30 +2004,73 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     width: 100%;
 }
 
-/* Progress Container */
+/* Progress Container with Text Inside */
 .progress-container {
-    height: 6px;
+    position: relative;
+    height: 16px;
     background: #070e1a;
-    border: 1px solid #14263f;
-    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
     overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 .progress-bar-custom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
     height: 100%;
-    border-radius: 10px;
-    transition: width 0.4s ease;
+    border-radius: 999px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
 }
 .progress-bar-custom.amber {
     background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%);
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
 }
 .progress-bar-custom.emerald {
     background: linear-gradient(90deg, #059669 0%, #10b981 100%);
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
 }
 .progress-bar-custom.cyan {
     background: linear-gradient(90deg, #00bcd4 0%, #00e5ff 100%);
-    box-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+}
+
+.progress-inner-label {
+    position: relative;
+    z-index: 2;
+    padding: 0 8px;
+    font-size: 0.60rem;
+    font-weight: 600;
+    line-height: 1;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 3px rgba(0, 0, 0, 0.85);
+    pointer-events: none;
+    user-select: none;
+}
+.progress-title-text {
+    color: #ffffff;
+    font-size: 0.60rem;
+    letter-spacing: 0.2px;
+    line-height: 1;
+}
+.progress-title-text i {
+    font-size: 0.58rem;
+    opacity: 0.95;
+    color: #fde047;
+}
+.progress-bar-custom.emerald ~ .progress-inner-label .progress-title-text i {
+    color: #a7f3d0;
+}
+.progress-bar-custom.cyan ~ .progress-inner-label .progress-title-text i {
+    color: #a5f3fc;
+}
+.progress-percent-text {
+    color: #ffffff;
+    font-size: 0.64rem;
+    letter-spacing: 0.2px;
+    line-height: 1;
 }
 
 /* Bottom Footer Strip */

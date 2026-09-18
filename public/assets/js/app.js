@@ -2029,7 +2029,7 @@
         let completedEl = cardCol.querySelector('.badge-completed strong');
         let remainingEl = cardCol.querySelector('.badge-remaining');
         let progressEl = cardCol.querySelector('.progress-bar-custom');
-        let percentTextEl = cardCol.querySelector('.progress-container')?.parentElement?.querySelector('.font-monospace');
+        let percentTextEl = cardCol.querySelector('.progress-percent-text') || cardCol.querySelector('.progress-container .font-monospace') || cardCol.querySelector('.progress-container')?.parentElement?.querySelector('.font-monospace');
 
         let currentCompleted = parseInt(cardCol.dataset.totalCompleted || (completedEl ? completedEl.textContent.replace(/,/g, '') : '0'), 10) || 0;
 
@@ -2405,7 +2405,7 @@
 
                 let remainingEl = card.querySelector('.badge-remaining');
                 let progressEl = card.querySelector('.progress-bar-custom');
-                let percentTextEl = card.querySelector('.progress-container')?.parentElement?.querySelector('.font-monospace');
+                let percentTextEl = card.querySelector('.progress-percent-text') || card.querySelector('.progress-container .font-monospace') || card.querySelector('.progress-container')?.parentElement?.querySelector('.font-monospace');
 
                 if (totalRequired > 0) {
                     let percentage = Math.min(100, Math.round((finalTotal / totalRequired) * 100));

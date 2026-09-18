@@ -234,13 +234,9 @@
                             </div>
                         </div>
 
-                        {{-- Cycle Progress Bar --}}
+                        {{-- Cycle Progress Bar (Percentage & Text Inside Bar) --}}
                         <div class="mb-2">
-                            <div class="d-flex justify-content-between align-items-center mb-1 text-muted-custom" style="font-size: 0.76rem;">
-                                <span><i class="bi bi-bar-chart-fill me-1 text-secondary"></i> Cycle Progress</span>
-                                <span class="fw-bold text-white font-monospace">{{ $item['percentage'] }}%</span>
-                            </div>
-                            <div class="progress-container">
+                            <div class="progress-container position-relative">
                                 @php
                                     $barClass = 'amber';
                                     if ($item['extra'] > 0) {
@@ -250,6 +246,12 @@
                                     }
                                 @endphp
                                 <div class="progress-bar-custom {{ $barClass }}" style="width: {{ $item['percentage'] }}%;"></div>
+                                <div class="progress-inner-label d-flex justify-content-between align-items-center w-100 h-100">
+                                    <span class="progress-title-text text-truncate">
+                                        <i class="bi bi-bar-chart-fill me-1"></i>Cycle Progress
+                                    </span>
+                                    <span class="progress-percent-text fw-bold font-monospace ms-1">{{ $item['percentage'] }}%</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -713,9 +715,20 @@
 
                 // Progress bar
                 const progressBar = card.querySelector('.progress-bar-custom');
+                const percentTextEl = card.querySelector('.progress-percent-text') || card.querySelector('.progress-container .font-monospace');
                 if (progressBar && totalReq > 0) {
                     const pct = Math.min(100, Math.round((newTotal / totalReq) * 100));
                     progressBar.style.width = pct + '%';
+                    if (percentTextEl) percentTextEl.textContent = pct + '%';
+
+                    const diff = newTotal - totalReq;
+                    let barClass = 'amber';
+                    if (diff > 0) {
+                        barClass = 'cyan';
+                    } else if (diff === 0) {
+                        barClass = 'emerald';
+                    }
+                    progressBar.className = `progress-bar-custom ${barClass}`;
                 }
             });
 
