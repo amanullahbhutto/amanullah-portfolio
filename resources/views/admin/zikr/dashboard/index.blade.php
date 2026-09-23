@@ -181,10 +181,51 @@
         </div>
     </div>
 
+    {{-- ─── Filter Bar ──────────────────────────────────────────────────── --}}
+    <div class="zikr-filter-bar d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 p-2 px-3 rounded-4 border"
+         style="background: rgba(8,17,30,0.92); border-color: rgba(6,182,212,0.18); backdrop-filter: blur(8px);">
+
+        <span class="small fw-bold text-uppercase" style="color:#64748b; font-size:0.68rem; letter-spacing:0.6px;">
+            <i class="bi bi-funnel me-1"></i>Filter Tasbeehs
+        </span>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            {{-- Incomplete (default active) --}}
+            <button type="button"
+                    class="zikr-filter-btn active"
+                    data-zikr-filter="incomplete"
+                    title="Show only incomplete tasbeehs">
+                <i class="bi bi-hourglass-split me-1"></i>
+                Incomplete
+                <span class="zikr-filter-count" id="zikr-count-incomplete"></span>
+            </button>
+
+            {{-- Completed --}}
+            <button type="button"
+                    class="zikr-filter-btn"
+                    data-zikr-filter="complete"
+                    title="Show only completed tasbeehs">
+                <i class="bi bi-check2-circle me-1"></i>
+                Completed
+                <span class="zikr-filter-count" id="zikr-count-complete"></span>
+            </button>
+
+            {{-- Show All --}}
+            <button type="button"
+                    class="zikr-filter-btn"
+                    data-zikr-filter="all"
+                    title="Show all tasbeehs">
+                <i class="bi bi-grid me-1"></i>
+                All
+                <span class="zikr-filter-count" id="zikr-count-all"></span>
+            </button>
+        </div>
+    </div>
+
     {{-- Tasbeeh Items Grid --}}
     <div class="row g-3 g-md-4" id="tasbeeh-list-container">
         @forelse($summary['tasbeehs'] as $item)
-            <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $item['tasbeeh_id'] }}" data-daily-target="{{ $item['daily_target'] }}" data-active-days="{{ $item['active_days'] }}" data-today-completed="{{ $item['today_completed'] }}" data-total-completed="{{ $item['total_completed'] }}" data-total-required="{{ $item['total_required'] }}" data-tracking-start-date="{{ $item['tracking_start_date'] ?? '' }}" data-render-date="{{ now()->format('Y-m-d') }}" data-base-today-completed="{{ $item['today_completed'] }}" data-base-today="{{ $item['today_completed'] }}" data-base-total-completed="{{ $item['total_completed'] }}" data-base-total="{{ $item['total_completed'] }}">
+            <div class="col-12 col-lg-6 d-flex" id="tasbeeh-card-{{ $item['tasbeeh_id'] }}" data-complete="{{ ($item['today_completed'] >= $item['daily_target'] && $item['daily_target'] > 0) ? 'true' : 'false' }}" data-daily-target="{{ $item['daily_target'] }}" data-active-days="{{ $item['active_days'] }}" data-today-completed="{{ $item['today_completed'] }}" data-total-completed="{{ $item['total_completed'] }}" data-total-required="{{ $item['total_required'] }}" data-tracking-start-date="{{ $item['tracking_start_date'] ?? '' }}" data-render-date="{{ now()->format('Y-m-d') }}" data-base-today-completed="{{ $item['today_completed'] }}" data-base-today="{{ $item['today_completed'] }}" data-base-total-completed="{{ $item['total_completed'] }}" data-base-total="{{ $item['total_completed'] }}">
                 <div class="zikr-item-card w-100 d-flex flex-column justify-content-between position-relative">
                     <div>
                         {{-- Top Header with Sort Number Circle Badge and Today's Count Badge --}}
@@ -659,11 +700,12 @@
                 card.dataset.totalCompleted = String(newTotal);
 
                 const completeBtn = card.querySelector('.btn-complete-icon');
+                const isDone = newToday >= dailyTarget && dailyTarget > 0;
                 if (completeBtn) {
-                    const isDone = newToday >= dailyTarget && dailyTarget > 0;
                     completeBtn.classList.toggle('is-completed', isDone);
                     completeBtn.classList.toggle('active', isDone);
                 }
+                card.dataset.complete = isDone ? 'true' : 'false';
 
                 if (!delta) return;
 
@@ -782,6 +824,11 @@
             if (typeof window.renderZikrStatCards === 'function') {
                 window.renderZikrStatCards();
             }
+
+            // Sync filter bar visibility and counts with latest numbers
+            if (typeof window.refreshZikrFilter === 'function') {
+                window.refreshZikrFilter();
+            }
         }
 
         // ─── Add a delta increment for a tasbeeh ─────────────────────────────
@@ -862,8 +909,19 @@
                     if (completeBtn) {
                         completeBtn.classList.remove('is-completed', 'active');
                     }
+
+                    // New day → this card is now incomplete again — unhide it in the filter
+                    const cardCol = card.closest('[data-complete]') || card;
+                    if (cardCol.dataset.complete !== undefined) {
+                        cardCol.dataset.complete = 'false';
+                    }
                 }
             });
+
+            // After resetting all stale cards, re-run the active filter so hidden cards reappear
+            if (isStale && typeof window.refreshZikrFilter === 'function') {
+                window.refreshZikrFilter();
+            }
 
             // Also reset top stat "Read Today" & percentage if page is stale
             const todayStatEl = document.getElementById('top-stat-today-completed');
@@ -1042,5 +1100,152 @@
         window.addEventListener('focus', checkDashboardMidnightRollover);
         window.addEventListener('pageshow', checkDashboardMidnightRollover);
     });
+
+    // ─── Zikr Filter Bar ──────────────────────────────────────────────────────
+    (function () {
+        'use strict';
+
+        // Robust evaluator for whether a tasbeeh card has completed its daily target
+        function isCardCompletedToday(card) {
+            const target = parseInt(card.dataset.dailyTarget || '0', 10);
+            let today = parseInt(card.dataset.todayCompleted || '0', 10);
+
+            // Also inspect live badge text in case numbers updated dynamically in DOM
+            const badgeStrong = card.querySelector('.today-status-badge strong');
+            if (badgeStrong) {
+                const badgeNum = parseInt(badgeStrong.textContent.replace(/[^0-9]/g, ''), 10);
+                if (!isNaN(badgeNum) && badgeNum > today) {
+                    today = badgeNum;
+                }
+            }
+
+            // If target is met or exceeded
+            if (target > 0 && today >= target) {
+                return true;
+            }
+
+            // Check if complete button has completed state
+            const completeBtn = card.querySelector('.btn-complete-icon');
+            if (completeBtn && (completeBtn.classList.contains('is-completed') || completeBtn.classList.contains('active'))) {
+                return true;
+            }
+
+            // Check checkmark in badge
+            const todayBadge = card.querySelector('.today-status-badge');
+            if (todayBadge && todayBadge.querySelector('.bi-check2')) {
+                return true;
+            }
+
+            return card.dataset.complete === 'true';
+        }
+
+        // Update count badges & visibility of cards
+        function applyZikrFilter(filter) {
+            // Select all tasbeeh cards in list
+            const cards = document.querySelectorAll('#tasbeeh-list-container > [id^="tasbeeh-card-"]');
+            let incompleteCount = 0, completeCount = 0;
+
+            cards.forEach(function (card) {
+                const done = isCardCompletedToday(card);
+                // Synchronize dataset attribute
+                card.dataset.complete = done ? 'true' : 'false';
+
+                if (done) {
+                    completeCount++;
+                } else {
+                    incompleteCount++;
+                }
+
+                let show = true;
+                if (filter === 'incomplete') {
+                    show = !done;
+                } else if (filter === 'complete') {
+                    show = done;
+                }
+                // 'all' → always show
+
+                if (show) {
+                    card.classList.remove('d-none');
+                    card.classList.add('d-flex');
+                    card.style.setProperty('display', '', '');
+                } else {
+                    card.classList.remove('d-flex');
+                    card.classList.add('d-none');
+                    card.style.setProperty('display', 'none', 'important');
+                }
+            });
+
+            // Update count badges
+            const elInc  = document.getElementById('zikr-count-incomplete');
+            const elComp = document.getElementById('zikr-count-complete');
+            const elAll  = document.getElementById('zikr-count-all');
+            if (elInc)  elInc.textContent  = incompleteCount;
+            if (elComp) elComp.textContent = completeCount;
+            if (elAll)  elAll.textContent  = incompleteCount + completeCount;
+
+            // Show "no results" message if all hidden
+            let visibleCount = filter === 'all' ? (incompleteCount + completeCount)
+                             : filter === 'complete' ? completeCount : incompleteCount;
+
+            let emptyMsg = document.getElementById('zikr-filter-empty-msg');
+            if (!emptyMsg) {
+                emptyMsg = document.createElement('div');
+                emptyMsg.id = 'zikr-filter-empty-msg';
+                emptyMsg.className = 'col-12 text-center py-4 text-muted-custom';
+                const container = document.getElementById('tasbeeh-list-container');
+                if (container) container.appendChild(emptyMsg);
+            }
+            if (visibleCount === 0 && (incompleteCount + completeCount) > 0) {
+                emptyMsg.style.display = '';
+                if (filter === 'incomplete') {
+                    emptyMsg.innerHTML = '<i class="bi bi-check2-all fs-2 text-success mb-2 d-block"></i>' +
+                        '<p class="mb-0 fw-semibold text-success">All today\'s tasks completed! 🎉</p>';
+                } else if (filter === 'complete') {
+                    emptyMsg.innerHTML = '<i class="bi bi-hourglass-split fs-2 text-warning mb-2 d-block"></i>' +
+                        '<p class="mb-0 text-muted-custom">No completed tasks yet for today.</p>';
+                } else {
+                    emptyMsg.innerHTML = '<p class="mb-0 text-muted-custom">No tasbeehs found.</p>';
+                }
+            } else {
+                emptyMsg.style.display = 'none';
+            }
+        }
+
+        // Get current active filter from button
+        function getActiveFilter() {
+            const active = document.querySelector('[data-zikr-filter].active');
+            return active ? active.dataset.zikrFilter : 'incomplete';
+        }
+
+        // Expose so live-delta updater can call it after DOM updates
+        window.refreshZikrFilter = function () {
+            applyZikrFilter(getActiveFilter());
+        };
+
+        function initFilterBar() {
+            const buttons = document.querySelectorAll('[data-zikr-filter]');
+            if (!buttons.length) return;
+
+            buttons.forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    // Update active state
+                    buttons.forEach(function (b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+
+                    applyZikrFilter(btn.dataset.zikrFilter);
+                });
+            });
+
+            // Default: show only incomplete on page load
+            applyZikrFilter('incomplete');
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initFilterBar);
+        } else {
+            initFilterBar();
+        }
+    })();
 </script>
 @endpush

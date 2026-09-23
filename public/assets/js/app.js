@@ -1060,6 +1060,15 @@
                     window.updateZikrCardDom(tasbeehId, countDelta, false);
                 }
 
+                // Immediately sync data-complete so the filter re-runs right away
+                if (card) {
+                    const curToday = parseInt(card.dataset.todayCompleted || '0', 10);
+                    const tgt      = parseInt(card.dataset.dailyTarget     || '100', 10);
+                    const isNowDone = curToday >= tgt && tgt > 0;
+                    card.dataset.complete = isNowDone ? 'true' : 'false';
+                    if (typeof window.refreshZikrFilter === 'function') window.refreshZikrFilter();
+                }
+
                 if (typeof window.showFlashToast === 'function') {
                     window.showFlashToast(toastMsg, 'success');
                 } else if (window.App && typeof window.App.showToast === 'function') {
@@ -1124,6 +1133,10 @@
                                 const isDone = sToday >= sTarget && sTarget > 0;
                                 completeIconBtn.classList.toggle('is-completed', isDone);
                                 completeIconBtn.classList.toggle('active', isDone);
+                                // Sync filter attribute
+                                const cardColEl = completeIconBtn.closest('[data-complete]');
+                                if (cardColEl) cardColEl.dataset.complete = isDone ? 'true' : 'false';
+                                if (typeof window.refreshZikrFilter === 'function') window.refreshZikrFilter();
                             }
 
                             if (data.summary && typeof window.reconcileZikrOfflineCounts === 'function') {
@@ -2110,6 +2123,14 @@
             const isDone = nextTodayCompleted >= dailyTarget && dailyTarget > 0;
             completeIconBtn.classList.toggle('is-completed', isDone);
             completeIconBtn.classList.toggle('active', isDone);
+            // Always sync filter attribute on the outer col wrapper
+            cardCol.dataset.complete = isDone ? 'true' : 'false';
+            if (typeof window.refreshZikrFilter === 'function') window.refreshZikrFilter();
+        } else {
+            // Even if button not found, still sync the filter attribute
+            const isDone = nextTodayCompleted >= dailyTarget && dailyTarget > 0;
+            cardCol.dataset.complete = isDone ? 'true' : 'false';
+            if (typeof window.refreshZikrFilter === 'function') window.refreshZikrFilter();
         }
 
         // Live Real-Time Lifetime Total Counter Update (Only increments/decrements on zikr additions/removals, NEVER on resets)
@@ -2401,6 +2422,10 @@
                     const isDone = finalToday >= dailyTarget && dailyTarget > 0;
                     completeIconBtn.classList.toggle('is-completed', isDone);
                     completeIconBtn.classList.toggle('active', isDone);
+                    // Sync filter attribute & re-run filter
+                    const cardColEl = completeIconBtn.closest('[data-complete]');
+                    if (cardColEl) cardColEl.dataset.complete = isDone ? 'true' : 'false';
+                    if (typeof window.refreshZikrFilter === 'function') window.refreshZikrFilter();
                 }
 
                 let remainingEl = card.querySelector('.badge-remaining');
