@@ -911,8 +911,9 @@
                     }
 
                     // New day → this card is now incomplete again — unhide it in the filter
-                    const cardCol = card.closest('[data-complete]') || card;
-                    if (cardCol.dataset.complete !== undefined) {
+                    card.dataset.complete = 'false';
+                    const cardCol = card.closest('[data-complete]');
+                    if (cardCol) {
                         cardCol.dataset.complete = 'false';
                     }
                 }
