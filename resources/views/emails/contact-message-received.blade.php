@@ -91,7 +91,7 @@
                             <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
                                     <td style="border-radius:12px; background:#ff6b2c;">
-                                        <a href="{{ route('admin.messages.show', $contactMessage) }}" style="display:inline-block; padding:13px 18px; color:#ffffff; font-size:14px; font-weight:800; text-decoration:none; border-radius:12px;">Open in Admin Inbox</a>
+                                        <a href="{{ $contactMessage->getKey() ? route('admin.messages.show', $contactMessage) : route('admin.messages.index') }}" style="display:inline-block; padding:13px 18px; color:#ffffff; font-size:14px; font-weight:800; text-decoration:none; border-radius:12px;">Open in Admin Inbox</a>
                                     </td>
                                 </tr>
                             </table>

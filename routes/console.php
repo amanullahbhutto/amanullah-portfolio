@@ -25,6 +25,7 @@ Artisan::command('mail:test {email?}', function (?string $email = null) {
         'message' => 'Hello Amanullah, I would like to hire you for a Laravel project. Please get in touch!',
         'ip_address' => '127.0.0.1',
     ]);
+    $dummyMessage->id = 1;
 
     try {
         Mail::to($targetEmail)->send(new ContactMessageReceived($dummyMessage));
