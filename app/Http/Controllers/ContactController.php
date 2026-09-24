@@ -34,8 +34,10 @@ class ContactController extends Controller
         $validated['ip_address'] = $request->ip();
         $message = ContactMessage::query()->create($validated);
 
+        $recipient = config('portfolio.contact_notification_email') ?: 'aman.ullah.csc@gmail.com';
+
         try {
-            Mail::to(config('portfolio.contact_notification_email'))
+            Mail::to($recipient)
                 ->send(new ContactMessageReceived($message));
         } catch (Throwable $exception) {
             report($exception);

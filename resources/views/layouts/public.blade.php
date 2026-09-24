@@ -44,7 +44,7 @@
                         <i class="bi bi-sun-fill theme-icon-light"></i>
                         <i class="bi bi-moon-stars-fill theme-icon-dark"></i>
                     </button>
-                    <a href="{{ route('contact.create') }}" class="btn btn-accent d-none d-sm-inline-flex">Hire me <i class="bi bi-arrow-up-right ms-2"></i></a>
+                    <a href="{{ route('contact.create', ['hire' => 1]) }}" class="btn btn-accent d-none d-sm-inline-flex">Hire me <i class="bi bi-arrow-up-right ms-2"></i></a>
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>
