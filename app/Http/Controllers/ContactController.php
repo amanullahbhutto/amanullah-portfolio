@@ -36,11 +36,28 @@ class ContactController extends Controller
 
         $recipient = config('portfolio.contact_notification_email') ?: 'aman.ullah.csc@gmail.com';
 
-        try {
-            Mail::to($recipient)
-                ->send(new ContactMessageReceived($message));
-        } catch (Throwable $exception) {
-            report($exception);
+        $sent = false;
+
+        // Agar mailer 'mail' par set hai to direct PHP native mail() use karein
+        if (config('mail.default') === 'mail') {
+            $sent = $this->sendViaPhpMail($recipient, $message);
+        } else {
+            try {
+                Mail::to($recipient)
+                    ->send(new ContactMessageReceived($message));
+                $sent = true;
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+
+            // Agar SMTP / Laravel Mailer fail ho jaye ya log par ho, to simple PHP mail() se backup send karein
+            if (! $sent || config('mail.default') === 'log') {
+                try {
+                    $this->sendViaPhpMail($recipient, $message);
+                } catch (Throwable $fallbackException) {
+                    report($fallbackException);
+                }
+            }
         }
 
         return back()->with([
@@ -49,5 +66,28 @@ class ContactController extends Controller
             'flash_duration' => 4000,
             'flash_variant' => 'contact-success-popup',
         ]);
+    }
+
+    protected function sendViaPhpMail(string $recipient, ContactMessage $message): bool
+    {
+        if (! function_exists('mail')) {
+            return false;
+        }
+
+        $subject = 'New portfolio contact: ' . $message->subject;
+        $body = view('emails.contact-message-received', ['contactMessage' => $message])->render();
+
+        $fromAddress = config('mail.from.address') ?: 'amanullah@triplewtools.com';
+        $fromName = config('mail.from.name') ?: 'Amanullah Portfolio';
+
+        $headers = [
+            'MIME-Version: 1.0',
+            'Content-type: text/html; charset=UTF-8',
+            'From: ' . $fromName . ' <' . $fromAddress . '>',
+            'Reply-To: ' . $message->name . ' <' . $message->email . '>',
+            'X-Mailer: PHP/' . phpversion(),
+        ];
+
+        return (bool) @mail($recipient, $subject, $body, implode("\r\n", $headers));
     }
 }

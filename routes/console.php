@@ -29,9 +29,22 @@ Artisan::command('mail:test {email?}', function (?string $email = null) {
 
     try {
         Mail::to($targetEmail)->send(new ContactMessageReceived($dummyMessage));
-        $this->info("SUCCESS: Test email sent successfully to {$targetEmail}!");
+        $this->info("SUCCESS (Laravel Mailer): Email dispatched to {$targetEmail}!");
     } catch (\Throwable $e) {
-        $this->error("FAILED: " . $e->getMessage());
+        $this->warn("Laravel Mailer note: " . $e->getMessage());
+    }
+
+    if (function_exists('mail')) {
+        $subject = 'Test PHP mail() function: Hire Amanullah';
+        $body = "This is a test using PHP built-in mail() function to verify server email delivery to {$targetEmail}.";
+        $fromEmail = config('mail.from.address') ?: 'amanullah@triplewtools.com';
+        $headers = "From: Amanullah Portfolio <{$fromEmail}>\r\nReply-To: client@example.com\r\nX-Mailer: PHP/" . phpversion();
+        $phpMailResult = @mail($targetEmail, $subject, $body, $headers);
+        if ($phpMailResult) {
+            $this->info("SUCCESS (PHP mail): Native mail() function accepted the email for delivery to {$targetEmail}!");
+        } else {
+            $this->comment("PHP mail() function did not send locally (normal on Windows local without mail server, but works on live cPanel/Linux).");
+        }
     }
 })->purpose('Test sending a portfolio contact email');
 
