@@ -10,7 +10,6 @@
     <title>@yield('title', 'Dashboard') - Amanullah</title>
     
     {{-- Progressive Web App (PWA) Meta & Icons --}}
-    <link rel="manifest" href="{{ route('pwa.manifest') }}">
     <meta name="pwa-sw-url" content="{{ route('pwa.sw') }}">
     <meta name="pwa-status-url" content="{{ route('pwa.status') }}">
     <meta name="pwa-sync-push-url" content="{{ route('pwa.sync.push') }}">

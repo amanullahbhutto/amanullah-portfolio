@@ -124,6 +124,15 @@ class PwaInstaller {
     }
 
     async triggerInstall() {
+        // Ensure manifest is attached dynamically only when user explicitly clicks install
+        let manifestLink = document.querySelector('link[rel="manifest"]');
+        if (!manifestLink) {
+            manifestLink = document.createElement('link');
+            manifestLink.rel = 'manifest';
+            manifestLink.href = '/manifest.json';
+            document.head.appendChild(manifestLink);
+        }
+
         // 1. If standard browser prompt available (Android / Chrome / Edge)
         if (this.deferredPrompt) {
             this.deferredPrompt.prompt();

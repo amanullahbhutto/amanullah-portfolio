@@ -7,17 +7,7 @@
     <title>@yield('title', ($profile?->full_name ?? 'Amanullah'))</title>
     <link rel="icon" type="image/png" href="{{ asset('assets/images/amanullah.png') }}">
 
-    {{-- Progressive Web App (PWA) Meta & Icons --}}
-    <link rel="manifest" href="{{ route('pwa.manifest') }}">
-    <meta name="pwa-sw-url" content="{{ route('pwa.sw') }}">
-    <meta name="pwa-status-url" content="{{ route('pwa.status') }}">
     <meta name="theme-color" content="{{ $pwaSettings?->theme_color ?? '#070d18' }}">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="{{ $pwaSettings?->short_name ?? 'Amanullah' }}">
-    <link rel="apple-touch-icon" href="{{ $pwaSettings?->icon_192_url ?? asset('assets/pwa-icons/icon-192x192.png') }}">
-
     <meta name="description" content="@yield('meta_description', 'Amanullah is a PHP and Laravel developer in Karachi building responsive, secure, and maintainable web applications.')">
     <script>document.documentElement.dataset.theme=localStorage.getItem('portfolio-theme')||'dark';</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -108,15 +98,20 @@
 
     <button class="back-to-top" type="button" data-back-to-top aria-label="Back to top"><i class="bi bi-arrow-up"></i></button>
     
-    {{-- iOS Safari Installation Instructions Modal --}}
-    @include('admin.pwa.partials.ios-modal')
-
     <script src="{{ asset('vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('vendor/aos/aos.js') }}"></script>
     <script src="{{ asset('assets/js/app.js') }}"></script>
     
-    {{-- PWA Installer & Service Worker Registration --}}
-    <script src="{{ asset('assets/js/pwa/pwa-installer.js') }}?v={{ file_exists(public_path('assets/js/pwa/pwa-installer.js')) ? filemtime(public_path('assets/js/pwa/pwa-installer.js')) : time() }}"></script>
+    {{-- Ensure public visitors have no active PWA install prompt in browser URL bar --}}
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                for (let r of registrations) {
+                    r.unregister();
+                }
+            });
+        }
+    </script>
     @stack('scripts')
 </body>
 </html>
