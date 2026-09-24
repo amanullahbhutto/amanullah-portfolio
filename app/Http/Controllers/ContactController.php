@@ -27,9 +27,12 @@ class ContactController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'subject' => ['required', 'string', 'max:150'],
             'message' => ['required', 'string', 'min:10', 'max:5000'],
-            'website' => ['nullable', 'max:0'],
+            'website' => ['nullable', 'string', 'max:255'],
         ]);
 
+        if (!empty($validated['website'])) {
+            $validated['message'] .= "\n\nWebsite: " . strip_tags((string) $validated['website']);
+        }
         unset($validated['website']);
         $validated['ip_address'] = $request->ip();
         $message = ContactMessage::query()->create($validated);

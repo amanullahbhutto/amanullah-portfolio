@@ -10,7 +10,6 @@
             <div class="contact-row"><i class="bi bi-geo-alt"></i><span>{{ $profile?->address }}, {{ $profile?->city }}</span></div>
         </div></div></div>
         <div class="col-lg-7"><div class="contact-form-wrap"><form method="POST" action="{{ route('contact.store') }}">@csrf
-            <div class="honeypot" aria-hidden="true"><label for="website">Website</label><input type="text" name="website" id="website" tabindex="-1" autocomplete="off"></div>
             <div class="row g-3">
                 <div class="col-md-6"><label class="form-label" for="name">Name *</label><input class="form-control" id="name" name="name" value="{{ old('name') }}" required maxlength="100" autocomplete="name" placeholder="Your name"></div>
                 <div class="col-md-6"><label class="form-label" for="email">Email *</label><input class="form-control" type="email" id="email" name="email" value="{{ old('email') }}" required maxlength="150" autocomplete="email" placeholder="you@company.com"></div>
