@@ -308,13 +308,23 @@ class DateOfBirthController extends Controller
 
     private function deleteDobImageFile(?string $path): void
     {
-        if (blank($path) || Str::startsWith($path, ['http://', 'https://', '/'])) {
+        if (
+            blank($path)
+            || ! Str::startsWith($path, 'DOB/')
+            || str_contains($path, '..')
+            || str_contains($path, "\0")
+        ) {
             return;
         }
 
+        $baseDir = realpath(public_path('DOB'));
         $fullPath = public_path($path);
-        if (File::exists($fullPath)) {
-            File::delete($fullPath);
+
+        if ($baseDir && File::exists($fullPath)) {
+            $realPath = realpath($fullPath);
+            if ($realPath && Str::startsWith($realPath, $baseDir)) {
+                File::delete($realPath);
+            }
         }
     }
 

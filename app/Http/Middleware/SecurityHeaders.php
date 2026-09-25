@@ -30,6 +30,15 @@ class SecurityHeaders
         // Restrict unnecessary browser features & APIs
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
+        // Prevent cross-domain policy file abuse (Flash/PDF)
+        $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');
+
+        // Hide PHP/server technology fingerprinting
+        $response->headers->remove('X-Powered-By');
+        if (function_exists('header_remove')) {
+            @header_remove('X-Powered-By');
+        }
+
         // Enforce HTTPS HSTS when connecting via HTTPS
         if ($request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');

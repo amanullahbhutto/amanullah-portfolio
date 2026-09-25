@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1. Deny access to sensitive files
+    RewriteRule ^(\.env|\.git|\.editorconfig|composer\.(json|lock)|package\.(json|lock)|phpunit\.xml) - [F,L,NC]
+
+    # 2. Deny direct access to framework directories
+    RewriteRule ^(app|bootstrap|config|database|resources|routes|storage|tests)/ - [F,L,NC]
+
+    # 3. Route everything cleanly to public directory
+    RewriteRule ^$ public/ [L]
+    RewriteRule (.*) public/$1 [L]
+</IfModule>
+
+# Disable directory browsing
+Options -Indexes

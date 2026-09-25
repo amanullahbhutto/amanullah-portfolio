@@ -618,6 +618,100 @@
             if (target) target.textContent = value || 'Present';
         };
 
+        let dobLightboxImages = [];
+        let dobLightboxIndex = 0;
+
+        const openDobLightbox = (images, startIndex = 0, title = 'Photos') => {
+            if (!images || images.length === 0) return;
+
+            dobLightboxImages = images.map((item) => (typeof item === 'string' ? item : item.url));
+            dobLightboxIndex = Math.max(0, Math.min(startIndex, dobLightboxImages.length - 1));
+
+            const lightboxModalEl = document.getElementById('dobLightboxModal');
+            if (!lightboxModalEl) return;
+
+            const titleEl = document.getElementById('dobLightboxTitle');
+            if (titleEl) titleEl.textContent = title;
+
+            updateDobLightboxDisplay();
+
+            const modalInstance = window.bootstrap
+                ? window.bootstrap.Modal.getOrCreateInstance(lightboxModalEl)
+                : null;
+            modalInstance?.show();
+        };
+
+        const updateDobLightboxDisplay = () => {
+            const imgEl = document.getElementById('dobLightboxActiveImg');
+            const counterEl = document.getElementById('dobLightboxCounter');
+            const prevBtn = document.getElementById('dobLightboxPrevBtn');
+            const nextBtn = document.getElementById('dobLightboxNextBtn');
+
+            if (imgEl && dobLightboxImages[dobLightboxIndex]) {
+                imgEl.src = dobLightboxImages[dobLightboxIndex];
+            }
+
+            if (counterEl) {
+                counterEl.textContent = `${dobLightboxIndex + 1} / ${dobLightboxImages.length}`;
+            }
+
+            if (prevBtn && nextBtn) {
+                if (dobLightboxImages.length <= 1) {
+                    prevBtn.style.display = 'none';
+                    nextBtn.style.display = 'none';
+                } else {
+                    prevBtn.style.display = 'flex';
+                    nextBtn.style.display = 'flex';
+                }
+            }
+        };
+
+        const nextDobLightbox = () => {
+            if (dobLightboxImages.length <= 1) return;
+            dobLightboxIndex = (dobLightboxIndex + 1) % dobLightboxImages.length;
+            updateDobLightboxDisplay();
+        };
+
+        const prevDobLightbox = () => {
+            if (dobLightboxImages.length <= 1) return;
+            dobLightboxIndex = (dobLightboxIndex - 1 + dobLightboxImages.length) % dobLightboxImages.length;
+            updateDobLightboxDisplay();
+        };
+
+        document.getElementById('dobLightboxPrevBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            prevDobLightbox();
+        });
+
+        document.getElementById('dobLightboxNextBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            nextDobLightbox();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            const lightboxModalEl = document.getElementById('dobLightboxModal');
+            if (!lightboxModalEl?.classList.contains('show')) return;
+
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                nextDobLightbox();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                prevDobLightbox();
+            }
+        });
+
+        const lightboxModalEl = document.getElementById('dobLightboxModal');
+        lightboxModalEl?.addEventListener('hidden.bs.modal', () => {
+            const photosModalEl = document.getElementById('dateOfBirthPhotosModal');
+            const viewModalEl = document.getElementById('dateOfBirthViewModal');
+            if (photosModalEl?.classList.contains('show') || viewModalEl?.classList.contains('show')) {
+                document.body.classList.add('modal-open');
+            }
+        });
+
         const openViewDobModal = (trigger) => {
             if (!viewModal) return;
             setViewText('[data-dob-view-name]', trigger.dataset.dobName || 'Date of Birth');
@@ -646,14 +740,19 @@
                 galleryWrapper.classList.remove('d-none');
                 if (photoCount) photoCount.textContent = images.length;
                 galleryContainer.innerHTML = '';
+                const personName = trigger.dataset.dobName || 'Date of Birth';
                 images.forEach((url, idx) => {
                     const item = document.createElement('div');
-                    item.className = 'dob-view-gallery-item';
+                    item.className = 'dob-view-gallery-item dob-photo-tile';
+                    item.title = 'Click to open slide view';
                     item.innerHTML = `
-                        <a href="${url}" target="_blank" rel="noopener noreferrer" title="View full image">
-                            <img src="${url}" alt="Photo ${idx + 1}">
-                        </a>
+                        <img src="${url}" alt="Photo ${idx + 1}" loading="lazy">
+                        <span class="dob-photo-view-badge" style="opacity:1;"><i class="bi bi-arrows-fullscreen"></i></span>
                     `;
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        openDobLightbox(images, idx, `Photos - ${personName}`);
+                    });
                     galleryContainer.appendChild(item);
                 });
             } else if (galleryWrapper) {
@@ -680,8 +779,9 @@
             const name = trigger.dataset.dobName || 'Person';
             const father = trigger.dataset.dobFatherName || '';
             const titleEl = currentPhotosForm.querySelector('[data-dob-photos-modal-title]');
+            const personTitle = father ? `Photos - ${name} (S/O ${father})` : `Photos - ${name}`;
             if (titleEl) {
-                titleEl.textContent = father ? `Photos - ${name} (S/O ${father})` : `Photos - ${name}`;
+                titleEl.textContent = personTitle;
             }
 
             const preview = currentPhotosForm.querySelector('#dobQuickUploadPreview');
@@ -709,17 +809,36 @@
             } else {
                 emptyState?.classList.add('d-none');
                 images.forEach((img, idx) => {
-                    const label = document.createElement('label');
-                    label.className = 'gallery-delete-tile';
-                    label.title = 'Click to mark for deletion';
-                    label.innerHTML = `
-                        <img src="${img.url}" alt="Photo ${idx + 1}">
-                        <input type="checkbox" name="delete_images[]" value="${img.path}" data-gallery-delete>
-                        <span class="gallery-delete-overlay"><i class="bi bi-trash3"></i></span>
+                    const tile = document.createElement('div');
+                    tile.className = 'dob-photo-tile';
+                    tile.title = 'Click to open slide view';
+                    tile.innerHTML = `
+                        <img src="${img.url}" alt="Photo ${idx + 1}" loading="lazy">
+                        <span class="dob-photo-view-badge"><i class="bi bi-arrows-fullscreen"></i></span>
+                        <span class="dob-photo-marked-label"><i class="bi bi-trash3 me-1"></i> Will Delete</span>
+                        <button type="button" class="dob-photo-delete-badge" title="Mark this photo for deletion" data-dob-delete-btn>
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                        <input type="checkbox" name="delete_images[]" value="${img.path}" class="d-none" data-gallery-delete>
                     `;
-                    const input = label.querySelector('input');
-                    input.addEventListener('change', () => label.classList.toggle('is-marked', input.checked));
-                    grid?.appendChild(label);
+
+                    const deleteBtn = tile.querySelector('[data-dob-delete-btn]');
+                    const checkbox = tile.querySelector('input[type="checkbox"]');
+
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        checkbox.checked = !checkbox.checked;
+                        tile.classList.toggle('is-marked', checkbox.checked);
+                        deleteBtn.title = checkbox.checked ? 'Unmark deletion' : 'Mark this photo for deletion';
+                    });
+
+                    tile.addEventListener('click', (e) => {
+                        if (e.target.closest('[data-dob-delete-btn]')) return;
+                        openDobLightbox(images, idx, personTitle);
+                    });
+
+                    grid?.appendChild(tile);
                 });
             }
 

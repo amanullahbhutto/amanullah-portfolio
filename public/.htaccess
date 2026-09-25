@@ -5,6 +5,18 @@
 
     RewriteEngine On
 
+    # Block access to hidden dot-files
+    <FilesMatch "^\.">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+
+    # Block sensitive file extensions
+    <FilesMatch "(?i)\.(bak|config|sql|ini|log|sh|inc|swp|dist|env|yml|yaml)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -19,4 +31,6 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+Options -Indexes
 

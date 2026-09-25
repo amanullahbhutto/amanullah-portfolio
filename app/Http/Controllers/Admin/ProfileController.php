@@ -104,15 +104,19 @@ class ProfileController extends Controller
 
     private function deletePublicProfileFile(?string $path): void
     {
-        if (blank($path) || Str::startsWith($path, ['http://', 'https://'])) {
+        if (blank($path) || Str::startsWith($path, ['http://', 'https://']) || str_contains($path, '..') || str_contains($path, "\0")) {
             return;
         }
 
         if (Str::startsWith($path, 'assets/images/')) {
+            $baseDir = realpath(public_path('assets/images'));
             $fullPath = public_path($path);
 
-            if (File::isFile($fullPath)) {
-                File::delete($fullPath);
+            if ($baseDir && File::isFile($fullPath)) {
+                $realPath = realpath($fullPath);
+                if ($realPath && Str::startsWith($realPath, $baseDir)) {
+                    File::delete($realPath);
+                }
             }
 
             return;

@@ -302,15 +302,19 @@ class PortfolioContentController extends Controller
 
     private function deleteContentImage(?string $path): void
     {
-        if (blank($path) || Str::startsWith($path, ['http://', 'https://', '/'])) {
+        if (blank($path) || Str::startsWith($path, ['http://', 'https://', '/']) || str_contains($path, '..') || str_contains($path, "\0")) {
             return;
         }
 
         if (Str::startsWith($path, 'assets/')) {
+            $baseDir = realpath(public_path('assets'));
             $fullPath = public_path($path);
 
-            if (File::isFile($fullPath)) {
-                File::delete($fullPath);
+            if ($baseDir && File::isFile($fullPath)) {
+                $realPath = realpath($fullPath);
+                if ($realPath && Str::startsWith($realPath, $baseDir)) {
+                    File::delete($realPath);
+                }
             }
 
             return;

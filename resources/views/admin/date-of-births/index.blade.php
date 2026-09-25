@@ -616,4 +616,28 @@
     </div>
 </div>
 
+{{-- Slide View / Lightbox Modal for DOB Photos --}}
+<div class="modal fade lightbox-modal" id="dobLightboxModal" tabindex="-1" aria-hidden="true" style="z-index: 1085;">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <h5 class="modal-title mb-0" id="dobLightboxTitle">Photos</h5>
+                    <span class="lightbox-counter" id="dobLightboxCounter">1 / 1</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body position-relative">
+                <button class="lightbox-nav-btn prev-btn" id="dobLightboxPrevBtn" type="button" aria-label="Previous image" title="Previous photo (Left Arrow)">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <img id="dobLightboxActiveImg" src="" alt="Full size preview" class="lightbox-preview-img">
+                <button class="lightbox-nav-btn next-btn" id="dobLightboxNextBtn" type="button" aria-label="Next image" title="Next photo (Right Arrow)">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
