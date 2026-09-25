@@ -611,6 +611,70 @@ class PortfolioTest extends TestCase
         ]);
     }
 
+    public function test_date_of_birth_can_upload_and_manage_multiple_images(): void
+    {
+        $admin = User::query()->where('email', 'admin@gmail.com')->firstOrFail();
+        $file1 = UploadedFile::fake()->image('photo1.jpg', 200, 200);
+        $file2 = UploadedFile::fake()->image('photo2.png', 200, 200);
+
+        $response = $this->actingAs($admin)
+            ->post('/admin/date-of-births', [
+                'name' => 'Gullam Mustafa',
+                'father_name' => 'Amanullah',
+                'start_date' => '28/09/2025',
+                'images' => [$file1, $file2],
+            ]);
+
+        $response->assertRedirect('/admin/date-of-births');
+
+        $record = DateOfBirth::query()->where('name', 'Gullam Mustafa')->firstOrFail();
+        $this->assertCount(2, $record->image_paths);
+        $this->assertStringContainsString('DOB/Gullam_Mustafa/', $record->image_paths[0]);
+        $this->assertFileExists(public_path($record->image_paths[0]));
+        $this->assertFileExists(public_path($record->image_paths[1]));
+        $this->assertSame($record->image_urls[1], $record->image_url);
+
+        // Check index page shows avatar button with photos data
+        $this->actingAs($admin)
+            ->get('/admin/date-of-births')
+            ->assertOk()
+            ->assertSee('data-dob-avatar-photos', false)
+            ->assertSee($record->image_url)
+            ->assertSee('2 photos');
+
+        // Check show page shows photos
+        $this->actingAs($admin)
+            ->get('/admin/date-of-births/'.$record->id)
+            ->assertOk()
+            ->assertSee('Photos (2)')
+            ->assertSee($record->image_urls[0])
+            ->assertSee($record->image_urls[1]);
+
+        // Test updatePhotos endpoint
+        $file3 = UploadedFile::fake()->image('photo3.webp', 200, 200);
+        $this->actingAs($admin)
+            ->put('/admin/date-of-births/'.$record->id.'/photos', [
+                'images' => [$file3],
+                'delete_images' => [$record->image_paths[0]],
+            ])
+            ->assertRedirect('/admin/date-of-births');
+
+        $record->refresh();
+        $this->assertCount(2, $record->image_paths);
+        $this->assertSame($record->image_urls[1], $record->image_url);
+
+        // Cleanup
+        foreach ($record->image_paths as $path) {
+            if (file_exists(public_path($path))) {
+                unlink(public_path($path));
+            }
+        }
+        $folder = public_path('DOB/Gullam_Mustafa');
+        if (is_dir($folder)) {
+            @rmdir($folder);
+        }
+    }
+
     public function test_homepage_experience_stat_can_use_manual_or_experience_dates(): void
     {
         $admin = User::query()->where('email', 'admin@gmail.com')->firstOrFail();

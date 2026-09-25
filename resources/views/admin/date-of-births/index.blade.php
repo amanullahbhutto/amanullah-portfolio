@@ -163,16 +163,50 @@
 
                                 <div class="d-flex align-items-center gap-2">
 
-                                    <span
-                                        class="user-avatar"
-                                        style="width:34px;height:34px"
-                                    >
-                                        {{ strtoupper(substr($dateOfBirth->name, 0, 1)) }}
-                                    </span>
+                                    @if($dateOfBirth->image_url)
+                                        <button
+                                            type="button"
+                                            class="user-avatar overflow-hidden p-0 border-0 dob-avatar-btn"
+                                            style="width:44px;height:44px;border-radius:12px;"
+                                            title="Click to view & manage photos"
+                                            data-dob-avatar-photos
+                                            data-dob-name="{{ $dateOfBirth->name }}"
+                                            data-dob-father-name="{{ $dateOfBirth->father_name }}"
+                                            data-dob-photos-action="{{ route('admin.date-of-births.photos.update', $dateOfBirth) }}"
+                                            data-dob-images='@json($dateOfBirth->images_with_urls)'
+                                        >
+                                            <img
+                                                src="{{ $dateOfBirth->image_url }}"
+                                                alt="{{ $dateOfBirth->name }}"
+                                                style="width:100%;height:100%;object-fit:cover;display:block;"
+                                            >
+                                        </button>
+                                    @else
+                                        <button
+                                            type="button"
+                                            class="user-avatar border-0 dob-avatar-btn"
+                                            style="width:44px;height:44px;border-radius:12px;font-size:1.1rem;font-weight:600;"
+                                            title="Click to view & manage photos"
+                                            data-dob-avatar-photos
+                                            data-dob-name="{{ $dateOfBirth->name }}"
+                                            data-dob-father-name="{{ $dateOfBirth->father_name }}"
+                                            data-dob-photos-action="{{ route('admin.date-of-births.photos.update', $dateOfBirth) }}"
+                                            data-dob-images='@json($dateOfBirth->images_with_urls)'
+                                        >
+                                            {{ strtoupper(substr($dateOfBirth->name, 0, 1)) }}
+                                        </button>
+                                    @endif
 
-                                    <strong>
-                                        {{ $dateOfBirth->name }}
-                                    </strong>
+                                    <div>
+                                        <strong>
+                                            {{ $dateOfBirth->name }}
+                                        </strong>
+                                        @if(count($dateOfBirth->image_paths) > 1)
+                                            <small class="text-muted-custom d-block" style="font-size:0.72rem;">
+                                                <i class="bi bi-images me-1"></i>{{ count($dateOfBirth->image_paths) }} photos
+                                            </small>
+                                        @endif
+                                    </div>
 
                                 </div>
 
@@ -233,22 +267,9 @@
 
 
                             <td>
-
-                                <strong>
-                                    {{ $dateOfBirth->age['years'] }}
-                                </strong>
-                                Years,
-
-                                <strong>
-                                    {{ $dateOfBirth->age['months'] }}
-                                </strong>
-                                Months,
-
-                                <strong>
-                                    {{ $dateOfBirth->age['days'] }}
-                                </strong>
-                                Days
-
+                                <strong>{{ $dateOfBirth->age['years'] }}</strong> Y,
+                                <strong>{{ $dateOfBirth->age['months'] }}</strong> M,
+                                <strong>{{ $dateOfBirth->age['days'] }}</strong> D
                             </td>
 
 
@@ -269,6 +290,7 @@
                                             data-dob-age="{{ $dateOfBirth->formatted_age }}"
                                             data-dob-next-birthday="{{ $dateOfBirth->next_birthday->format('M d, Y') }}"
                                             data-dob-next-countdown="{{ $dateOfBirth->formatted_next_birthday_countdown }}"
+                                            data-dob-images='@json($dateOfBirth->image_urls)'
                                             aria-label="View record"
                                         >
                                             <i class="bi bi-eye"></i>
@@ -288,6 +310,7 @@
                                             data-dob-father-name="{{ $dateOfBirth->father_name }}"
                                             data-dob-start-date="{{ $dateOfBirth->start_date->format('j/n/Y') }}"
                                             data-dob-end-date="{{ $dateOfBirth->end_date?->format('j/n/Y') }}"
+                                            data-dob-images='@json($dateOfBirth->images_with_urls)'
                                             aria-label="Edit record"
                                         >
                                             <i class="bi bi-pencil"></i>
@@ -383,8 +406,8 @@
 
 @if($canCreateDateOfBirth || $canUpdateDateOfBirth)
     <div class="modal fade dob-modal" id="dateOfBirthFormModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <form class="modal-content" method="POST" action="{{ route('admin.date-of-births.store') }}" data-dob-form>
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <form class="modal-content" method="POST" action="{{ route('admin.date-of-births.store') }}" data-dob-form enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="_method" value="PUT" data-dob-method disabled>
 
@@ -444,6 +467,29 @@
                             <div class="dob-form-help">Leave empty to calculate age up to today.</div>
                             <div class="invalid-feedback" data-dob-error-for="end_date"></div>
                         </div>
+
+                        <div class="col-12">
+                            <label class="form-label" for="dob_images">Images (JPG, PNG, WebP)</label>
+                            <input
+                                class="form-control"
+                                id="dob_images"
+                                name="images[]"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                multiple
+                                data-gallery-input="#dobModalImageSelection"
+                                data-dob-field="images"
+                            >
+                            <div class="dob-form-help">Upload one or multiple images. Saved in public/DOB/{name}. The last uploaded image will be used as avatar in the list.</div>
+                            <div id="dobModalImageSelection" class="selected-gallery-preview mt-2 d-none"></div>
+                            <div id="dobExistingImagesWrapper" class="mt-3 d-none">
+                                <label class="form-label small text-muted-custom mb-1">
+                                    Existing Images (click image to mark for deletion):
+                                </label>
+                                <div id="dobExistingImages" class="project-gallery-admin"></div>
+                            </div>
+                            <div class="invalid-feedback" data-dob-error-for="images"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -460,7 +506,7 @@
 @endif
 
 <div class="modal fade dob-modal" id="dateOfBirthViewModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <div>
@@ -497,8 +543,76 @@
                         <strong data-dob-view-countdown></strong>
                     </div>
                 </div>
+
+                <div class="mt-3 d-none" id="dobViewGalleryWrapper">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fw-semibold small text-muted-custom">Photos (<span id="dobViewPhotoCount">0</span>)</span>
+                    </div>
+                    <div id="dobViewGallery" class="dob-view-gallery-grid"></div>
+                </div>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="modal fade dob-modal" id="dateOfBirthPhotosModal" tabindex="-1" aria-hidden="true" style="z-index: 1075;">
+    <div class="modal-dialog dob-photos-dialog" style="max-width: 480px; margin: 24px auto;">
+        <form class="modal-content" method="POST" action="" data-dob-photos-form enctype="multipart/form-data">
+            @csrf
+            <input type="hidden" name="_method" value="PUT">
+
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title h5" data-dob-photos-modal-title>Photos</h2>
+                    <p class="text-muted-custom small mb-0" data-dob-photos-modal-subtitle>View, upload and delete photos for this person.</p>
+                </div>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="mb-4">
+                    <label class="form-label fw-semibold" for="dob_quick_upload_images">
+                        <i class="bi bi-cloud-arrow-up me-1 text-accent"></i> Upload New Photos (JPG, PNG, WebP)
+                    </label>
+                    <input
+                        class="form-control"
+                        id="dob_quick_upload_images"
+                        name="images[]"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        multiple
+                        data-gallery-input="#dobQuickUploadPreview"
+                    >
+                    <div class="dob-form-help">Upload one or multiple photos. The last uploaded photo will be displayed as the avatar in the list.</div>
+                    <div id="dobQuickUploadPreview" class="selected-gallery-preview mt-2 d-none"></div>
+                    <div class="invalid-feedback" data-dob-photos-error></div>
+                </div>
+
+                <hr class="my-3 opacity-25">
+
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fw-semibold">All Photos (<span id="dobPhotosCount">0</span>)</span>
+                        <span class="text-muted-custom small">Click photo trash to mark for deletion</span>
+                    </div>
+
+                    <div id="dobPhotosEmptyState" class="text-center py-4 rounded-3 border border-dashed text-muted-custom d-none" style="background: var(--surface-2);">
+                        <i class="bi bi-images fs-1 d-block mb-1 text-accent opacity-75"></i>
+                        <span>No photos uploaded yet for this person.</span>
+                    </div>
+
+                    <div id="dobPhotosGrid" class="project-gallery-admin"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-outline-theme" type="button" data-bs-dismiss="modal">Close</button>
+                <button class="btn btn-accent" type="submit" data-dob-photos-submit>
+                    <i class="bi bi-check-lg me-1"></i>
+                    <span data-dob-photos-submit-label>Save Changes</span>
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 

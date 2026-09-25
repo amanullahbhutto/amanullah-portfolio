@@ -8,6 +8,7 @@
 <form
     method="POST"
     action="{{ route('admin.date-of-births.store') }}"
+    enctype="multipart/form-data"
 >
 
     @csrf
@@ -158,6 +159,38 @@
                     <div class="form-text">
                         Leave empty to calculate age up to today. DD/MM/YYYY example 25/3/2008.
                     </div>
+
+                </div>
+
+
+                <div class="col-12">
+
+                    <label class="form-label" for="images">
+                        Images (JPG, PNG, WebP)
+                    </label>
+
+                    <input
+                        class="form-control @error('images') is-invalid @enderror @error('images.*') is-invalid @enderror"
+                        id="images"
+                        name="images[]"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        multiple
+                        data-gallery-input="#dobCreateImageSelection"
+                    >
+
+                    <div class="form-text">
+                        Upload one or multiple images. Saved in public/DOB/{name}. The last uploaded image will be used as the avatar in the list.
+                    </div>
+
+                    <div id="dobCreateImageSelection" class="selected-gallery-preview mt-2 d-none"></div>
+
+                    @error('images')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
+                    @error('images.*')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
 
                 </div>
 

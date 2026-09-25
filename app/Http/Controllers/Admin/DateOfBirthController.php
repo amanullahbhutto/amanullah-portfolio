@@ -8,7 +8,10 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class DateOfBirthController extends Controller
@@ -27,7 +30,7 @@ class DateOfBirthController extends Controller
 
         $this->middleware(
             'permission:update date of birth',
-            ['only' => ['edit', 'update']]
+            ['only' => ['edit', 'update', 'updatePhotos']]
         );
 
         $this->middleware(
@@ -97,11 +100,22 @@ class DateOfBirthController extends Controller
     {
         $validated = $this->validatedData($request);
 
+        $uploadedImages = [];
+        if ($request->hasFile('images')) {
+            $folder = $this->getPersonFolder($validated['name']);
+            foreach ($request->file('images', []) as $file) {
+                if ($file instanceof UploadedFile) {
+                    $uploadedImages[] = $this->storeDobImageFile($file, $folder);
+                }
+            }
+        }
+
         $dateOfBirth = DateOfBirth::query()->create([
             'name' => $validated['name'],
             'father_name' => $validated['father_name'] ?? null,
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'] ?? null,
+            'images' => $uploadedImages,
         ]);
 
         if ($request->expectsJson()) {
@@ -145,11 +159,33 @@ class DateOfBirthController extends Controller
     ): RedirectResponse|JsonResponse {
         $validated = $this->validatedData($request);
 
+        $existingImages = $dateOfBirth->image_paths;
+        $deleteImages = array_values(array_intersect($validated['delete_images'] ?? [], $existingImages));
+
+        foreach ($deleteImages as $deletedImage) {
+            $this->deleteDobImageFile($deletedImage);
+        }
+
+        $remainingImages = array_values(array_diff($existingImages, $deleteImages));
+
+        $newImages = [];
+        if ($request->hasFile('images')) {
+            $folder = $this->getPersonFolder($validated['name'], $dateOfBirth->id);
+            foreach ($request->file('images', []) as $file) {
+                if ($file instanceof UploadedFile) {
+                    $newImages[] = $this->storeDobImageFile($file, $folder);
+                }
+            }
+        }
+
+        $allImages = array_values(array_unique(array_merge($remainingImages, $newImages)));
+
         $dateOfBirth->update([
             'name' => $validated['name'],
             'father_name' => $validated['father_name'] ?? null,
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'] ?? null,
+            'images' => $allImages,
         ]);
 
         if ($request->expectsJson()) {
@@ -169,6 +205,16 @@ class DateOfBirthController extends Controller
      */
     public function destroy(Request $request, DateOfBirth $dateOfBirth): RedirectResponse|JsonResponse
     {
+        foreach ($dateOfBirth->image_paths as $imagePath) {
+            $this->deleteDobImageFile($imagePath);
+        }
+
+        $folder = $this->getPersonFolder($dateOfBirth->name, $dateOfBirth->id);
+        $directory = public_path('DOB/'.$folder);
+        if (File::isDirectory($directory) && count(File::files($directory)) === 0) {
+            File::deleteDirectory($directory);
+        }
+
         $dateOfBirth->delete();
 
         if ($request->expectsJson()) {
@@ -182,6 +228,96 @@ class DateOfBirthController extends Controller
             ->with('success', 'Date of birth record deleted successfully.');
     }
 
+    /**
+     * Update photos for a specific date of birth record.
+     */
+    public function updatePhotos(
+        Request $request,
+        DateOfBirth $dateOfBirth
+    ): RedirectResponse|JsonResponse {
+        $validated = $request->validate([
+            'images' => ['nullable', 'array', 'max:20'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'delete_images' => ['nullable', 'array'],
+            'delete_images.*' => ['string', 'max:500'],
+        ]);
+
+        $existingImages = $dateOfBirth->image_paths;
+        $deletedImages = array_values(array_intersect($validated['delete_images'] ?? [], $existingImages));
+
+        foreach ($deletedImages as $deletedImage) {
+            $this->deleteDobImageFile($deletedImage);
+        }
+
+        $remainingImages = array_values(array_diff($existingImages, $deletedImages));
+
+        $newImages = [];
+        if ($request->hasFile('images')) {
+            $folder = $this->getPersonFolder($dateOfBirth->name, $dateOfBirth->id);
+            foreach ($request->file('images', []) as $file) {
+                if ($file instanceof UploadedFile) {
+                    $newImages[] = $this->storeDobImageFile($file, $folder);
+                }
+            }
+        }
+
+        $allImages = array_values(array_unique(array_merge($remainingImages, $newImages)));
+
+        $dateOfBirth->update([
+            'images' => $allImages,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Photos updated successfully.',
+                'record' => $this->recordPayload($dateOfBirth->fresh()),
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.date-of-births.index')
+            ->with('success', 'Photos updated successfully.');
+    }
+
+    private function getPersonFolder(string $name, ?int $id = null): string
+    {
+        $folder = trim(preg_replace('/[^A-Za-z0-9_\-]+/', '_', $name), '_');
+        if ($folder === '') {
+            $folder = $id ? 'dob_'.$id : 'person';
+        }
+
+        return $folder;
+    }
+
+    private function storeDobImageFile(UploadedFile $file, string $folder): string
+    {
+        $directory = public_path('DOB/'.$folder);
+        File::ensureDirectoryExists($directory);
+
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        $extension = strtolower($file->extension() ?: $file->getClientOriginalExtension());
+        if (! in_array($extension, $allowedExtensions, true)) {
+            $extension = 'jpg';
+        }
+
+        $filename = 'img-'.now()->format('YmdHis').'-'.Str::random(8).'.'.$extension;
+        $file->move($directory, $filename);
+
+        return 'DOB/'.$folder.'/'.$filename;
+    }
+
+    private function deleteDobImageFile(?string $path): void
+    {
+        if (blank($path) || Str::startsWith($path, ['http://', 'https://', '/'])) {
+            return;
+        }
+
+        $fullPath = public_path($path);
+        if (File::exists($fullPath)) {
+            File::delete($fullPath);
+        }
+    }
+
     private function validatedData(Request $request): array
     {
         $this->normalizeDateInputs($request);
@@ -191,6 +327,10 @@ class DateOfBirthController extends Controller
             'father_name' => ['nullable', 'string', 'max:150'],
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'images' => ['nullable', 'array', 'max:20'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'delete_images' => ['nullable', 'array'],
+            'delete_images.*' => ['string', 'max:500'],
         ]);
     }
 
@@ -270,6 +410,9 @@ class DateOfBirthController extends Controller
             'age' => $dateOfBirth->formatted_age,
             'next_birthday' => $dateOfBirth->next_birthday->format('M d, Y'),
             'next_birthday_countdown' => $dateOfBirth->formatted_next_birthday_countdown,
+            'primary_image_url' => $dateOfBirth->image_url,
+            'image_urls' => $dateOfBirth->image_urls,
+            'images' => $dateOfBirth->images_with_urls,
         ];
     }
 }

@@ -9,13 +9,28 @@
 
     <div class="admin-card-head">
 
-        <div>
+        <div class="d-flex align-items-center gap-3">
 
-            <h2>{{ $dateOfBirth->name }}</h2>
+            @if($dateOfBirth->image_url)
+                <span class="user-avatar overflow-hidden p-0" style="width:48px;height:48px;border-radius:12px;">
+                    <img
+                        src="{{ $dateOfBirth->image_url }}"
+                        alt="{{ $dateOfBirth->name }}"
+                        style="width:100%;height:100%;object-fit:cover;display:block;"
+                    >
+                </span>
+            @else
+                <span class="user-avatar" style="width:48px;height:48px;border-radius:12px;font-size:1.2rem;">
+                    {{ strtoupper(substr($dateOfBirth->name, 0, 1)) }}
+                </span>
+            @endif
 
-            <p class="text-muted-custom small mb-0 mt-1">
-                Date of birth record details.
-            </p>
+            <div>
+                <h2>{{ $dateOfBirth->name }}</h2>
+                <p class="text-muted-custom small mb-0 mt-1">
+                    Date of birth record details.
+                </p>
+            </div>
 
         </div>
 
@@ -202,6 +217,36 @@
                 </div>
 
             </div>
+
+
+            @if(count($dateOfBirth->image_urls) > 0)
+                <div class="col-12">
+
+                    <div class="admin-card mt-2">
+
+                        <div class="admin-card-head">
+                            <div>
+                                <h3 class="h6 mb-0">Photos ({{ count($dateOfBirth->image_urls) }})</h3>
+                                <p class="text-muted-custom small mb-0 mt-1">Uploaded images for {{ $dateOfBirth->name }}</p>
+                            </div>
+                        </div>
+
+                        <div class="admin-card-body">
+                            <div class="dob-view-gallery-grid">
+                                @foreach($dateOfBirth->image_urls as $imageUrl)
+                                    <div class="dob-view-gallery-item">
+                                        <a href="{{ $imageUrl }}" target="_blank" rel="noopener noreferrer" title="View full image">
+                                            <img src="{{ $imageUrl }}" alt="{{ $dateOfBirth->name }} photo {{ $loop->iteration }}">
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            @endif
 
 
         </div>

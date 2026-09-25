@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class DateOfBirth extends Model
 {
@@ -15,12 +16,69 @@ class DateOfBirth extends Model
         'father_name',
         'start_date',
         'end_date',
+        'images',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'images' => 'array',
     ];
+
+    public function getImagePathsAttribute(): array
+    {
+        $images = $this->images;
+        if (is_string($images)) {
+            $decoded = json_decode($images, true);
+            $images = is_array($decoded) ? $decoded : [];
+        }
+
+        return is_array($images) ? array_values(array_filter($images)) : [];
+    }
+
+    public function getImageUrlsAttribute(): array
+    {
+        return array_map(function ($path) {
+            if (blank($path)) {
+                return '';
+            }
+
+            if (Str::startsWith($path, ['http://', 'https://', '/'])) {
+                return $path;
+            }
+
+            return asset($path);
+        }, $this->image_paths);
+    }
+
+    public function getImagesWithUrlsAttribute(): array
+    {
+        $urls = $this->image_urls;
+        $items = [];
+
+        foreach ($this->image_paths as $index => $path) {
+            $items[] = [
+                'path' => $path,
+                'url' => $urls[$index] ?? asset($path),
+            ];
+        }
+
+        return $items;
+    }
+
+    public function getPrimaryImageAttribute(): ?string
+    {
+        $paths = $this->image_paths;
+
+        return ! empty($paths) ? $paths[count($paths) - 1] : null;
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        $urls = $this->image_urls;
+
+        return ! empty($urls) ? $urls[count($urls) - 1] : null;
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -55,7 +113,7 @@ class DateOfBirth extends Model
     {
         $age = $this->age;
 
-        return "{$age['years']} Years, {$age['months']} Months, {$age['days']} Days";
+        return "{$age['years']} Y, {$age['months']} M, {$age['days']} D";
     }
 
     public function getNextBirthdayAttribute(): Carbon

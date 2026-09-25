@@ -78,6 +78,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): v
     Route::get('/', DashboardController::class)->name('dashboard');
     Route::get('/dashboard', fn() => redirect()->route('admin.dashboard'));
 
+    Route::put('date-of-births/{dateOfBirth}/photos', [DateOfBirthController::class, 'updatePhotos'])
+        ->name('date-of-births.photos.update');
     Route::resource('date-of-births', DateOfBirthController::class);
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

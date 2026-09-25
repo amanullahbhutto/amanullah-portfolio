@@ -472,17 +472,23 @@
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         const formModalElement = document.getElementById('dateOfBirthFormModal');
         const viewModalElement = document.getElementById('dateOfBirthViewModal');
+        const photosModalElement = document.getElementById('dateOfBirthPhotosModal');
         const formModal = formModalElement && window.bootstrap
             ? window.bootstrap.Modal.getOrCreateInstance(formModalElement)
             : null;
         const viewModal = viewModalElement && window.bootstrap
             ? window.bootstrap.Modal.getOrCreateInstance(viewModalElement)
             : null;
+        const photosModal = photosModalElement && window.bootstrap
+            ? window.bootstrap.Modal.getOrCreateInstance(photosModalElement)
+            : null;
         const dobForm = formModalElement?.querySelector('[data-dob-form]');
         const methodInput = dobForm?.querySelector('[data-dob-method]');
         const submitButton = dobForm?.querySelector('[data-dob-submit]');
         const submitLabel = dobForm?.querySelector('[data-dob-submit-label]');
         const modalTitle = dobForm?.querySelector('[data-dob-modal-title]');
+        const photosForm = photosModalElement?.querySelector('[data-dob-photos-form]');
+        const photosModalTitle = photosForm?.querySelector('[data-dob-photos-modal-title]');
 
         const setField = (field, value = '') => {
             const input = dobForm?.querySelector(`[data-dob-field="${field}"]`);
@@ -540,6 +546,16 @@
             if (!dobForm || !formModal) return;
             clearDobErrors();
             dobForm.reset();
+            const galleryPreview = document.querySelector('#dobModalImageSelection');
+            if (galleryPreview) {
+                galleryPreview.innerHTML = '';
+                galleryPreview.classList.add('d-none');
+            }
+            const existingWrapper = document.querySelector('#dobExistingImagesWrapper');
+            const existingContainer = document.querySelector('#dobExistingImages');
+            if (existingWrapper) existingWrapper.classList.add('d-none');
+            if (existingContainer) existingContainer.innerHTML = '';
+
             dobForm.action = dobCrud.dataset.dobStoreUrl;
             if (methodInput) methodInput.disabled = true;
             if (modalTitle) modalTitle.textContent = 'Add Date of Birth';
@@ -551,6 +567,41 @@
             if (!dobForm || !formModal) return;
             clearDobErrors();
             dobForm.reset();
+            const galleryPreview = document.querySelector('#dobModalImageSelection');
+            if (galleryPreview) {
+                galleryPreview.innerHTML = '';
+                galleryPreview.classList.add('d-none');
+            }
+            const existingWrapper = document.querySelector('#dobExistingImagesWrapper');
+            const existingContainer = document.querySelector('#dobExistingImages');
+            if (existingContainer) existingContainer.innerHTML = '';
+
+            let images = [];
+            try {
+                images = JSON.parse(trigger.dataset.dobImages || '[]');
+            } catch (e) {
+                images = [];
+            }
+
+            if (images.length > 0 && existingWrapper && existingContainer) {
+                existingWrapper.classList.remove('d-none');
+                images.forEach((img, idx) => {
+                    const label = document.createElement('label');
+                    label.className = 'gallery-delete-tile';
+                    label.title = 'Click to mark for deletion';
+                    label.innerHTML = `
+                        <img src="${img.url}" alt="image ${idx + 1}">
+                        <input type="checkbox" name="delete_images[]" value="${img.path}" data-gallery-delete>
+                        <span class="gallery-delete-overlay"><i class="bi bi-trash3"></i></span>
+                    `;
+                    const input = label.querySelector('input');
+                    input.addEventListener('change', () => label.classList.toggle('is-marked', input.checked));
+                    existingContainer.appendChild(label);
+                });
+            } else if (existingWrapper) {
+                existingWrapper.classList.add('d-none');
+            }
+
             dobForm.action = trigger.dataset.dobAction;
             if (methodInput) methodInput.disabled = false;
             setField('name', trigger.dataset.dobName);
@@ -579,10 +630,110 @@
             setViewText('[data-dob-view-age]', trigger.dataset.dobAge);
             setViewText('[data-dob-view-next]', trigger.dataset.dobNextBirthday);
             setViewText('[data-dob-view-countdown]', trigger.dataset.dobNextCountdown);
+
+            const galleryWrapper = viewModalElement?.querySelector('#dobViewGalleryWrapper');
+            const galleryContainer = viewModalElement?.querySelector('#dobViewGallery');
+            const photoCount = viewModalElement?.querySelector('#dobViewPhotoCount');
+
+            let images = [];
+            try {
+                images = JSON.parse(trigger.dataset.dobImages || '[]');
+            } catch (e) {
+                images = [];
+            }
+
+            if (images.length > 0 && galleryWrapper && galleryContainer) {
+                galleryWrapper.classList.remove('d-none');
+                if (photoCount) photoCount.textContent = images.length;
+                galleryContainer.innerHTML = '';
+                images.forEach((url, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'dob-view-gallery-item';
+                    item.innerHTML = `
+                        <a href="${url}" target="_blank" rel="noopener noreferrer" title="View full image">
+                            <img src="${url}" alt="Photo ${idx + 1}">
+                        </a>
+                    `;
+                    galleryContainer.appendChild(item);
+                });
+            } else if (galleryWrapper) {
+                galleryWrapper.classList.add('d-none');
+                if (galleryContainer) galleryContainer.innerHTML = '';
+            }
+
             viewModal.show();
         };
 
+        const openPhotosModal = (trigger) => {
+            const currentPhotosModalEl = document.getElementById('dateOfBirthPhotosModal');
+            const currentPhotosForm = currentPhotosModalEl?.querySelector('[data-dob-photos-form]');
+            if (!currentPhotosForm || !currentPhotosModalEl) return;
+
+            const modalInstance = window.bootstrap
+                ? window.bootstrap.Modal.getOrCreateInstance(currentPhotosModalEl)
+                : null;
+            if (!modalInstance) return;
+
+            currentPhotosForm.reset();
+            currentPhotosForm.action = trigger.dataset.dobPhotosAction || '';
+
+            const name = trigger.dataset.dobName || 'Person';
+            const father = trigger.dataset.dobFatherName || '';
+            const titleEl = currentPhotosForm.querySelector('[data-dob-photos-modal-title]');
+            if (titleEl) {
+                titleEl.textContent = father ? `Photos - ${name} (S/O ${father})` : `Photos - ${name}`;
+            }
+
+            const preview = currentPhotosForm.querySelector('#dobQuickUploadPreview');
+            if (preview) {
+                preview.innerHTML = '';
+                preview.classList.add('d-none');
+            }
+
+            const grid = currentPhotosForm.querySelector('#dobPhotosGrid');
+            const emptyState = currentPhotosForm.querySelector('#dobPhotosEmptyState');
+            const countEl = currentPhotosForm.querySelector('#dobPhotosCount');
+            if (grid) grid.innerHTML = '';
+
+            let images = [];
+            try {
+                images = JSON.parse(trigger.dataset.dobImages || '[]');
+            } catch (e) {
+                images = [];
+            }
+
+            if (countEl) countEl.textContent = images.length;
+
+            if (images.length === 0) {
+                emptyState?.classList.remove('d-none');
+            } else {
+                emptyState?.classList.add('d-none');
+                images.forEach((img, idx) => {
+                    const label = document.createElement('label');
+                    label.className = 'gallery-delete-tile';
+                    label.title = 'Click to mark for deletion';
+                    label.innerHTML = `
+                        <img src="${img.url}" alt="Photo ${idx + 1}">
+                        <input type="checkbox" name="delete_images[]" value="${img.path}" data-gallery-delete>
+                        <span class="gallery-delete-overlay"><i class="bi bi-trash3"></i></span>
+                    `;
+                    const input = label.querySelector('input');
+                    input.addEventListener('change', () => label.classList.toggle('is-marked', input.checked));
+                    grid?.appendChild(label);
+                });
+            }
+
+            modalInstance.show();
+        };
+
         document.addEventListener('click', (event) => {
+            const avatarPhotosTrigger = event.target.closest?.('[data-dob-avatar-photos]');
+            if (avatarPhotosTrigger) {
+                event.preventDefault();
+                openPhotosModal(avatarPhotosTrigger);
+                return;
+            }
+
             const createTrigger = event.target.closest?.('[data-dob-open]');
             if (createTrigger) {
                 event.preventDefault();
@@ -602,6 +753,48 @@
                 event.preventDefault();
                 openViewDobModal(viewTrigger);
             }
+        });
+
+        photosForm?.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const submitBtn = photosForm.querySelector('[data-dob-photos-submit]');
+            const submitLabel = photosForm.querySelector('[data-dob-photos-submit-label]');
+            if (submitBtn) submitBtn.disabled = true;
+            if (submitLabel) submitLabel.textContent = 'Saving...';
+
+            const formData = new FormData(photosForm);
+
+            fetch(photosForm.action, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: formData,
+            })
+                .then((response) => {
+                    if (response.status === 422) {
+                        return response.json().then((payload) => {
+                            const err = Object.values(payload.errors || {}).flat()[0] || 'Validation failed';
+                            throw new Error(err);
+                        });
+                    }
+                    if (!response.ok) throw new Error('Save failed');
+                    return response.json();
+                })
+                .then((payload) => {
+                    photosModal?.hide();
+                    showFlashToast(payload.message || 'Photos updated successfully.');
+                    return refreshDobResults();
+                })
+                .catch((error) => {
+                    showFlashToast(error.message || 'Photos could not be updated.', 'danger');
+                })
+                .finally(() => {
+                    if (submitBtn) submitBtn.disabled = false;
+                    if (submitLabel) submitLabel.textContent = 'Save Changes';
+                });
         });
 
         const calculateDobStats = (startDateStr) => {
@@ -633,7 +826,7 @@
             const startFormattedLong = birth.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 
             return {
-                ageText: `<strong>${years}</strong> Years, <strong>${months}</strong> Months, <strong>${days}</strong> Days`,
+                ageText: `<strong>${years}</strong> Y, <strong>${months}</strong> M, <strong>${days}</strong> D`,
                 countdownText,
                 nextBirthdayFormatted,
                 startFormattedShort,
@@ -657,7 +850,7 @@
             tr.innerHTML = `
                 <td>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="user-avatar" style="width:34px;height:34px">${avatarLetter}</span>
+                        <span class="user-avatar" style="width:44px;height:44px;border-radius:12px;font-size:1.1rem;font-weight:600;">${avatarLetter}</span>
                         <div>
                             <strong>${data.name || '—'}</strong>
                             <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;"><i class="bi bi-cloud-arrow-up"></i> Offline</span>
@@ -698,7 +891,7 @@
             if (tr.cells[0]) {
                 tr.cells[0].innerHTML = `
                     <div class="d-flex align-items-center gap-2">
-                        <span class="user-avatar" style="width:34px;height:34px">${avatarLetter}</span>
+                        <span class="user-avatar" style="width:44px;height:44px;border-radius:12px;font-size:1.1rem;font-weight:600;">${avatarLetter}</span>
                         <div>
                             <strong>${data.name || '—'}</strong>
                             <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;"><i class="bi bi-cloud-arrow-up"></i> Offline</span>

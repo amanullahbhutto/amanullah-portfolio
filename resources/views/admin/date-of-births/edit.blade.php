@@ -8,6 +8,7 @@
 <form
     method="POST"
     action="{{ route('admin.date-of-births.update', $dateOfBirth) }}"
+    enctype="multipart/form-data"
 >
 
     @csrf
@@ -164,6 +165,55 @@
                     <div class="form-text">
                         Leave empty to calculate age up to today. DD/MM/YYYY example 25/3/2008.
                     </div>
+
+                </div>
+
+
+                <div class="col-12">
+
+                    <label class="form-label" for="images">
+                        Upload Images (JPG, PNG, WebP)
+                    </label>
+
+                    <input
+                        class="form-control @error('images') is-invalid @enderror @error('images.*') is-invalid @enderror"
+                        id="images"
+                        name="images[]"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        multiple
+                        data-gallery-input="#dobEditImageSelection"
+                    >
+
+                    <div class="form-text">
+                        Add new images. Saved in public/DOB/{name}. The last uploaded image will be used as avatar in the list.
+                    </div>
+
+                    <div id="dobEditImageSelection" class="selected-gallery-preview mt-2 d-none"></div>
+
+                    @error('images')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
+                    @error('images.*')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
+
+                    @if(count($dateOfBirth->image_paths) > 0)
+                        <div class="mt-3">
+                            <label class="form-label small text-muted-custom mb-1">
+                                Existing Images (click image to mark for deletion):
+                            </label>
+                            <div class="project-gallery-admin">
+                                @foreach($dateOfBirth->image_paths as $index => $imagePath)
+                                    <label class="gallery-delete-tile" title="Click to mark for deletion">
+                                        <img src="{{ $dateOfBirth->image_urls[$index] ?? asset($imagePath) }}" alt="{{ $dateOfBirth->name }} image {{ $loop->iteration }}">
+                                        <input type="checkbox" name="delete_images[]" value="{{ $imagePath }}" data-gallery-delete>
+                                        <span class="gallery-delete-overlay"><i class="bi bi-trash3"></i></span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
 
                 </div>
 
