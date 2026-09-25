@@ -621,6 +621,83 @@
         let dobLightboxImages = [];
         let dobLightboxIndex = 0;
         let lightboxParentSource = null;
+        let dobAutoplayTimer = null;
+        let dobIsHovered = false;
+        const DOB_AUTOPLAY_INTERVAL = 3800; // 3.8s per slide
+
+        const stopDobAutoplay = () => {
+            if (dobAutoplayTimer) {
+                clearTimeout(dobAutoplayTimer);
+                dobAutoplayTimer = null;
+            }
+        };
+
+        const startDobAutoplay = () => {
+            stopDobAutoplay();
+            if (dobLightboxImages.length <= 1 || dobIsHovered) return;
+
+            dobAutoplayTimer = setTimeout(() => {
+                nextDobLightbox('next');
+            }, DOB_AUTOPLAY_INTERVAL);
+        };
+
+        const updateDobLightboxDisplay = (direction = 'zoom') => {
+            const wrapper = document.querySelector('.dob-slider-img-wrapper');
+            const counterEl = document.getElementById('dobLightboxCounter');
+            const prevBtn = document.getElementById('dobLightboxPrevBtn');
+            const nextBtn = document.getElementById('dobLightboxNextBtn');
+
+            if (!wrapper) return;
+
+            const nextUrl = dobLightboxImages[dobLightboxIndex];
+            const currentImg = document.getElementById('dobLightboxActiveImg');
+
+            if (currentImg && currentImg.getAttribute('src') && direction !== 'zoom' && currentImg.getAttribute('src') !== nextUrl) {
+                // Clean up any lingering outgoing clones from rapid clicking
+                wrapper.querySelectorAll('.dob-slider-outgoing-img').forEach((el) => el.remove());
+
+                // Clone current image as outgoing slide
+                const outgoingImg = currentImg.cloneNode(true);
+                outgoingImg.removeAttribute('id');
+                outgoingImg.className = 'dob-slider-outgoing-img ' + (direction === 'next' ? 'dob-slide-out-left' : 'dob-slide-out-right');
+                wrapper.appendChild(outgoingImg);
+
+                // Set incoming active image
+                currentImg.className = 'dob-slider-incoming-img ' + (direction === 'next' ? 'dob-slide-in-right' : 'dob-slide-in-left');
+                currentImg.src = nextUrl;
+
+                setTimeout(() => {
+                    outgoingImg.remove();
+                    if (currentImg && currentImg.classList.contains('dob-slider-incoming-img')) {
+                        currentImg.className = 'dob-slider-active-img';
+                    }
+                }, 430);
+            } else if (currentImg) {
+                currentImg.className = 'dob-slider-active-img dob-animate-zoom';
+                currentImg.src = nextUrl;
+            }
+
+            if (counterEl) {
+                counterEl.textContent = `${dobLightboxIndex + 1} / ${dobLightboxImages.length}`;
+            }
+
+            if (prevBtn && nextBtn) {
+                if (dobLightboxImages.length <= 1) {
+                    prevBtn.style.display = 'none';
+                    nextBtn.style.display = 'none';
+                } else {
+                    prevBtn.style.display = 'flex';
+                    nextBtn.style.display = 'flex';
+                }
+            }
+
+            // Restart auto-scroll for next slide
+            if (dobLightboxImages.length > 1 && !dobIsHovered) {
+                startDobAutoplay();
+            } else {
+                stopDobAutoplay();
+            }
+        };
 
         const openDobLightbox = (images, startIndex = 0, title = 'Photos', parentSource = null) => {
             if (!images || images.length === 0) return;
@@ -643,7 +720,7 @@
             const titleEl = document.getElementById('dobLightboxTitle');
             if (titleEl) titleEl.textContent = title;
 
-            updateDobLightboxDisplay();
+            updateDobLightboxDisplay('zoom');
 
             if (parentSource === 'photosModal') {
                 const photosModalEl = document.getElementById('dateOfBirthPhotosModal');
@@ -663,41 +740,16 @@
             modalInstance?.show();
         };
 
-        const updateDobLightboxDisplay = () => {
-            const imgEl = document.getElementById('dobLightboxActiveImg');
-            const counterEl = document.getElementById('dobLightboxCounter');
-            const prevBtn = document.getElementById('dobLightboxPrevBtn');
-            const nextBtn = document.getElementById('dobLightboxNextBtn');
-
-            if (imgEl && dobLightboxImages[dobLightboxIndex]) {
-                imgEl.src = dobLightboxImages[dobLightboxIndex];
-            }
-
-            if (counterEl) {
-                counterEl.textContent = `${dobLightboxIndex + 1} / ${dobLightboxImages.length}`;
-            }
-
-            if (prevBtn && nextBtn) {
-                if (dobLightboxImages.length <= 1) {
-                    prevBtn.style.display = 'none';
-                    nextBtn.style.display = 'none';
-                } else {
-                    prevBtn.style.display = 'flex';
-                    nextBtn.style.display = 'flex';
-                }
-            }
-        };
-
-        const nextDobLightbox = () => {
+        const nextDobLightbox = (direction = 'next') => {
             if (dobLightboxImages.length <= 1) return;
             dobLightboxIndex = (dobLightboxIndex + 1) % dobLightboxImages.length;
-            updateDobLightboxDisplay();
+            updateDobLightboxDisplay(direction);
         };
 
         const prevDobLightbox = () => {
             if (dobLightboxImages.length <= 1) return;
             dobLightboxIndex = (dobLightboxIndex - 1 + dobLightboxImages.length) % dobLightboxImages.length;
-            updateDobLightboxDisplay();
+            updateDobLightboxDisplay('prev');
         };
 
         document.getElementById('dobLightboxPrevBtn')?.addEventListener('click', (e) => {
@@ -709,8 +761,38 @@
         document.getElementById('dobLightboxNextBtn')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            nextDobLightbox();
+            nextDobLightbox('next');
         });
+
+        const sliderStage = document.getElementById('dobSliderStage');
+        sliderStage?.addEventListener('mouseenter', () => {
+            dobIsHovered = true;
+            stopDobAutoplay();
+        });
+        sliderStage?.addEventListener('mouseleave', () => {
+            dobIsHovered = false;
+            if (dobLightboxImages.length > 1) {
+                startDobAutoplay();
+            }
+        });
+
+        // Touch swipe support for mobile
+        let dobTouchStartX = 0;
+        let dobTouchEndX = 0;
+        sliderStage?.addEventListener('touchstart', (e) => {
+            dobTouchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        sliderStage?.addEventListener('touchend', (e) => {
+            dobTouchEndX = e.changedTouches[0].screenX;
+            const diff = dobTouchEndX - dobTouchStartX;
+            if (Math.abs(diff) > 45) {
+                if (diff < 0) {
+                    nextDobLightbox('next');
+                } else {
+                    prevDobLightbox();
+                }
+            }
+        }, { passive: true });
 
         document.addEventListener('keydown', (e) => {
             const lightboxModalEl = document.getElementById('dobLightboxModal');
@@ -718,7 +800,7 @@
 
             if (e.key === 'ArrowRight') {
                 e.preventDefault();
-                nextDobLightbox();
+                nextDobLightbox('next');
             } else if (e.key === 'ArrowLeft') {
                 e.preventDefault();
                 prevDobLightbox();
@@ -727,6 +809,7 @@
 
         const lightboxModalEl = document.getElementById('dobLightboxModal');
         lightboxModalEl?.addEventListener('hidden.bs.modal', () => {
+            stopDobAutoplay();
             const prevSource = lightboxParentSource;
             lightboxParentSource = null;
 
@@ -840,41 +923,27 @@
                 emptyState?.classList.add('d-none');
                 images.forEach((img, idx) => {
                     const imgUrl = (typeof img === 'object' && img !== null) ? (img.url || img.path || '') : String(img);
-                    const imgPath = (typeof img === 'object' && img !== null) ? (img.path || img.url || '') : String(img);
 
                     const tile = document.createElement('div');
                     tile.className = 'dob-photo-tile';
                     tile.title = 'Click to open slide view';
                     tile.innerHTML = `
                         <img src="${imgUrl}" alt="Photo ${idx + 1}" loading="lazy">
-                        <span class="dob-photo-view-badge"><i class="bi bi-arrows-fullscreen"></i></span>
-                        <span class="dob-photo-marked-label"><i class="bi bi-trash3 me-1"></i> Will Delete</span>
-                        <button type="button" class="dob-photo-delete-badge" title="Mark this photo for deletion" data-dob-delete-btn>
-                            <i class="bi bi-trash3"></i>
-                        </button>
-                        <input type="checkbox" name="delete_images[]" value="${imgPath}" class="d-none" data-gallery-delete>
+                        <span class="dob-photo-view-badge" style="opacity: 1;"><i class="bi bi-arrows-fullscreen"></i></span>
                     `;
 
-                    const deleteBtn = tile.querySelector('[data-dob-delete-btn]');
-                    const checkbox = tile.querySelector('input[type="checkbox"]');
-
-                    deleteBtn?.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (checkbox) {
-                            checkbox.checked = !checkbox.checked;
-                            tile.classList.toggle('is-marked', checkbox.checked);
-                            deleteBtn.title = checkbox.checked ? 'Unmark deletion' : 'Mark this photo for deletion';
-                        }
-                    });
-
                     tile.addEventListener('click', (e) => {
-                        if (e.target.closest('[data-dob-delete-btn]')) return;
+                        e.preventDefault();
                         openDobLightbox(images, idx, personTitle, 'photosModal');
                     });
 
                     grid?.appendChild(tile);
                 });
+            }
+
+            const modalBody = currentPhotosModalEl?.querySelector('.modal-body');
+            if (modalBody) {
+                modalBody.scrollTop = 0;
             }
         };
 
@@ -892,6 +961,12 @@
             const trigger = event.relatedTarget?.closest?.('[data-dob-avatar-photos]') || event.relatedTarget;
             if (trigger && trigger.hasAttribute && trigger.hasAttribute('data-dob-avatar-photos')) {
                 populatePhotosModal(trigger);
+            }
+        });
+        photosModalEl?.addEventListener('shown.bs.modal', () => {
+            const modalBody = photosModalEl.querySelector('.modal-body');
+            if (modalBody) {
+                modalBody.scrollTop = 0;
             }
         });
 

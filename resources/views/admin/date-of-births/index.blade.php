@@ -538,7 +538,7 @@
 @endif
 
 <div class="modal fade dob-modal" id="dateOfBirthViewModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <div>
@@ -588,7 +588,7 @@
 </div>
 
 <div class="modal fade dob-modal" id="dateOfBirthPhotosModal" tabindex="-1" aria-hidden="true" style="z-index: 1075;">
-    <div class="modal-dialog dob-photos-dialog" style="max-width: 480px; margin: 24px auto;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable dob-photos-dialog" style="max-width: 520px;">
         <form class="modal-content" method="POST" action="" data-dob-photos-form enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="_method" value="PUT">
@@ -596,7 +596,7 @@
             <div class="modal-header">
                 <div>
                     <h2 class="modal-title h5" data-dob-photos-modal-title>Photos</h2>
-                    <p class="text-muted-custom small mb-0" data-dob-photos-modal-subtitle>View, upload and delete photos for this person.</p>
+                    <p class="text-muted-custom small mb-0" data-dob-photos-modal-subtitle>Upload new photos or click any photo to open slider.</p>
                 </div>
                 <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -625,7 +625,7 @@
                 <div>
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <span class="fw-semibold">All Photos (<span id="dobPhotosCount">0</span>)</span>
-                        <span class="text-muted-custom small">Click photo trash to mark for deletion</span>
+                        <span class="text-muted-custom small">Click any photo to open slide view</span>
                     </div>
 
                     <div id="dobPhotosEmptyState" class="text-center py-4 rounded-3 border border-dashed text-muted-custom d-none" style="background: var(--surface-2);">
@@ -640,33 +640,37 @@
             <div class="modal-footer">
                 <button class="btn btn-outline-theme" type="button" data-bs-dismiss="modal">Close</button>
                 <button class="btn btn-accent" type="submit" data-dob-photos-submit>
-                    <i class="bi bi-check-lg me-1"></i>
-                    <span data-dob-photos-submit-label>Save Changes</span>
+                    <i class="bi bi-cloud-arrow-up me-1"></i>
+                    <span data-dob-photos-submit-label>Upload Photos</span>
                 </button>
             </div>
         </form>
     </div>
 </div>
 
-{{-- Slide View / Lightbox Modal for DOB Photos --}}
+{{-- Slide View / Lightbox Modal for DOB Photos (Clean UI matching screenshot) --}}
 <div class="modal fade lightbox-modal" id="dobLightboxModal" tabindex="-1" aria-hidden="true" style="z-index: 1085;">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
-        <div class="modal-content">
-            <div class="modal-header d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-3">
-                    <h5 class="modal-title mb-0" id="dobLightboxTitle">Photos</h5>
-                    <span class="lightbox-counter" id="dobLightboxCounter">1 / 1</span>
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 1050px;">
+        <div class="modal-content overflow-hidden border-0 shadow-2xl" style="background: #000000; border-radius: 16px;">
+            <div class="modal-header d-flex justify-content-between align-items-center py-3 px-4 border-0" style="background: #08090c;">
+                <div class="d-flex align-items-center flex-wrap">
+                    <h5 class="modal-title mb-0 fs-6 fw-bold text-white" id="dobLightboxTitle">Photos</h5>
+                    <span class="lightbox-counter text-white-50 ms-3" id="dobLightboxCounter" style="font-size: 0.88rem; font-weight: 500;">1 / 1</span>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="opacity: 0.8;"></button>
             </div>
-            <div class="modal-body position-relative">
-                <button class="lightbox-nav-btn prev-btn" id="dobLightboxPrevBtn" type="button" aria-label="Previous image" title="Previous photo (Left Arrow)">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
-                <img id="dobLightboxActiveImg" src="" alt="Full size preview" class="lightbox-preview-img">
-                <button class="lightbox-nav-btn next-btn" id="dobLightboxNextBtn" type="button" aria-label="Next image" title="Next photo (Right Arrow)">
-                    <i class="bi bi-chevron-right"></i>
-                </button>
+            <div class="modal-body position-relative p-0 overflow-hidden" id="dobSliderStage" style="background: #000000;">
+                <div class="dob-slider-viewport d-flex align-items-center justify-content-center position-relative" style="min-height: 520px; max-height: 80vh; padding: 24px 30px; background: #000000;">
+                    <button class="lightbox-nav-btn prev-btn" id="dobLightboxPrevBtn" type="button" aria-label="Previous image" title="Previous photo">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <div class="dob-slider-img-wrapper" style="min-height: 480px; max-height: 76vh; width: 100%; display: flex; align-items: center; justify-content: center; position: relative;">
+                        <img id="dobLightboxActiveImg" src="" alt="Photo preview" class="dob-slider-active-img">
+                    </div>
+                    <button class="lightbox-nav-btn next-btn" id="dobLightboxNextBtn" type="button" aria-label="Next image" title="Next photo">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
