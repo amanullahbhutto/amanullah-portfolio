@@ -169,16 +169,18 @@
                                             class="user-avatar overflow-hidden p-0 border-0 dob-avatar-btn"
                                             style="width:44px;height:44px;border-radius:12px;"
                                             title="Click to view & manage photos"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#dateOfBirthPhotosModal"
                                             data-dob-avatar-photos
                                             data-dob-name="{{ $dateOfBirth->name }}"
                                             data-dob-father-name="{{ $dateOfBirth->father_name }}"
                                             data-dob-photos-action="{{ route('admin.date-of-births.photos.update', $dateOfBirth) }}"
-                                            data-dob-images='@json($dateOfBirth->images_with_urls)'
+                                            data-dob-images="{{ json_encode($dateOfBirth->images_with_urls) }}"
                                         >
                                             <img
                                                 src="{{ $dateOfBirth->image_url }}"
                                                 alt="{{ $dateOfBirth->name }}"
-                                                style="width:100%;height:100%;object-fit:cover;display:block;"
+                                                style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;"
                                             >
                                         </button>
                                     @else
@@ -187,11 +189,13 @@
                                             class="user-avatar border-0 dob-avatar-btn"
                                             style="width:44px;height:44px;border-radius:12px;font-size:1.1rem;font-weight:600;"
                                             title="Click to view & manage photos"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#dateOfBirthPhotosModal"
                                             data-dob-avatar-photos
                                             data-dob-name="{{ $dateOfBirth->name }}"
                                             data-dob-father-name="{{ $dateOfBirth->father_name }}"
                                             data-dob-photos-action="{{ route('admin.date-of-births.photos.update', $dateOfBirth) }}"
-                                            data-dob-images='@json($dateOfBirth->images_with_urls)'
+                                            data-dob-images="{{ json_encode($dateOfBirth->images_with_urls) }}"
                                         >
                                             {{ strtoupper(substr($dateOfBirth->name, 0, 1)) }}
                                         </button>
@@ -201,10 +205,22 @@
                                         <strong>
                                             {{ $dateOfBirth->name }}
                                         </strong>
-                                        @if(count($dateOfBirth->image_paths) > 1)
-                                            <small class="text-muted-custom d-block" style="font-size:0.72rem;">
-                                                <i class="bi bi-images me-1"></i>{{ count($dateOfBirth->image_paths) }} photos
-                                            </small>
+                                        @if(count($dateOfBirth->image_paths) > 0)
+                                            <button
+                                                type="button"
+                                                class="btn btn-link p-0 text-muted-custom d-block text-start text-decoration-none"
+                                                style="font-size:0.72rem; cursor:pointer;"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#dateOfBirthPhotosModal"
+                                                data-dob-avatar-photos
+                                                data-dob-name="{{ $dateOfBirth->name }}"
+                                                data-dob-father-name="{{ $dateOfBirth->father_name }}"
+                                                data-dob-photos-action="{{ route('admin.date-of-births.photos.update', $dateOfBirth) }}"
+                                                data-dob-images="{{ json_encode($dateOfBirth->images_with_urls) }}"
+                                                title="View & manage photos"
+                                            >
+                                                <i class="bi bi-images me-1 text-accent"></i>{{ count($dateOfBirth->image_paths) }} {{ count($dateOfBirth->image_paths) === 1 ? 'photo' : 'photos' }}
+                                            </button>
                                         @endif
                                     </div>
 
@@ -301,6 +317,22 @@
 
                                     @can('update date of birth')
 
+                                        <button
+                                            type="button"
+                                            class="btn-icon"
+                                            title="View & manage photos"
+                                            aria-label="Manage photos"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#dateOfBirthPhotosModal"
+                                            data-dob-avatar-photos
+                                            data-dob-name="{{ $dateOfBirth->name }}"
+                                            data-dob-father-name="{{ $dateOfBirth->father_name }}"
+                                            data-dob-photos-action="{{ route('admin.date-of-births.photos.update', $dateOfBirth) }}"
+                                            data-dob-images="{{ json_encode($dateOfBirth->images_with_urls) }}"
+                                        >
+                                            <i class="bi bi-images"></i>
+                                        </button>
+
                                         <a
                                             class="btn-icon"
                                             href="{{ route('admin.date-of-births.edit', $dateOfBirth) }}"
@@ -310,7 +342,7 @@
                                             data-dob-father-name="{{ $dateOfBirth->father_name }}"
                                             data-dob-start-date="{{ $dateOfBirth->start_date->format('j/n/Y') }}"
                                             data-dob-end-date="{{ $dateOfBirth->end_date?->format('j/n/Y') }}"
-                                            data-dob-images='@json($dateOfBirth->images_with_urls)'
+                                            data-dob-images="{{ json_encode($dateOfBirth->images_with_urls) }}"
                                             aria-label="Edit record"
                                         >
                                             <i class="bi bi-pencil"></i>

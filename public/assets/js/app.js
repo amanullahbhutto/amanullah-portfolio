@@ -620,11 +620,21 @@
 
         let dobLightboxImages = [];
         let dobLightboxIndex = 0;
+        let lightboxParentSource = null;
 
-        const openDobLightbox = (images, startIndex = 0, title = 'Photos') => {
+        const openDobLightbox = (images, startIndex = 0, title = 'Photos', parentSource = null) => {
             if (!images || images.length === 0) return;
 
-            dobLightboxImages = images.map((item) => (typeof item === 'string' ? item : item.url));
+            lightboxParentSource = parentSource;
+
+            dobLightboxImages = images.map((item) => {
+                if (!item) return '';
+                if (typeof item === 'string') return item;
+                return item.url || item.path || '';
+            }).filter(Boolean);
+
+            if (dobLightboxImages.length === 0) return;
+
             dobLightboxIndex = Math.max(0, Math.min(startIndex, dobLightboxImages.length - 1));
 
             const lightboxModalEl = document.getElementById('dobLightboxModal');
@@ -634,6 +644,18 @@
             if (titleEl) titleEl.textContent = title;
 
             updateDobLightboxDisplay();
+
+            if (parentSource === 'photosModal') {
+                const photosModalEl = document.getElementById('dateOfBirthPhotosModal');
+                if (photosModalEl?.classList.contains('show') && window.bootstrap) {
+                    window.bootstrap.Modal.getOrCreateInstance(photosModalEl).hide();
+                }
+            } else if (parentSource === 'viewModal') {
+                const viewModalEl = document.getElementById('dateOfBirthViewModal');
+                if (viewModalEl?.classList.contains('show') && window.bootstrap) {
+                    window.bootstrap.Modal.getOrCreateInstance(viewModalEl).hide();
+                }
+            }
 
             const modalInstance = window.bootstrap
                 ? window.bootstrap.Modal.getOrCreateInstance(lightboxModalEl)
@@ -705,10 +727,19 @@
 
         const lightboxModalEl = document.getElementById('dobLightboxModal');
         lightboxModalEl?.addEventListener('hidden.bs.modal', () => {
-            const photosModalEl = document.getElementById('dateOfBirthPhotosModal');
-            const viewModalEl = document.getElementById('dateOfBirthViewModal');
-            if (photosModalEl?.classList.contains('show') || viewModalEl?.classList.contains('show')) {
-                document.body.classList.add('modal-open');
+            const prevSource = lightboxParentSource;
+            lightboxParentSource = null;
+
+            if (prevSource === 'photosModal') {
+                const photosModalEl = document.getElementById('dateOfBirthPhotosModal');
+                if (photosModalEl && window.bootstrap) {
+                    window.bootstrap.Modal.getOrCreateInstance(photosModalEl).show();
+                }
+            } else if (prevSource === 'viewModal') {
+                const viewModalEl = document.getElementById('dateOfBirthViewModal');
+                if (viewModalEl && window.bootstrap) {
+                    window.bootstrap.Modal.getOrCreateInstance(viewModalEl).show();
+                }
             }
         });
 
@@ -741,19 +772,20 @@
                 if (photoCount) photoCount.textContent = images.length;
                 galleryContainer.innerHTML = '';
                 const personName = trigger.dataset.dobName || 'Date of Birth';
-                images.forEach((url, idx) => {
-                    const item = document.createElement('div');
-                    item.className = 'dob-view-gallery-item dob-photo-tile';
-                    item.title = 'Click to open slide view';
-                    item.innerHTML = `
+                images.forEach((item, idx) => {
+                    const url = (typeof item === 'object' && item !== null) ? (item.url || item.path || '') : String(item);
+                    const div = document.createElement('div');
+                    div.className = 'dob-view-gallery-item dob-photo-tile';
+                    div.title = 'Click to open slide view';
+                    div.innerHTML = `
                         <img src="${url}" alt="Photo ${idx + 1}" loading="lazy">
                         <span class="dob-photo-view-badge" style="opacity:1;"><i class="bi bi-arrows-fullscreen"></i></span>
                     `;
-                    item.addEventListener('click', (e) => {
+                    div.addEventListener('click', (e) => {
                         e.preventDefault();
-                        openDobLightbox(images, idx, `Photos - ${personName}`);
+                        openDobLightbox(images, idx, `Photos - ${personName}`, 'viewModal');
                     });
-                    galleryContainer.appendChild(item);
+                    galleryContainer.appendChild(div);
                 });
             } else if (galleryWrapper) {
                 galleryWrapper.classList.add('d-none');
@@ -763,15 +795,12 @@
             viewModal.show();
         };
 
-        const openPhotosModal = (trigger) => {
+        const populatePhotosModal = (trigger) => {
+            if (!trigger) return;
+
             const currentPhotosModalEl = document.getElementById('dateOfBirthPhotosModal');
             const currentPhotosForm = currentPhotosModalEl?.querySelector('[data-dob-photos-form]');
-            if (!currentPhotosForm || !currentPhotosModalEl) return;
-
-            const modalInstance = window.bootstrap
-                ? window.bootstrap.Modal.getOrCreateInstance(currentPhotosModalEl)
-                : null;
-            if (!modalInstance) return;
+            if (!currentPhotosForm) return;
 
             currentPhotosForm.reset();
             currentPhotosForm.action = trigger.dataset.dobPhotosAction || '';
@@ -797,7 +826,8 @@
 
             let images = [];
             try {
-                images = JSON.parse(trigger.dataset.dobImages || '[]');
+                const rawImages = trigger.dataset.dobImages || '[]';
+                images = JSON.parse(rawImages);
             } catch (e) {
                 images = [];
             }
@@ -809,46 +839,65 @@
             } else {
                 emptyState?.classList.add('d-none');
                 images.forEach((img, idx) => {
+                    const imgUrl = (typeof img === 'object' && img !== null) ? (img.url || img.path || '') : String(img);
+                    const imgPath = (typeof img === 'object' && img !== null) ? (img.path || img.url || '') : String(img);
+
                     const tile = document.createElement('div');
                     tile.className = 'dob-photo-tile';
                     tile.title = 'Click to open slide view';
                     tile.innerHTML = `
-                        <img src="${img.url}" alt="Photo ${idx + 1}" loading="lazy">
+                        <img src="${imgUrl}" alt="Photo ${idx + 1}" loading="lazy">
                         <span class="dob-photo-view-badge"><i class="bi bi-arrows-fullscreen"></i></span>
                         <span class="dob-photo-marked-label"><i class="bi bi-trash3 me-1"></i> Will Delete</span>
                         <button type="button" class="dob-photo-delete-badge" title="Mark this photo for deletion" data-dob-delete-btn>
                             <i class="bi bi-trash3"></i>
                         </button>
-                        <input type="checkbox" name="delete_images[]" value="${img.path}" class="d-none" data-gallery-delete>
+                        <input type="checkbox" name="delete_images[]" value="${imgPath}" class="d-none" data-gallery-delete>
                     `;
 
                     const deleteBtn = tile.querySelector('[data-dob-delete-btn]');
                     const checkbox = tile.querySelector('input[type="checkbox"]');
 
-                    deleteBtn.addEventListener('click', (e) => {
+                    deleteBtn?.addEventListener('click', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        checkbox.checked = !checkbox.checked;
-                        tile.classList.toggle('is-marked', checkbox.checked);
-                        deleteBtn.title = checkbox.checked ? 'Unmark deletion' : 'Mark this photo for deletion';
+                        if (checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            tile.classList.toggle('is-marked', checkbox.checked);
+                            deleteBtn.title = checkbox.checked ? 'Unmark deletion' : 'Mark this photo for deletion';
+                        }
                     });
 
                     tile.addEventListener('click', (e) => {
                         if (e.target.closest('[data-dob-delete-btn]')) return;
-                        openDobLightbox(images, idx, personTitle);
+                        openDobLightbox(images, idx, personTitle, 'photosModal');
                     });
 
                     grid?.appendChild(tile);
                 });
             }
-
-            modalInstance.show();
         };
+
+        const openPhotosModal = (trigger) => {
+            populatePhotosModal(trigger);
+            const currentPhotosModalEl = document.getElementById('dateOfBirthPhotosModal');
+            if (currentPhotosModalEl && window.bootstrap) {
+                const modalInstance = window.bootstrap.Modal.getOrCreateInstance(currentPhotosModalEl);
+                modalInstance.show();
+            }
+        };
+
+        const photosModalEl = document.getElementById('dateOfBirthPhotosModal');
+        photosModalEl?.addEventListener('show.bs.modal', (event) => {
+            const trigger = event.relatedTarget?.closest?.('[data-dob-avatar-photos]') || event.relatedTarget;
+            if (trigger && trigger.hasAttribute && trigger.hasAttribute('data-dob-avatar-photos')) {
+                populatePhotosModal(trigger);
+            }
+        });
 
         document.addEventListener('click', (event) => {
             const avatarPhotosTrigger = event.target.closest?.('[data-dob-avatar-photos]');
             if (avatarPhotosTrigger) {
-                event.preventDefault();
                 openPhotosModal(avatarPhotosTrigger);
                 return;
             }
