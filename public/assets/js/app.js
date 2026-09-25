@@ -586,12 +586,15 @@
             if (images.length > 0 && existingWrapper && existingContainer) {
                 existingWrapper.classList.remove('d-none');
                 images.forEach((img, idx) => {
+                    const imgUrl = (typeof img === 'object' && img !== null) ? (img.url || img.path || '') : String(img);
+                    const imgPath = (typeof img === 'object' && img !== null) ? (img.path || img.url || '') : String(img);
                     const label = document.createElement('label');
                     label.className = 'gallery-delete-tile';
                     label.title = 'Click to mark for deletion';
                     label.innerHTML = `
-                        <img src="${img.url}" alt="image ${idx + 1}">
-                        <input type="checkbox" name="delete_images[]" value="${img.path}" data-gallery-delete>
+                        <img src="${imgUrl}" alt="image ${idx + 1}">
+                        ${idx === 0 ? '<span class="badge bg-accent position-absolute" style="top:6px;left:6px;font-size:0.68rem;padding:3px 6px;z-index:4;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">Latest</span>' : ''}
+                        <input type="checkbox" name="delete_images[]" value="${imgPath}" data-gallery-delete>
                         <span class="gallery-delete-overlay"><i class="bi bi-trash3"></i></span>
                     `;
                     const input = label.querySelector('input');
@@ -858,10 +861,11 @@
                 images.forEach((item, idx) => {
                     const url = (typeof item === 'object' && item !== null) ? (item.url || item.path || '') : String(item);
                     const div = document.createElement('div');
-                    div.className = 'dob-view-gallery-item dob-photo-tile';
+                    div.className = 'dob-view-gallery-item dob-photo-tile position-relative';
                     div.title = 'Click to open slide view';
                     div.innerHTML = `
                         <img src="${url}" alt="Photo ${idx + 1}" loading="lazy">
+                        ${idx === 0 ? '<span class="badge bg-accent position-absolute" style="top:6px;left:6px;font-size:0.68rem;padding:3px 6px;z-index:4;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">Latest</span>' : ''}
                         <span class="dob-photo-view-badge" style="opacity:1;"><i class="bi bi-arrows-fullscreen"></i></span>
                     `;
                     div.addEventListener('click', (e) => {
@@ -925,10 +929,11 @@
                     const imgUrl = (typeof img === 'object' && img !== null) ? (img.url || img.path || '') : String(img);
 
                     const tile = document.createElement('div');
-                    tile.className = 'dob-photo-tile';
+                    tile.className = 'dob-photo-tile position-relative';
                     tile.title = 'Click to open slide view';
                     tile.innerHTML = `
                         <img src="${imgUrl}" alt="Photo ${idx + 1}" loading="lazy">
+                        ${idx === 0 ? '<span class="badge bg-accent position-absolute" style="top:6px;left:6px;font-size:0.68rem;padding:3px 6px;z-index:4;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">Latest</span>' : ''}
                         <span class="dob-photo-view-badge" style="opacity: 1;"><i class="bi bi-arrows-fullscreen"></i></span>
                     `;
 

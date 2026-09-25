@@ -233,11 +233,14 @@
 
                         <div class="admin-card-body">
                             <div class="dob-view-gallery-grid">
-                                @foreach($dateOfBirth->image_urls as $imageUrl)
-                                    <div class="dob-view-gallery-item">
-                                        <a href="{{ $imageUrl }}" target="_blank" rel="noopener noreferrer" title="View full image">
-                                            <img src="{{ $imageUrl }}" alt="{{ $dateOfBirth->name }} photo {{ $loop->iteration }}">
+                                @foreach($dateOfBirth->images_with_urls as $item)
+                                    <div class="dob-view-gallery-item position-relative">
+                                        <a href="{{ $item['url'] }}" target="_blank" rel="noopener noreferrer" title="View full image">
+                                            <img src="{{ $item['url'] }}" alt="{{ $dateOfBirth->name }} photo {{ $loop->iteration }}">
                                         </a>
+                                        @if($loop->first)
+                                            <span class="badge bg-accent position-absolute" style="top:6px;left:6px;font-size:0.68rem;padding:3px 6px;z-index:4;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">Latest</span>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>

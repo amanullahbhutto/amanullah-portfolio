@@ -201,13 +201,16 @@
                     @if(count($dateOfBirth->image_paths) > 0)
                         <div class="mt-3">
                             <label class="form-label small text-muted-custom mb-1">
-                                Existing Images (click image to mark for deletion):
+                                Existing Images (latest at top &bull; click image to mark for deletion):
                             </label>
                             <div class="project-gallery-admin">
-                                @foreach($dateOfBirth->image_paths as $index => $imagePath)
+                                @foreach($dateOfBirth->images_with_urls as $item)
                                     <label class="gallery-delete-tile" title="Click to mark for deletion">
-                                        <img src="{{ $dateOfBirth->image_urls[$index] ?? asset($imagePath) }}" alt="{{ $dateOfBirth->name }} image {{ $loop->iteration }}">
-                                        <input type="checkbox" name="delete_images[]" value="{{ $imagePath }}" data-gallery-delete>
+                                        <img src="{{ $item['url'] }}" alt="{{ $dateOfBirth->name }} image {{ $loop->iteration }}">
+                                        @if($loop->first)
+                                            <span class="badge bg-accent position-absolute" style="top:6px;left:6px;font-size:0.68rem;padding:3px 6px;z-index:4;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">Latest</span>
+                                        @endif
+                                        <input type="checkbox" name="delete_images[]" value="{{ $item['path'] }}" data-gallery-delete>
                                         <span class="gallery-delete-overlay"><i class="bi bi-trash3"></i></span>
                                     </label>
                                 @endforeach

@@ -421,7 +421,7 @@ class DateOfBirthController extends Controller
             'next_birthday' => $dateOfBirth->next_birthday->format('M d, Y'),
             'next_birthday_countdown' => $dateOfBirth->formatted_next_birthday_countdown,
             'primary_image_url' => $dateOfBirth->image_url,
-            'image_urls' => $dateOfBirth->image_urls,
+            'image_urls' => array_values(array_reverse($dateOfBirth->image_urls)),
             'images' => $dateOfBirth->images_with_urls,
         ];
     }

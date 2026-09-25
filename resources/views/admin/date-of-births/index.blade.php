@@ -306,7 +306,7 @@
                                             data-dob-age="{{ $dateOfBirth->formatted_age }}"
                                             data-dob-next-birthday="{{ $dateOfBirth->next_birthday->format('M d, Y') }}"
                                             data-dob-next-countdown="{{ $dateOfBirth->formatted_next_birthday_countdown }}"
-                                            data-dob-images='@json($dateOfBirth->image_urls)'
+                                            data-dob-images="{{ json_encode($dateOfBirth->images_with_urls) }}"
                                             aria-label="View record"
                                         >
                                             <i class="bi bi-eye"></i>
@@ -316,22 +316,6 @@
 
 
                                     @can('update date of birth')
-
-                                        <button
-                                            type="button"
-                                            class="btn-icon"
-                                            title="View & manage photos"
-                                            aria-label="Manage photos"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#dateOfBirthPhotosModal"
-                                            data-dob-avatar-photos
-                                            data-dob-name="{{ $dateOfBirth->name }}"
-                                            data-dob-father-name="{{ $dateOfBirth->father_name }}"
-                                            data-dob-photos-action="{{ route('admin.date-of-births.photos.update', $dateOfBirth) }}"
-                                            data-dob-images="{{ json_encode($dateOfBirth->images_with_urls) }}"
-                                        >
-                                            <i class="bi bi-images"></i>
-                                        </button>
 
                                         <a
                                             class="btn-icon"

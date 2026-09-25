@@ -63,7 +63,12 @@ class DateOfBirth extends Model
             ];
         }
 
-        return $items;
+        return array_values(array_reverse($items));
+    }
+
+    public function getLatestImageUrlsAttribute(): array
+    {
+        return array_values(array_reverse($this->image_urls));
     }
 
     public function getPrimaryImageAttribute(): ?string
