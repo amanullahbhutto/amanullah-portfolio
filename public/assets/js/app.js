@@ -1230,11 +1230,11 @@
             tr.dataset.dobRow = data.id;
             tr.innerHTML = `
                 <td>
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="user-avatar flex-shrink-0" style="width:68px;height:68px;min-width:68px;border-radius:16px;font-size:1.75rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;">${avatarLetter}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="user-avatar" style="width:44px;height:44px;border-radius:12px;font-size:1.1rem;font-weight:600;">${avatarLetter}</span>
                         <div>
-                            <strong class="d-block" style="font-size:0.98rem;">${data.name || '—'}</strong>
-                            <span class="badge bg-warning text-dark mt-1" style="font-size:0.65rem;"><i class="bi bi-cloud-arrow-up"></i> Offline</span>
+                            <strong>${data.name || '—'}</strong>
+                            <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;"><i class="bi bi-cloud-arrow-up"></i> Offline</span>
                         </div>
                     </div>
                 </td>
@@ -1271,11 +1271,11 @@
 
             if (tr.cells[0]) {
                 tr.cells[0].innerHTML = `
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="user-avatar flex-shrink-0" style="width:68px;height:68px;min-width:68px;border-radius:16px;font-size:1.75rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;">${avatarLetter}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="user-avatar" style="width:44px;height:44px;border-radius:12px;font-size:1.1rem;font-weight:600;">${avatarLetter}</span>
                         <div>
-                            <strong class="d-block" style="font-size:0.98rem;">${data.name || '—'}</strong>
-                            <span class="badge bg-warning text-dark mt-1" style="font-size:0.65rem;"><i class="bi bi-cloud-arrow-up"></i> Offline</span>
+                            <strong>${data.name || '—'}</strong>
+                            <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;"><i class="bi bi-cloud-arrow-up"></i> Offline</span>
                         </div>
                     </div>
                 `;

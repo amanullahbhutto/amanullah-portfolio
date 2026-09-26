@@ -882,43 +882,6 @@ details.sidebar-group[open] > summary { color: var(--accent); background: var(--
 .searchable-option-item:hover { background: var(--accent-soft); color: var(--accent); }
 .searchable-option-item.active { background: var(--accent); color: #fff; font-weight: 700; }
 .searchable-option-item.active i { color: #fff; }
-
-.dob-avatar-btn {
-    width: 68px !important;
-    height: 68px !important;
-    min-width: 68px !important;
-    border-radius: 16px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    overflow: hidden !important;
-    border: 2px solid rgba(255, 255, 255, 0.08) !important;
-    background: var(--accent) !important;
-    color: #fff !important;
-    font-weight: 700;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-    cursor: pointer;
-    flex-shrink: 0;
-    position: relative;
-}
-.dob-avatar-btn:has(img) {
-    background: var(--surface-2, #181d28) !important;
-}
-.dob-avatar-btn:hover {
-    transform: scale(1.05);
-    border-color: var(--accent) !important;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-}
-.dob-avatar-btn img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-    object-position: center center !important;
-    display: block !important;
-    pointer-events: none;
-}
-
 .search-field { position: relative; }
 .search-field > i { display: none !important; }
 .search-field .form-control { min-height: 44px; height: 44px; padding-left: 16px !important; padding-right: 42px !important; line-height: 42px; }
