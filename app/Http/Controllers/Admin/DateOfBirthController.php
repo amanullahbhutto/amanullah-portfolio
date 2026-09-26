@@ -236,10 +236,15 @@ class DateOfBirthController extends Controller
         DateOfBirth $dateOfBirth
     ): RedirectResponse|JsonResponse {
         $validated = $request->validate([
-            'images' => ['nullable', 'array', 'max:20'],
-            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images' => ['nullable', 'array', 'max:100'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp,gif,avif,bmp', 'max:102400'],
             'delete_images' => ['nullable', 'array'],
             'delete_images.*' => ['string', 'max:500'],
+        ], [
+            'images.*.image' => 'The uploaded file must be a valid image.',
+            'images.*.mimes' => 'Photos must be in JPG, JPEG, PNG, WebP, GIF, AVIF or BMP format.',
+            'images.*.max' => 'An uploaded photo exceeds the 100 MB size limit.',
+            'images.max' => 'You cannot upload more than :max photos at once.',
         ]);
 
         $existingImages = $dateOfBirth->image_paths;
@@ -294,16 +299,135 @@ class DateOfBirthController extends Controller
         $directory = public_path('DOB/'.$folder);
         File::ensureDirectoryExists($directory);
 
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'bmp'];
         $extension = strtolower($file->extension() ?: $file->getClientOriginalExtension());
         if (! in_array($extension, $allowedExtensions, true)) {
             $extension = 'jpg';
         }
 
-        $filename = 'img-'.now()->format('YmdHis').'-'.Str::random(8).'.'.$extension;
-        $file->move($directory, $filename);
+        $filename = 'img-'.now()->format('YmdHis').'-'.Str::lower(Str::random(8)).'.'.$extension;
+        $targetPath = $directory.DIRECTORY_SEPARATOR.$filename;
+
+        // Try to optimize/compress if image is large and GD is supported
+        $optimized = $this->optimizeAndSaveImage($file, $targetPath, $extension);
+        if (! $optimized) {
+            $file->move($directory, $filename);
+        }
 
         return 'DOB/'.$folder.'/'.$filename;
+    }
+
+    private function optimizeAndSaveImage(UploadedFile $file, string $targetPath, string $extension): bool
+    {
+        if (! extension_loaded('gd')) {
+            return false;
+        }
+
+        if (in_array($extension, ['gif', 'avif', 'svg'], true)) {
+            return false;
+        }
+
+        $sourcePath = $file->getRealPath();
+        if (! $sourcePath || ! file_exists($sourcePath)) {
+            return false;
+        }
+
+        $fileSize = $file->getSize();
+        $imageInfo = @getimagesize($sourcePath);
+        if (! $imageInfo) {
+            return false;
+        }
+
+        [$width, $height, $imageType] = $imageInfo;
+        $maxDimension = 2560;
+
+        $needsResize = ($width > $maxDimension || $height > $maxDimension);
+        $needsCompression = ($fileSize > 2 * 1024 * 1024);
+
+        if (! $needsResize && ! $needsCompression) {
+            return false;
+        }
+
+        try {
+            $srcImage = null;
+            switch ($imageType) {
+                case IMAGETYPE_JPEG:
+                    $srcImage = @imagecreatefromjpeg($sourcePath);
+                    break;
+                case IMAGETYPE_PNG:
+                    $srcImage = @imagecreatefrompng($sourcePath);
+                    break;
+                case IMAGETYPE_WEBP:
+                    if (function_exists('imagecreatefromwebp')) {
+                        $srcImage = @imagecreatefromwebp($sourcePath);
+                    }
+                    break;
+                case IMAGETYPE_BMP:
+                    if (function_exists('imagecreatefrombmp')) {
+                        $srcImage = @imagecreatefrombmp($sourcePath);
+                    }
+                    break;
+            }
+
+            if (! $srcImage) {
+                return false;
+            }
+
+            if ($needsResize) {
+                if ($width > $height) {
+                    $newWidth = $maxDimension;
+                    $newHeight = (int) round(($height * $maxDimension) / $width);
+                } else {
+                    $newHeight = $maxDimension;
+                    $newWidth = (int) round(($width * $maxDimension) / $height);
+                }
+            } else {
+                $newWidth = $width;
+                $newHeight = $height;
+            }
+
+            $dstImage = imagecreatetruecolor($newWidth, $newHeight);
+            if (! $dstImage) {
+                imagedestroy($srcImage);
+                return false;
+            }
+
+            if ($imageType === IMAGETYPE_PNG || $imageType === IMAGETYPE_WEBP) {
+                imagealphablending($dstImage, false);
+                imagesavealpha($dstImage, true);
+                $transparent = imagecolorallocatealpha($dstImage, 255, 255, 255, 127);
+                imagefilledrectangle($dstImage, 0, 0, $newWidth, $newHeight, $transparent);
+            }
+
+            imagecopyresampled($dstImage, $srcImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+            $saved = false;
+            switch ($imageType) {
+                case IMAGETYPE_JPEG:
+                    $saved = @imagejpeg($dstImage, $targetPath, 88);
+                    break;
+                case IMAGETYPE_PNG:
+                    $saved = @imagepng($dstImage, $targetPath, 6);
+                    break;
+                case IMAGETYPE_WEBP:
+                    if (function_exists('imagewebp')) {
+                        $saved = @imagewebp($dstImage, $targetPath, 88);
+                    }
+                    break;
+                case IMAGETYPE_BMP:
+                    if (function_exists('imagebmp')) {
+                        $saved = @imagebmp($dstImage, $targetPath);
+                    }
+                    break;
+            }
+
+            imagedestroy($srcImage);
+            imagedestroy($dstImage);
+
+            return $saved && file_exists($targetPath) && filesize($targetPath) > 0;
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     private function deleteDobImageFile(?string $path): void
@@ -337,10 +461,15 @@ class DateOfBirthController extends Controller
             'father_name' => ['nullable', 'string', 'max:150'],
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'images' => ['nullable', 'array', 'max:20'],
-            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images' => ['nullable', 'array', 'max:100'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp,gif,avif,bmp', 'max:102400'],
             'delete_images' => ['nullable', 'array'],
             'delete_images.*' => ['string', 'max:500'],
+        ], [
+            'images.*.image' => 'The uploaded file must be a valid image.',
+            'images.*.mimes' => 'Images must be in JPG, JPEG, PNG, WebP, GIF, AVIF or BMP format.',
+            'images.*.max' => 'An uploaded image exceeds the 100 MB size limit.',
+            'images.max' => 'You cannot upload more than :max images at once.',
         ]);
     }
 

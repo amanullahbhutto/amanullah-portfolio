@@ -485,18 +485,18 @@
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label" for="dob_images">Images (JPG, PNG, WebP)</label>
+                            <label class="form-label" for="dob_images">Images (JPG, PNG, WebP, GIF &bull; Any size / Large MB supported)</label>
                             <input
                                 class="form-control"
                                 id="dob_images"
                                 name="images[]"
                                 type="file"
-                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp,image/*"
                                 multiple
                                 data-gallery-input="#dobModalImageSelection"
                                 data-dob-field="images"
                             >
-                            <div class="dob-form-help">Upload one or multiple images. Saved in public/DOB/{name}. The last uploaded image will be used as avatar in the list.</div>
+                            <div class="dob-form-help">Upload one or multiple images of any size. Saved in public/DOB/{name}. The last uploaded image will be used as avatar in the list.</div>
                             <div id="dobModalImageSelection" class="selected-gallery-preview mt-2 d-none"></div>
                             <div id="dobExistingImagesWrapper" class="mt-3 d-none">
                                 <label class="form-label small text-muted-custom mb-1">
@@ -588,18 +588,18 @@
             <div class="modal-body">
                 <div class="mb-4">
                     <label class="form-label fw-semibold" for="dob_quick_upload_images">
-                        <i class="bi bi-cloud-arrow-up me-1 text-accent"></i> Upload New Photos (JPG, PNG, WebP)
+                        <i class="bi bi-cloud-arrow-up me-1 text-accent"></i> Upload New Photos (JPG, PNG, WebP, GIF &bull; Any size / Large MB supported)
                     </label>
                     <input
                         class="form-control"
                         id="dob_quick_upload_images"
                         name="images[]"
                         type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp,image/*"
                         multiple
                         data-gallery-input="#dobQuickUploadPreview"
                     >
-                    <div class="dob-form-help">Upload one or multiple photos. The last uploaded photo will be displayed as the avatar in the list.</div>
+                    <div class="dob-form-help">Upload one or multiple photos of any size. The last uploaded photo will be displayed as the avatar in the list.</div>
                     <div id="dobQuickUploadPreview" class="selected-gallery-preview mt-2 d-none"></div>
                     <div class="invalid-feedback" data-dob-photos-error></div>
                 </div>

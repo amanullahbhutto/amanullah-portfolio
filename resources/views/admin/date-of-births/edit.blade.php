@@ -172,7 +172,7 @@
                 <div class="col-12">
 
                     <label class="form-label" for="images">
-                        Upload Images (JPG, PNG, WebP)
+                        Upload Images (All formats supported &bull; Any size / Large MB supported)
                     </label>
 
                     <input
@@ -180,13 +180,13 @@
                         id="images"
                         name="images[]"
                         type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        accept="image/*, .jpg, .jpeg, .png, .webp, .gif, .avif, .bmp, .heic, .heif, .tiff, .tif, .svg, .jfif"
                         multiple
                         data-gallery-input="#dobEditImageSelection"
                     >
 
                     <div class="form-text">
-                        Add new images. Saved in public/DOB/{name}. The last uploaded image will be used as avatar in the list.
+                        Add new images of any format and size. Saved in public/DOB/{name}. The last uploaded image will be used as avatar in the list.
                     </div>
 
                     <div id="dobEditImageSelection" class="selected-gallery-preview mt-2 d-none"></div>

@@ -495,17 +495,115 @@
             if (input) input.value = value || '';
         };
 
+        const compressImageIfNeeded = async (file) => {
+            if (!file || !file.type || !file.type.startsWith('image/')) return file;
+            if (file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
+            if (file.size <= 1.5 * 1024 * 1024) return file;
+
+            return new Promise((resolve) => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    let { width, height } = img;
+                    const maxDim = 2560;
+
+                    if (width > maxDim || height > maxDim) {
+                        if (width > height) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        } else {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        resolve(file);
+                        return;
+                    }
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+                    const quality = 0.88;
+
+                    canvas.toBlob((blob) => {
+                        if (blob && blob.size < file.size) {
+                            const compressed = new File([blob], file.name, {
+                                type: outputType,
+                                lastModified: Date.now(),
+                            });
+                            resolve(compressed);
+                        } else {
+                            resolve(file);
+                        }
+                    }, outputType, quality);
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    resolve(file);
+                };
+                img.src = url;
+            });
+        };
+
+        const optimizeFormImages = async (form) => {
+            const fileInputs = form.querySelectorAll('input[type="file"][name="images[]"]');
+            const formData = new FormData(form);
+            let hasFiles = false;
+
+            for (const input of fileInputs) {
+                if (input.files && input.files.length > 0) {
+                    hasFiles = true;
+                    break;
+                }
+            }
+
+            if (!hasFiles) {
+                return formData;
+            }
+
+            formData.delete('images[]');
+            for (const input of fileInputs) {
+                if (!input.files || input.files.length === 0) continue;
+                for (const file of Array.from(input.files)) {
+                    try {
+                        const optimized = await compressImageIfNeeded(file);
+                        formData.append('images[]', optimized, file.name);
+                    } catch (_) {
+                        formData.append('images[]', file, file.name);
+                    }
+                }
+            }
+
+            return formData;
+        };
+
         const clearDobErrors = () => {
             dobForm?.querySelectorAll('.is-invalid').forEach((input) => input.classList.remove('is-invalid'));
             dobForm?.querySelectorAll('[data-dob-error-for]').forEach((feedback) => {
                 feedback.textContent = '';
             });
+            const imgInput = dobForm?.querySelector('[data-dob-field="images"]');
+            imgInput?.classList.remove('is-invalid');
+            const imgFeedback = dobForm?.querySelector('[data-dob-error-for="images"]');
+            if (imgFeedback) imgFeedback.textContent = '';
         };
 
         const showDobErrors = (errors = {}) => {
             Object.entries(errors).forEach(([field, messages]) => {
-                const input = dobForm?.querySelector(`[data-dob-field="${field}"]`);
-                const feedback = dobForm?.querySelector(`[data-dob-error-for="${field}"]`);
+                let input = dobForm?.querySelector(`[data-dob-field="${field}"]`);
+                let feedback = dobForm?.querySelector(`[data-dob-error-for="${field}"]`);
+
+                if (!input && field.startsWith('images')) {
+                    input = dobForm?.querySelector('[data-dob-field="images"]');
+                    feedback = dobForm?.querySelector('[data-dob-error-for="images"]');
+                }
+
                 input?.classList.add('is-invalid');
                 if (feedback) feedback.textContent = messages[0] || 'This field is invalid.';
             });
@@ -892,6 +990,16 @@
             currentPhotosForm.reset();
             currentPhotosForm.action = trigger.dataset.dobPhotosAction || '';
 
+            const errFeedback = currentPhotosForm.querySelector('[data-dob-photos-error]');
+            const fileInput = currentPhotosForm.querySelector('#dob_quick_upload_images');
+            if (errFeedback) {
+                errFeedback.textContent = '';
+                errFeedback.classList.remove('d-block');
+            }
+            if (fileInput) {
+                fileInput.classList.remove('is-invalid');
+            }
+
             const name = trigger.dataset.dobName || 'Person';
             const father = trigger.dataset.dobFatherName || '';
             const titleEl = currentPhotosForm.querySelector('[data-dob-photos-modal-title]');
@@ -1003,14 +1111,32 @@
             }
         });
 
-        photosForm?.addEventListener('submit', (event) => {
+        photosForm?.addEventListener('submit', async (event) => {
             event.preventDefault();
             const submitBtn = photosForm.querySelector('[data-dob-photos-submit]');
             const submitLabel = photosForm.querySelector('[data-dob-photos-submit-label]');
-            if (submitBtn) submitBtn.disabled = true;
-            if (submitLabel) submitLabel.textContent = 'Saving...';
+            const errFeedback = photosForm.querySelector('[data-dob-photos-error]');
+            const fileInput = photosForm.querySelector('#dob_quick_upload_images');
 
-            const formData = new FormData(photosForm);
+            if (errFeedback) {
+                errFeedback.textContent = '';
+                errFeedback.classList.remove('d-block');
+            }
+            if (fileInput) {
+                fileInput.classList.remove('is-invalid');
+            }
+
+            if (submitBtn) submitBtn.disabled = true;
+            if (submitLabel) submitLabel.textContent = 'Processing photos...';
+
+            let formData;
+            try {
+                formData = await optimizeFormImages(photosForm);
+            } catch (_) {
+                formData = new FormData(photosForm);
+            }
+
+            if (submitLabel) submitLabel.textContent = 'Uploading...';
 
             fetch(photosForm.action, {
                 method: 'POST',
@@ -1025,6 +1151,13 @@
                     if (response.status === 422) {
                         return response.json().then((payload) => {
                             const err = Object.values(payload.errors || {}).flat()[0] || 'Validation failed';
+                            if (errFeedback) {
+                                errFeedback.textContent = err;
+                                errFeedback.classList.add('d-block');
+                            }
+                            if (fileInput) {
+                                fileInput.classList.add('is-invalid');
+                            }
                             throw new Error(err);
                         });
                     }
@@ -1041,7 +1174,7 @@
                 })
                 .finally(() => {
                     if (submitBtn) submitBtn.disabled = false;
-                    if (submitLabel) submitLabel.textContent = 'Save Changes';
+                    if (submitLabel) submitLabel.textContent = 'Upload Photos';
                 });
         });
 
@@ -1168,19 +1301,19 @@
             }
         };
 
-        dobForm?.addEventListener('submit', (event) => {
+        dobForm?.addEventListener('submit', async (event) => {
             event.preventDefault();
             clearDobErrors();
 
-            const formData = new FormData(dobForm);
-            const name = formData.get('name');
-            const fatherName = formData.get('father_name');
-            const startDate = formData.get('start_date');
-            const endDate = formData.get('end_date');
             const actionUrl = dobForm.action || '';
             const match = actionUrl.match(/date-of-births\/(\d+)/);
             const isUpdate = methodInput && !methodInput.disabled && match;
             const recordId = isUpdate ? parseInt(match[1], 10) : null;
+
+            const name = dobForm.querySelector('[data-dob-field="name"]')?.value || '';
+            const fatherName = dobForm.querySelector('[data-dob-field="father_name"]')?.value || '';
+            const startDate = dobForm.querySelector('[data-dob-field="start_date"]')?.value || '';
+            const endDate = dobForm.querySelector('[data-dob-field="end_date"]')?.value || '';
 
             if (!navigator.onLine) {
                 const tempId = recordId || `offline_${Date.now()}`;
@@ -1204,6 +1337,16 @@
             }
 
             setDobSubmitting(true);
+            if (submitLabel) submitLabel.textContent = 'Processing images...';
+
+            let formData;
+            try {
+                formData = await optimizeFormImages(dobForm);
+            } catch (_) {
+                formData = new FormData(dobForm);
+            }
+
+            if (submitLabel) submitLabel.textContent = isUpdate ? 'Updating...' : 'Saving...';
 
             fetch(dobForm.action, {
                 method: 'POST',
@@ -1218,6 +1361,8 @@
                     if (response.status === 422) {
                         return response.json().then((payload) => {
                             showDobErrors(payload.errors);
+                            const firstErr = Object.values(payload.errors || {}).flat()[0] || 'Validation failed';
+                            showFlashToast(firstErr, 'danger');
                             throw new Error('Validation failed');
                         });
                     }
@@ -1243,10 +1388,13 @@
                         formModal?.hide();
                         showFlashToast('Date of birth record saved offline and displayed!', 'info');
                     } else if (error.message !== 'Validation failed') {
-                        showFlashToast('Date of birth record could not be saved.', 'danger');
+                        showFlashToast(error.message || 'Date of birth record could not be saved.', 'danger');
                     }
                 })
-                .finally(() => setDobSubmitting(false));
+                .finally(() => {
+                    setDobSubmitting(false);
+                    if (submitLabel) submitLabel.textContent = isUpdate ? 'Update Record' : 'Save Record';
+                });
         });
 
         document.addEventListener('submit', (event) => {
@@ -1297,6 +1445,78 @@
                 });
         });
     }
+
+    // Standard Date of Birth forms (create.blade.php & edit.blade.php) image optimization on submit
+    document.querySelectorAll('form[action*="date-of-births"]').forEach((form) => {
+        if (form.hasAttribute('data-dob-form') || form.hasAttribute('data-dob-photos-form') || form.hasAttribute('data-dob-delete')) return;
+
+        form.addEventListener('submit', async (e) => {
+            const fileInput = form.querySelector('input[type="file"][name="images[]"]');
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
+            if (form.dataset.compressed === 'true') return;
+
+            e.preventDefault();
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Processing images...';
+            }
+
+            try {
+                if (typeof DataTransfer !== 'undefined') {
+                    const dt = new DataTransfer();
+                    for (const file of Array.from(fileInput.files)) {
+                        if (file.type && file.type.startsWith('image/') && file.size > 1.5 * 1024 * 1024 && file.type !== 'image/gif' && file.type !== 'image/svg+xml') {
+                            const optimized = await new Promise((resolve) => {
+                                const img = new Image();
+                                const url = URL.createObjectURL(file);
+                                img.onload = () => {
+                                    URL.revokeObjectURL(url);
+                                    let { width, height } = img;
+                                    const maxDim = 2560;
+                                    if (width > maxDim || height > maxDim) {
+                                        if (width > height) {
+                                            height = Math.round((height * maxDim) / width);
+                                            width = maxDim;
+                                        } else {
+                                            width = Math.round((width * maxDim) / height);
+                                            height = maxDim;
+                                        }
+                                    }
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = width;
+                                    canvas.height = height;
+                                    const ctx = canvas.getContext('2d');
+                                    if (!ctx) { resolve(file); return; }
+                                    ctx.drawImage(img, 0, 0, width, height);
+                                    const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+                                    canvas.toBlob((blob) => {
+                                        if (blob && blob.size < file.size) {
+                                            resolve(new File([blob], file.name, { type: outputType, lastModified: Date.now() }));
+                                        } else {
+                                            resolve(file);
+                                        }
+                                    }, outputType, 0.88);
+                                };
+                                img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+                                img.src = url;
+                            });
+                            dt.items.add(optimized);
+                        } else {
+                            dt.items.add(file);
+                        }
+                    }
+                    fileInput.files = dt.files;
+                }
+            } catch (_) {}
+
+            if (submitBtn) {
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Uploading...';
+            }
+            form.dataset.compressed = 'true';
+            form.submit();
+        });
+    });
 
     document.querySelectorAll('[data-image-input]').forEach((input) => {
         input.addEventListener('change', () => {
