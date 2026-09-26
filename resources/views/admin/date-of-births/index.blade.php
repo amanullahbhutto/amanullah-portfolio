@@ -127,7 +127,7 @@
 
         <div class="table-responsive">
 
-            <table class="table table-hover">
+            <table class="table table-hover align-middle">
 
                 <thead>
 
@@ -161,13 +161,13 @@
 
                             <td>
 
-                                <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center gap-3">
 
                                     @if($dateOfBirth->image_url)
                                         <button
                                             type="button"
-                                            class="user-avatar overflow-hidden p-0 border-0 dob-avatar-btn"
-                                            style="width:44px;height:44px;border-radius:12px;"
+                                            class="user-avatar overflow-hidden p-0 border-0 dob-avatar-btn flex-shrink-0"
+                                            style="width:68px;height:68px;min-width:68px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;background:var(--surface-2, #181d28);"
                                             title="Click to view & manage photos"
                                             data-bs-toggle="modal"
                                             data-bs-target="#dateOfBirthPhotosModal"
@@ -180,14 +180,14 @@
                                             <img
                                                 src="{{ $dateOfBirth->image_url }}"
                                                 alt="{{ $dateOfBirth->name }}"
-                                                style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;"
+                                                style="width:100%;height:100%;object-fit:cover;object-position:center center;display:block;pointer-events:none;"
                                             >
                                         </button>
                                     @else
                                         <button
                                             type="button"
-                                            class="user-avatar border-0 dob-avatar-btn"
-                                            style="width:44px;height:44px;border-radius:12px;font-size:1.1rem;font-weight:600;"
+                                            class="user-avatar border-0 dob-avatar-btn flex-shrink-0"
+                                            style="width:68px;height:68px;min-width:68px;border-radius:16px;font-size:1.75rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;"
                                             title="Click to view & manage photos"
                                             data-bs-toggle="modal"
                                             data-bs-target="#dateOfBirthPhotosModal"
@@ -202,14 +202,14 @@
                                     @endif
 
                                     <div>
-                                        <strong>
+                                        <strong class="d-block" style="font-size: 0.98rem;">
                                             {{ $dateOfBirth->name }}
                                         </strong>
                                         @if(count($dateOfBirth->image_paths) > 0)
                                             <button
                                                 type="button"
-                                                class="btn btn-link p-0 text-muted-custom d-block text-start text-decoration-none"
-                                                style="font-size:0.72rem; cursor:pointer;"
+                                                class="btn btn-link p-0 text-muted-custom d-block text-start text-decoration-none mt-1"
+                                                style="font-size:0.75rem; cursor:pointer;"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#dateOfBirthPhotosModal"
                                                 data-dob-avatar-photos
