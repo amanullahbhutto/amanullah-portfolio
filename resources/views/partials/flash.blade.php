@@ -8,10 +8,10 @@
         if (session()->has($key)) {
             $flashMessages->push([
                 'type' => $type,
-                'title' => $type === 'success' ? $successTitle : 'Error',
+                'title' => session('flash_title', ($type === 'success' ? $successTitle : 'Error')),
                 'message' => session($key),
-                'duration' => $type === 'success' ? $successDuration : 5000,
-                'variant' => $type === 'success' ? $successVariant : null,
+                'duration' => (int) session('flash_duration', ($type === 'success' ? $successDuration : 8000)),
+                'variant' => $type === 'success' ? $successVariant : session('flash_variant'),
             ]);
         }
     }

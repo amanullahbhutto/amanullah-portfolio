@@ -9,7 +9,17 @@
             <div class="contact-row"><i class="bi bi-whatsapp"></i><div>@if($profile?->phone)<a class="whatsapp-link" href="{{ $profile->whatsapp_url }}" target="_blank" rel="noopener">{{ $profile->phone }}</a>@endif</div></div>
             <div class="contact-row"><i class="bi bi-geo-alt"></i><span>{{ $profile?->address }}, {{ $profile?->city }}</span></div>
         </div></div></div>
-        <div class="col-lg-7"><div class="contact-form-wrap"><form method="POST" action="{{ route('contact.store') }}">@csrf
+        <div class="col-lg-7"><div class="contact-form-wrap">
+            @if(session('error'))
+                <div class="alert alert-danger d-flex align-items-start gap-2 mb-4" role="alert" style="border-radius: 14px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                    <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0 text-danger mt-1"></i>
+                    <div>
+                        <strong class="d-block mb-1">{{ session('flash_title', 'Email Sending Failed') }}</strong>
+                        <div class="small text-break">{{ session('error') }}</div>
+                    </div>
+                </div>
+            @endif
+            <form method="POST" action="{{ route('contact.store') }}">@csrf
             <div class="row g-3">
                 <div class="col-md-6"><label class="form-label" for="name">Name *</label><input class="form-control" id="name" name="name" value="{{ old('name') }}" required maxlength="100" autocomplete="name" placeholder="Your name"></div>
                 <div class="col-md-6"><label class="form-label" for="email">Email *</label><input class="form-control" type="email" id="email" name="email" value="{{ old('email') }}" required maxlength="150" autocomplete="email" placeholder="you@company.com"></div>

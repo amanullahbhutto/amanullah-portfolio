@@ -40,10 +40,19 @@ class ContactController extends Controller
         $recipient = config('portfolio.contact_notification_email') ?: 'aman.ullah.csc@gmail.com';
 
         $sent = false;
+        $mailError = null;
 
         // Agar mailer 'mail' par set hai to direct PHP native mail() use karein
         if (config('mail.default') === 'mail') {
-            $sent = $this->sendViaPhpMail($recipient, $message);
+            try {
+                $sent = $this->sendViaPhpMail($recipient, $message);
+                if (! $sent) {
+                    $mailError = 'PHP mail() function returned false. Please check server sendmail configuration.';
+                }
+            } catch (Throwable $e) {
+                report($e);
+                $mailError = $e->getMessage();
+            }
         } else {
             try {
                 Mail::to($recipient)
@@ -51,16 +60,29 @@ class ContactController extends Controller
                 $sent = true;
             } catch (Throwable $exception) {
                 report($exception);
+                $mailError = $exception->getMessage();
             }
 
             // Agar SMTP / Laravel Mailer fail ho jaye ya log par ho, to simple PHP mail() se backup send karein
-            if (! $sent || config('mail.default') === 'log') {
+            if (! $sent) {
                 try {
-                    $this->sendViaPhpMail($recipient, $message);
+                    $fallbackSent = $this->sendViaPhpMail($recipient, $message);
+                    if ($fallbackSent) {
+                        $sent = true;
+                        $mailError = null;
+                    }
                 } catch (Throwable $fallbackException) {
                     report($fallbackException);
                 }
             }
+        }
+
+        if (! $sent) {
+            return back()->withInput()->with([
+                'error' => 'Your message was saved in database, but email notification failed to send to ' . $recipient . '. Error: ' . ($mailError ?: 'Mail delivery failed. Please check mail settings.'),
+                'flash_title' => 'Email Sending Failed',
+                'flash_duration' => 10000,
+            ]);
         }
 
         return back()->with([
