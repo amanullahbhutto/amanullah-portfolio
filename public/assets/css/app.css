@@ -852,8 +852,34 @@ details.sidebar-group[open] > summary { color: var(--accent); background: var(--
 .admin-main { min-height: 100vh; margin-left: 270px; }
 .admin-topbar { min-height: 82px; padding: 14px 30px; display: flex; align-items: center; justify-content: space-between; gap: 20px; background: rgba(11, 12, 15, 0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--line); position: sticky !important; top: 0 !important; z-index: 1030 !important; }
 .topbar-title { font-size: clamp(0.95rem, 3.2vw, 1.35rem); margin: 0; white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
-.topbar-actions { display: flex; align-items: center; gap: 9px; }
-.notification-link { position: relative; }
+.notification-link { position: relative; display: inline-grid; place-items: center; }
+.notification-link span,
+.notification-link .notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #0b0c0f;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+    pointer-events: none;
+    z-index: 5;
+    transition: transform 0.2s ease;
+}
+.notification-link:hover span,
+.notification-link:hover .notification-badge {
+    transform: scale(1.1);
+}
 .topbar-profile { border: 0; background: transparent; color: var(--text); display: flex; align-items: center; gap: 6px; font-size: .8rem; padding: 2px; cursor: pointer; }
 .topbar-profile > span { transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .topbar-profile:hover > span { transform: scale(1.05); box-shadow: 0 0 12px rgba(255, 107, 44, 0.45); }
@@ -4307,10 +4333,13 @@ body.is-standalone-pwa .admin-main {
     border-color: rgba(94, 234, 212, 0.5) !important;
     box-shadow: 0 0 12px rgba(94, 234, 212, 0.2) !important;
 }
-[data-theme="light"] .notification-link span {
+[data-theme="light"] .notification-link span,
+[data-theme="light"] .notification-link .notification-badge {
     background: #5eead4 !important;
     color: #064843 !important;
     font-weight: 800 !important;
+    border: 2px solid #064843 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
 }
 [data-theme="light"] .topbar-profile > span {
     background: #ffffff !important;

@@ -292,16 +292,17 @@ class ZikrTrackingTest extends TestCase
 
         $created = Tasbeeh::where('title', 'Ayat-e-Shifa')->first();
 
-        // Update
+        // Update (allowing daily_target = 0)
         $this->putJson(route('admin.tasbeehs.update', $created), [
             'title' => 'Ayat-e-Shifa Updated',
             'arabic_text' => 'وَيَشْفِ صُدُورَ قَوْمٍ مُؤْمِنِينَ',
             'urdu_meaning' => 'شفا کی آیت',
-            'daily_target' => 100,
+            'daily_target' => 0,
             'description' => 'Updated spiritual healing description.',
         ])->assertOk();
 
         $this->assertSame('Ayat-e-Shifa Updated', $created->fresh()->title);
+        $this->assertSame(0, (int) $created->fresh()->daily_target);
         $this->assertSame('Updated spiritual healing description.', $created->fresh()->description);
 
         // Toggle

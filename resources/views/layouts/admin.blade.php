@@ -199,7 +199,7 @@
                     @can('view message')
                         <a class="topbar-icon notification-link" href="{{ route('admin.messages.index', ['filter' => 'unread']) }}" title="Unread messages" aria-label="Unread messages">
                             <i class="bi bi-bell"></i>
-                            @if($unreadMessageCount > 0)<span>{{ $unreadMessageCount > 99 ? '99+' : $unreadMessageCount }}</span>@endif
+                            @if($unreadMessageCount > 0)<span class="notification-badge">{{ $unreadMessageCount > 99 ? '99+' : $unreadMessageCount }}</span>@endif
                         </a>
                     @endcan
                     <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch colour theme" title="Day / night mode">

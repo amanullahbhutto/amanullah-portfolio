@@ -2441,7 +2441,7 @@
             if (arabicInput) arabicInput.value = arabic || '';
             if (urduInput) urduInput.value = urdu || '';
             if (descInput) descInput.value = desc || '';
-            if (targetInput) targetInput.value = target || 100;
+            if (targetInput) targetInput.value = (target !== undefined && target !== null && target !== '') ? target : 100;
             if (orderInput) orderInput.value = order || 0;
             if (activeInput) activeInput.checked = active === '1';
             if (refInput) refInput.value = ref || '';
@@ -2574,7 +2574,7 @@
                     editBtn.dataset.title = title || '';
                     editBtn.dataset.arabic = arabic || '';
                     editBtn.dataset.urdu = urdu || '';
-                    editBtn.dataset.target = target || '';
+                    editBtn.dataset.target = (target !== undefined && target !== null) ? String(target) : '';
                     editBtn.dataset.order = order || '';
                     editBtn.dataset.active = active || '1';
                     editBtn.dataset.desc = desc || '';

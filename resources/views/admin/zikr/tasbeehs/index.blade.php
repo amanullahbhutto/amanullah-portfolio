@@ -317,7 +317,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label text-white fw-bold">Daily Target <span class="text-danger">*</span></label>
-                            <input class="form-control font-monospace" type="number" name="daily_target" value="100" min="1" max="100000" required style="background: #0c1626; border-color: #1c2c44; color: #fff;">
+                            <input class="form-control font-monospace" type="number" name="daily_target" value="100" min="0" max="100000" required style="background: #0c1626; border-color: #1c2c44; color: #fff;">
                             <div class="invalid-feedback" data-error-for="daily_target"></div>
                         </div>
                         <div class="col-12">
@@ -382,7 +382,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label text-white fw-bold">Daily Target <span class="text-danger">*</span></label>
-                            <input class="form-control font-monospace" type="number" name="daily_target" id="editTasbeehTarget" min="1" max="100000" required style="background: #0c1626; border-color: #1c2c44; color: #fff;">
+                            <input class="form-control font-monospace" type="number" name="daily_target" id="editTasbeehTarget" min="0" max="100000" required style="background: #0c1626; border-color: #1c2c44; color: #fff;">
                             <div class="invalid-feedback" data-error-for="daily_target"></div>
                         </div>
                         <div class="col-12">
