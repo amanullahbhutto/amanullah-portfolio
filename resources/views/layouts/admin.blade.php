@@ -124,7 +124,7 @@
                 @can('view user')<a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class="bi bi-people"></i><span>Users</span></a>@endcan
                 @can('view role')<a href="{{ route('admin.roles.index') }}" class="{{ request()->routeIs('admin.roles.*') ? 'active' : '' }}"><i class="bi bi-shield-lock"></i><span>Roles</span></a>@endcan
                 @can('view permission')<a href="{{ route('admin.permissions.index') }}" class="{{ request()->routeIs('admin.permissions.*') ? 'active' : '' }}"><i class="bi bi-key"></i><span>Permissions</span></a>@endcan
-                @if(auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->can('view maintenance'))<a href="{{ route('admin.maintenance.index') }}" class="{{ request()->routeIs('admin.maintenance.*') ? 'active' : '' }}"><i class="bi bi-terminal"></i><span>Maintenance</span></a>@endif
+                @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->can('view maintenance'))<a href="{{ route('admin.maintenance.index') }}" class="{{ request()->routeIs('admin.maintenance.*') ? 'active' : '' }}"><i class="bi bi-terminal"></i><span>Maintenance</span></a>@endif
                 @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->can('manage pwa settings'))
                     <a href="{{ route('admin.pwa.settings') }}" class="{{ request()->routeIs('admin.pwa.settings*') ? 'active' : '' }}">
                         <i class="bi bi-phone"></i><span>Mobile App Settings</span>

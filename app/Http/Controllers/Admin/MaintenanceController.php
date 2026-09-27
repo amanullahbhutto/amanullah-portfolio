@@ -73,6 +73,16 @@ class MaintenanceController extends Controller
             'color' => 'danger',
             'badge' => 'Views',
         ],
+        'storage_link' => [
+            'name' => 'Storage Symlink',
+            'command' => 'php artisan storage:link',
+            'artisan' => 'storage:link',
+            'params' => [],
+            'description' => 'Links public/storage directory to storage/app/public for uploaded media files.',
+            'icon' => 'bi-link-45deg',
+            'color' => 'secondary',
+            'badge' => 'Storage',
+        ],
     ];
 
     public function __construct()
@@ -82,7 +92,7 @@ class MaintenanceController extends Controller
             if (! $user) {
                 abort(403);
             }
-            if ($user->hasRole('admin') || $user->can('view maintenance') || $user->can('run maintenance')) {
+            if ($user->hasAnyRole(['Super Admin', 'Admin', 'admin', 'super-admin']) || $user->can('view maintenance') || $user->can('run maintenance')) {
                 return $next($request);
             }
             abort(403, 'Unauthorized access.');
@@ -106,6 +116,11 @@ class MaintenanceController extends Controller
 
     public function run(Request $request): RedirectResponse
     {
+        $user = auth()->user();
+        if (! ($user && ($user->hasAnyRole(['Super Admin', 'Admin', 'admin', 'super-admin']) || $user->can('run maintenance')))) {
+            abort(403, 'Unauthorized to execute maintenance commands.');
+        }
+
         $action = (string) $request->input('command');
         abort_unless(isset(self::COMMANDS[$action]), 404);
 

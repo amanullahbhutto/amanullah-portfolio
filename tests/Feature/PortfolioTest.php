@@ -1029,7 +1029,8 @@ class PortfolioTest extends TestCase
             ->assertSee('php artisan cache:clear')
             ->assertSee('php artisan config:clear')
             ->assertSee('php artisan route:clear')
-            ->assertSee('php artisan view:clear');
+            ->assertSee('php artisan view:clear')
+            ->assertSee('php artisan storage:link');
 
         // 3. Admin can execute optimize_clear
         $this->actingAs($admin)
@@ -1056,6 +1057,15 @@ class PortfolioTest extends TestCase
             ->from('/admin/maintenance')
             ->post('/admin/maintenance/run', [
                 'command' => 'migrate',
+            ])
+            ->assertRedirect('/admin/maintenance')
+            ->assertSessionHas('success');
+
+        // 6. Admin can execute storage_link
+        $this->actingAs($admin)
+            ->from('/admin/maintenance')
+            ->post('/admin/maintenance/run', [
+                'command' => 'storage_link',
             ])
             ->assertRedirect('/admin/maintenance')
             ->assertSessionHas('success');

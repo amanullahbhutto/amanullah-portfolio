@@ -668,6 +668,7 @@ h1, h2, h3, h4, h5, h6, .brand-mark { font-family: "Space Grotesk", sans-serif; 
 .maintenance-cmd-icon.warning { color: #f59e0b; background: rgba(245,158,11,.13); }
 .maintenance-cmd-icon.primary { color: #818cf8; background: rgba(129,140,248,.13); }
 .maintenance-cmd-icon.danger { color: #ef5c66; background: rgba(239,92,102,.13); }
+.maintenance-cmd-icon.secondary { color: #a855f7; background: rgba(168,85,247,.13); }
 .maintenance-pill { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 7px; font-size: .68rem; font-weight: 800; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); white-space: nowrap; }
 .maintenance-code-box { padding: 8px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); font-family: monospace; font-size: .76rem; color: var(--accent); overflow-wrap: anywhere; }
 .maintenance-code-box code { color: inherit; font-size: inherit; }

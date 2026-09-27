@@ -11,7 +11,7 @@
                 <p class="text-muted-custom small mb-0 mt-1">Execute safe Artisan management commands and clear framework caches directly from the admin dashboard.</p>
             </div>
             <div class="responsive-actions">
-                @can('run maintenance')
+                @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->can('run maintenance'))
                     <form method="POST" action="{{ route('admin.maintenance.run') }}" data-confirm="Are you sure you want to run optimize:clear to reset all application caches?">
                         @csrf
                         <input type="hidden" name="command" value="optimize_clear">
@@ -19,7 +19,7 @@
                             <i class="bi bi-stars me-1"></i>Clear All Caches (Optimize)
                         </button>
                     </form>
-                @endcan
+                @endif
             </div>
         </div>
         <div class="admin-card-body">
@@ -105,7 +105,7 @@
                         </div>
                     </div>
                     <div class="admin-card-head pt-0 border-0">
-                        @can('run maintenance')
+                        @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->can('run maintenance'))
                             <form method="POST" action="{{ route('admin.maintenance.run') }}" class="w-100" data-confirm="Run '{{ $item['command'] }}' now?">
                                 @csrf
                                 <input type="hidden" name="command" value="{{ $key }}">
@@ -117,7 +117,7 @@
                             <button type="button" class="btn btn-outline-theme btn-sm w-100 disabled" disabled>
                                 <i class="bi bi-lock me-1"></i> Permission Required
                             </button>
-                        @endcan
+                        @endif
                     </div>
                 </div>
             </div>

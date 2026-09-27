@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
-            return ($user->hasRole('Super Admin') || $user->hasRole('admin') || $user->hasRole('super-admin')) ? true : null;
+            return ($user->hasRole('Super Admin') || $user->hasRole('Admin') || $user->hasRole('admin') || $user->hasRole('super-admin')) ? true : null;
         });
 
         Paginator::useBootstrapFive();
