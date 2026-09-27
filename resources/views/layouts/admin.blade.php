@@ -194,18 +194,18 @@
                         <h1 class="topbar-title text-nowrap text-truncate mb-0">@yield('page_title', 'Dashboard')</h1>
                     </div>
                 </div>
-                <div class="topbar-actions">
-                    <a class="topbar-icon" href="{{ route('home') }}" target="_blank" title="View website" aria-label="View website"><i class="bi bi-box-arrow-up-right"></i></a>
+                <div class="topbar-actions d-flex align-items-center flex-nowrap">
+                    <a class="topbar-icon flex-shrink-0" href="{{ route('home') }}" target="_blank" title="View website" aria-label="View website"><i class="bi bi-box-arrow-up-right"></i></a>
                     @can('view message')
-                        <a class="topbar-icon notification-link" href="{{ route('admin.messages.index', ['filter' => 'unread']) }}" title="Unread messages" aria-label="Unread messages">
+                        <a class="topbar-icon notification-link flex-shrink-0" href="{{ route('admin.messages.index', ['filter' => 'unread']) }}" title="Unread messages" aria-label="Unread messages">
                             <i class="bi bi-bell"></i>
                             @if($unreadMessageCount > 0)<span class="notification-badge">{{ $unreadMessageCount > 99 ? '99+' : $unreadMessageCount }}</span>@endif
                         </a>
                     @endcan
-                    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch colour theme" title="Day / night mode">
+                    <button class="theme-toggle flex-shrink-0" type="button" data-theme-toggle aria-label="Switch colour theme" title="Day / night mode">
                         <i class="bi bi-sun-fill theme-icon-light"></i><i class="bi bi-moon-stars-fill theme-icon-dark"></i>
                     </button>
-                    <div class="dropdown">
+                    <div class="dropdown flex-shrink-0">
                         <button class="topbar-profile dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="{{ auth()->user()->name }}" aria-label="User menu">
                             <span>{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
                         </button>

@@ -852,6 +852,7 @@ details.sidebar-group[open] > summary { color: var(--accent); background: var(--
 .admin-main { min-height: 100vh; margin-left: 270px; }
 .admin-topbar { min-height: 82px; padding: 14px 30px; display: flex; align-items: center; justify-content: space-between; gap: 20px; background: rgba(11, 12, 15, 0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--line); position: sticky !important; top: 0 !important; z-index: 1030 !important; }
 .topbar-title { font-size: clamp(0.95rem, 3.2vw, 1.35rem); margin: 0; white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+.topbar-actions { display: flex; align-items: center; gap: 9px; flex-wrap: nowrap; flex-shrink: 0; }
 .notification-link { position: relative; display: inline-grid; place-items: center; }
 .notification-link span,
 .notification-link .notification-badge {
