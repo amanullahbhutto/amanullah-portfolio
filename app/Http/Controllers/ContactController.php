@@ -113,6 +113,6 @@ class ContactController extends Controller
             'X-Mailer: PHP/' . phpversion(),
         ];
 
-        return (bool) @mail($recipient, $subject, $body, implode("\r\n", $headers));
+        return (bool) @mail($recipient, $subject, $body, implode("\r\n", $headers), "-f{$fromAddress}");
     }
 }

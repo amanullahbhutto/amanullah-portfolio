@@ -12,8 +12,9 @@ return [
             'encryption' => env('MAIL_ENCRYPTION', 'tls'),
             'username' => env('MAIL_USERNAME', 'aman.ullah.csc@gmail.com'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            'timeout' => env('MAIL_TIMEOUT', 15),
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+            'verify_peer' => env('MAIL_VERIFY_PEER', false),
         ],
         'sendmail' => [
             'transport' => 'sendmail',
@@ -24,7 +25,7 @@ return [
         'failover' => ['transport' => 'failover', 'mailers' => ['smtp', 'log'], 'retry_after' => 60],
     ],
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'aman.ullah.csc@gmail.com'),
+        'address' => env('MAIL_FROM_ADDRESS', 'amanullah@triplewtools.com'),
         'name' => env('MAIL_FROM_NAME', 'Amanullah Portfolio'),
     ],
 ];

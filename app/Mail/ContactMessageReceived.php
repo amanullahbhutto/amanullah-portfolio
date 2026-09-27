@@ -19,7 +19,11 @@ class ContactMessageReceived extends Mailable
 
     public function envelope(): Envelope
     {
+        $fromAddress = config('mail.from.address') ?: 'amanullah@triplewtools.com';
+        $fromName = config('mail.from.name') ?: 'Amanullah Portfolio';
+
         return new Envelope(
+            from: new \Illuminate\Mail\Mailables\Address($fromAddress, $fromName),
             replyTo: [$this->contactMessage->email],
             subject: 'New portfolio contact: '.$this->contactMessage->subject,
         );
