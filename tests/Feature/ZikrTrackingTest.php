@@ -646,5 +646,85 @@ class ZikrTrackingTest extends TestCase
         // Overall journey preserved from oldest tasbeeh!
         $this->assertSame(61, $summaryAfter['journey_duration']['total_days']);
     }
+
+    public function test_protected_stats_password_verification_requires_correct_password(): void
+    {
+        $user = $this->muslimUser;
+        $this->actingAs($user);
+
+        // Incorrect password
+        $response = $this->postJson(route('admin.zikr.verify-stats-password'), [
+            'password' => 'wrong-password',
+            'user_id' => $user->id,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Incorrect password! Please enter your correct login password.',
+            ]);
+
+        $this->assertNull(session('zikr_stats_unlocked_at'));
+
+        // Correct password
+        $successResponse = $this->postJson(route('admin.zikr.verify-stats-password'), [
+            'password' => 'password',
+            'user_id' => $user->id,
+        ]);
+
+        $successResponse->assertOk()
+            ->assertJson([
+                'success' => true,
+                'expires_in_seconds' => 300,
+            ])
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'expires_in_seconds',
+                'stats' => [
+                    'lifetime_total',
+                    'raw_lifetime_total',
+                    'lifetime_duration',
+                    'overall_total_required',
+                    'raw_overall_total_required',
+                    'overall_total_completed',
+                    'raw_overall_total_completed',
+                    'overall_percentage',
+                    'tasbeehs',
+                ],
+            ]);
+
+        $this->assertNotNull(session('zikr_stats_unlocked_at'));
+
+        // Lock endpoint locks again
+        $lockResponse = $this->postJson(route('admin.zikr.lock-stats'));
+        $lockResponse->assertOk()->assertJson(['success' => true]);
+        $this->assertNull(session('zikr_stats_unlocked_at'));
+    }
+
+    public function test_dashboard_respects_session_unlock_state_and_masks_when_locked(): void
+    {
+        $user = $this->muslimUser;
+        $this->actingAs($user);
+
+        // 1. When locked (default)
+        session()->forget('zikr_stats_unlocked_at');
+        $response = $this->get(route('admin.zikr.index'));
+        $response->assertOk();
+        $response->assertViewHas('isStatsUnlocked', false);
+
+        // 2. When unlocked within 5 minutes
+        session(['zikr_stats_unlocked_at' => now()->timestamp]);
+        $responseUnlocked = $this->get(route('admin.zikr.index'));
+        $responseUnlocked->assertOk();
+        $responseUnlocked->assertViewHas('isStatsUnlocked', true);
+
+        // 3. When session is older than 5 minutes (e.g. 6 minutes ago)
+        session(['zikr_stats_unlocked_at' => now()->subMinutes(6)->timestamp]);
+        $responseExpired = $this->get(route('admin.zikr.index'));
+        $responseExpired->assertOk();
+        $responseExpired->assertViewHas('isStatsUnlocked', false);
+        $this->assertNull(session('zikr_stats_unlocked_at'));
+    }
 }
 

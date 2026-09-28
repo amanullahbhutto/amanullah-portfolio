@@ -153,6 +153,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): v
     Route::post('/zikr/complete-all-today', [ZikrCounterController::class, 'completeAllToday'])->name('zikr.complete-all-today');
     Route::post('/zikr/reset-all', [ZikrCounterController::class, 'resetAll'])->name('zikr.reset-all');
     Route::post('/zikr/reset-lifetime', [ZikrCounterController::class, 'resetLifetime'])->name('zikr.reset-lifetime');
+    Route::post('/zikr/verify-stats-password', [ZikrDashboardController::class, 'verifyStatsPassword'])->name('zikr.verify-stats-password');
+    Route::post('/zikr/lock-stats', [ZikrDashboardController::class, 'lockStats'])->name('zikr.lock-stats');
     Route::post('/zikr/settings', [ZikrDashboardController::class, 'updateSettings'])->name('zikr.settings.update');
 
     // Admin Tasbeeh Definitions CRUD

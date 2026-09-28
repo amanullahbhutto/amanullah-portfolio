@@ -76,8 +76,9 @@
         <div class="col-6 col-md-4 col-xl-2">
             <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 position-relative d-flex flex-column justify-content-between" data-stat-card="lifetime" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.14) 0%, #08111e 100%); border-color: rgba(249, 115, 22, 0.4); min-height: 104px;">
                 <div class="d-flex align-items-center justify-content-between w-100">
-                    <span class="small fw-bold text-uppercase text-truncate" style="color: #f97316; font-size: 0.7rem;">
-                        <i class="bi bi-infinity me-1"></i>Lifetime Total
+                    <span class="small fw-bold text-uppercase text-truncate d-flex align-items-center gap-1" style="color: #f97316; font-size: 0.7rem;">
+                        <i class="bi bi-infinity"></i>Lifetime Total
+                        <i class="bi {{ $isStatsUnlocked ? 'bi-unlock-fill text-success' : 'bi-lock-fill text-warning' }} zikr-stat-lock-icon ms-0.5" data-stat-lock="lifetime" title="{{ $isStatsUnlocked ? 'Unlocked (5m session)' : 'Password Protected' }}" style="font-size: 0.72rem;"></i>
                     </span>
                     <div class="d-flex align-items-center gap-2">
                         <button type="button" class="btn btn-link p-0 text-secondary zikr-stat-eye-btn" data-stat-target="lifetime" title="Show/Hide Lifetime Total" style="line-height: 1; font-size: 0.82rem; color: #94a3b8 !important;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#94a3b8'">
@@ -88,9 +89,9 @@
                         </button>
                     </div>
                 </div>
-                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-lifetime-total" data-raw-val="{{ number_format($summary['lifetime_total']) }}" data-base-lifetime="{{ (int) $summary['lifetime_total'] }}" data-stat-card="lifetime" style="color: #f97316 !important; line-height: 1.2;" title="Click to show/hide">{{ number_format($summary['lifetime_total']) }}</strong>
+                <strong class="fs-3 fs-md-2 text-white d-block font-monospace my-0 zikr-stat-maskable {{ !$isStatsUnlocked ? 'zikr-stat-masked-dots' : '' }}" id="top-stat-lifetime-total" data-raw-val="{{ $isStatsUnlocked ? number_format($summary['lifetime_total']) : '' }}" data-base-lifetime="{{ (int) $summary['lifetime_total'] }}" data-stat-card="lifetime" style="color: #f97316 !important; line-height: 1.2;" title="Click to show/hide">{{ $isStatsUnlocked ? number_format($summary['lifetime_total']) : '••••' }}</strong>
                 <small class="d-block text-truncate zikr-stat-maskable" id="top-stat-lifetime-duration" data-raw-subtext="<i class='bi bi-clock-history me-1'></i>{{ $summary['lifetime_duration']['formatted_full'] ?? 'Day 1' }}" data-masked-subtext="<i class='bi bi-clock-history me-1'></i>••••" data-stat-card="lifetime" style="font-size: 0.72rem; color: #fdba74;" title="Started: {{ $summary['lifetime_duration']['start_date_formatted'] ?? 'Today' }}">
-                    <i class="bi bi-clock-history me-1"></i>{{ $summary['lifetime_duration']['formatted_full'] ?? 'Day 1' }}
+                    {!! $isStatsUnlocked ? ("<i class='bi bi-clock-history me-1'></i>" . ($summary['lifetime_duration']['formatted_full'] ?? 'Day 1')) : "<i class='bi bi-clock-history me-1'></i>••••" !!}
                 </small>
             </div>
         </div>
@@ -129,12 +130,15 @@
         <div class="col-6 col-md-4 col-xl-2">
             <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" data-stat-card="total_required" style="background: #08111e; border-color: #142845; min-height: 104px;">
                 <div class="d-flex align-items-center justify-content-between w-100">
-                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Total Required</span>
+                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate d-flex align-items-center gap-1" style="font-size: 0.7rem;">
+                        Total Required
+                        <i class="bi {{ $isStatsUnlocked ? 'bi-unlock-fill text-success' : 'bi-lock-fill text-warning' }} zikr-stat-lock-icon ms-0.5" data-stat-lock="total_required" title="{{ $isStatsUnlocked ? 'Unlocked (5m session)' : 'Password Protected' }}" style="font-size: 0.72rem;"></i>
+                    </span>
                     <button type="button" class="btn btn-link p-0 text-secondary zikr-stat-eye-btn" data-stat-target="total_required" title="Show/Hide Total Required" style="line-height: 1; font-size: 0.82rem; color: #94a3b8 !important;" onmouseover="this.style.color='#06b6d4'" onmouseout="this.style.color='#94a3b8'">
                         <i class="bi bi-eye"></i>
                     </button>
                 </div>
-                <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-total-required" data-raw-val="{{ number_format($summary['overall_total_required']) }}" data-stat-card="total_required" style="line-height: 1.2;" title="Click to show/hide">{{ number_format($summary['overall_total_required']) }}</strong>
+                <strong class="fs-3 fs-md-2 text-info d-block font-monospace my-0 zikr-stat-maskable {{ !$isStatsUnlocked ? 'zikr-stat-masked-dots' : '' }}" id="top-stat-total-required" data-raw-val="{{ $isStatsUnlocked ? number_format($summary['overall_total_required']) : '' }}" data-stat-card="total_required" style="line-height: 1.2;" title="Click to show/hide">{{ $isStatsUnlocked ? number_format($summary['overall_total_required']) : '••••' }}</strong>
                 <small class="text-muted-custom d-block text-truncate zikr-stat-maskable" id="top-stat-required-subtext" data-raw-subtext="Active cycle till today" data-masked-subtext="Active cycle till today" data-stat-card="total_required" style="font-size: 0.72rem;">Active cycle till today</small>
             </div>
         </div>
@@ -143,13 +147,16 @@
         <div class="col-6 col-md-4 col-xl-2">
             <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 d-flex flex-column justify-content-between" data-stat-card="total_completed" style="background: #08111e; border-color: #142845; min-height: 104px;">
                 <div class="d-flex align-items-center justify-content-between w-100">
-                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate" style="font-size: 0.7rem;">Total Completed</span>
+                    <span class="text-muted-custom small fw-bold text-uppercase d-block text-truncate d-flex align-items-center gap-1" style="font-size: 0.7rem;">
+                        Total Completed
+                        <i class="bi {{ $isStatsUnlocked ? 'bi-unlock-fill text-success' : 'bi-lock-fill text-warning' }} zikr-stat-lock-icon ms-0.5" data-stat-lock="total_completed" title="{{ $isStatsUnlocked ? 'Unlocked (5m session)' : 'Password Protected' }}" style="font-size: 0.72rem;"></i>
+                    </span>
                     <button type="button" class="btn btn-link p-0 text-secondary zikr-stat-eye-btn" data-stat-target="total_completed" title="Show/Hide Total Completed" style="line-height: 1; font-size: 0.82rem; color: #94a3b8 !important;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">
                         <i class="bi bi-eye"></i>
                     </button>
                 </div>
-                <strong class="fs-3 fs-md-2 text-success d-block font-monospace my-0 zikr-stat-maskable" id="top-stat-total-completed" data-raw-val="{{ number_format($summary['overall_total_completed']) }}" data-stat-card="total_completed" style="line-height: 1.2;" title="Click to show/hide">{{ number_format($summary['overall_total_completed']) }}</strong>
-                <small class="text-success d-block fw-semibold text-truncate zikr-stat-maskable" id="top-stat-overall-percentage" data-raw-subtext="{{ $summary['overall_percentage'] }}% Completed" data-masked-subtext="•••% Completed" data-stat-card="total_completed" style="font-size: 0.72rem;">{{ $summary['overall_percentage'] }}% Completed</small>
+                <strong class="fs-3 fs-md-2 text-success d-block font-monospace my-0 zikr-stat-maskable {{ !$isStatsUnlocked ? 'zikr-stat-masked-dots' : '' }}" id="top-stat-total-completed" data-raw-val="{{ $isStatsUnlocked ? number_format($summary['overall_total_completed']) : '' }}" data-stat-card="total_completed" style="line-height: 1.2;" title="Click to show/hide">{{ $isStatsUnlocked ? number_format($summary['overall_total_completed']) : '••••' }}</strong>
+                <small class="text-success d-block fw-semibold text-truncate zikr-stat-maskable" id="top-stat-overall-percentage" data-raw-subtext="{{ $summary['overall_percentage'] }}% Completed" data-masked-subtext="•••% Completed" data-stat-card="total_completed" style="font-size: 0.72rem;">{{ $isStatsUnlocked ? ($summary['overall_percentage'] . '% Completed') : '•••% Completed' }}</small>
             </div>
         </div>
 
@@ -308,7 +315,7 @@
                             @else
                                 <span class="badge-remaining">Remaining {{ number_format($item['remaining']) }}</span>
                             @endif
-                            <span class="badge-completed">Completed: <strong class="text-white">{{ number_format($item['total_completed']) }}</strong> / {{ number_format($item['total_required']) }}</span>
+                            <span class="badge-completed" data-tasbeeh-badge="{{ $item['tasbeeh_id'] }}" data-raw-completed="{{ number_format($item['total_completed']) }}" data-raw-required="{{ number_format($item['total_required']) }}" style="cursor: pointer;" title="Completed / Required">Completed: <strong class="text-white zikr-badge-comp-val">{{ $isStatsUnlocked ? number_format($item['total_completed']) : '••••' }}</strong> / <span class="zikr-badge-req-val">{{ $isStatsUnlocked ? number_format($item['total_required']) : '••••' }}</span></span>
                         </div>
 
                         {{-- Action Icons Group --}}
@@ -485,6 +492,7 @@
 @include('admin.zikr.partials.desc-modal')
 @include('admin.zikr.partials.settings-modal')
 @include('admin.zikr.partials.bulk-actions-modals')
+@include('admin.zikr.partials.unlock-stats-modal')
 @endsection
 
 @push('scripts')
@@ -492,6 +500,93 @@
     (function () {
         const STORAGE_KEY = 'zikr_stat_cards_visibility_state';
         const ALL_CARDS = ['lifetime', 'daily_target', 'read_today', 'total_required', 'total_completed', 'backlog'];
+        const PROTECTED_CARDS = ['lifetime', 'total_required', 'total_completed'];
+        const UNPROTECTED_CARDS = ['daily_target', 'read_today', 'backlog'];
+
+        window.ZikrStatsSecurity = {
+            isUnlocked: {{ $isStatsUnlocked ? 'true' : 'false' }},
+            remainingSeconds: {{ (int) ($statsUnlockRemaining ?? 0) }},
+            timerInterval: null,
+            targetUserId: '{{ $selectedUser->id ?? auth()->id() }}',
+            verifyUrl: '{{ route('admin.zikr.verify-stats-password') }}',
+            lockUrl: '{{ route('admin.zikr.lock-stats') }}',
+            csrfToken: '{{ csrf_token() }}',
+
+            isProtected: function (cardKey) {
+                return PROTECTED_CARDS.includes(cardKey);
+            },
+
+            openUnlockModal: function () {
+                const modalEl = document.getElementById('unlockZikrStatsModal');
+                if (!modalEl) return;
+                const errEl = document.getElementById('unlockStatsPasswordError');
+                if (errEl) { errEl.classList.add('d-none'); errEl.textContent = ''; }
+                const input = document.getElementById('unlockStatsPasswordInput');
+                if (input) { input.value = ''; }
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            },
+
+            lockNow: async function () {
+                this.isUnlocked = false;
+                this.remainingSeconds = 0;
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+
+                try {
+                    fetch(this.lockUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+                } catch (e) {}
+
+                this.updateUiState();
+                if (typeof window.renderZikrStatCards === 'function') {
+                    window.renderZikrStatCards();
+                }
+            },
+
+            startCountdown: function (seconds) {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                this.remainingSeconds = seconds;
+                this.timerInterval = setInterval(() => {
+                    this.remainingSeconds--;
+                    if (this.remainingSeconds <= 0) {
+                        this.lockNow();
+                    }
+                }, 1000);
+            },
+
+            updateUiState: function () {
+                if (this.isUnlocked) {
+                    document.querySelectorAll('.zikr-stat-lock-icon').forEach(icon => {
+                        icon.className = 'bi bi-unlock-fill text-success zikr-stat-lock-icon ms-1';
+                        icon.setAttribute('title', 'Unlocked (5m session)');
+                    });
+                } else {
+                    document.querySelectorAll('.zikr-stat-lock-icon').forEach(icon => {
+                        icon.className = 'bi bi-lock-fill text-warning zikr-stat-lock-icon ms-1';
+                        icon.setAttribute('title', 'Password Protected');
+                    });
+
+                    // Mask tasbeeh badge counts
+                    document.querySelectorAll('[data-tasbeeh-badge]').forEach(badge => {
+                        const compEl = badge.querySelector('.zikr-badge-comp-val');
+                        const reqEl = badge.querySelector('.zikr-badge-req-val');
+                        if (compEl) compEl.textContent = '••••';
+                        if (reqEl) reqEl.textContent = '••••';
+                    });
+                }
+            }
+        };
 
         function getVisibilityMap() {
             try {
@@ -503,6 +598,12 @@
         }
 
         function isCardVisible(map, cardKey) {
+            // Protected cards MUST be unlocked via password session to be visible
+            if (window.ZikrStatsSecurity && window.ZikrStatsSecurity.isProtected(cardKey)) {
+                if (!window.ZikrStatsSecurity.isUnlocked) {
+                    return false;
+                }
+            }
             // Default to visible (true) unless explicitly set to false
             return map[cardKey] !== false;
         }
@@ -514,6 +615,19 @@
         }
 
         window.toggleZikrStatVisibility = function (cardKey) {
+            // If protected card:
+            if (window.ZikrStatsSecurity && window.ZikrStatsSecurity.isProtected(cardKey)) {
+                if (!window.ZikrStatsSecurity.isUnlocked) {
+                    // If currently locked, prompt for password
+                    window.ZikrStatsSecurity.openUnlockModal();
+                    return;
+                } else {
+                    // If currently unlocked, clicking hides & locks immediately!
+                    window.ZikrStatsSecurity.lockNow();
+                    return;
+                }
+            }
+
             const map = getVisibilityMap();
             const current = isCardVisible(map, cardKey);
             map[cardKey] = !current;
@@ -523,6 +637,31 @@
 
         window.toggleAllZikrStatsVisibility = function () {
             const map = getVisibilityMap();
+            if (window.ZikrStatsSecurity && window.ZikrStatsSecurity.isUnlocked) {
+                // If currently unlocked, clicking hides and locks protected stats!
+                window.ZikrStatsSecurity.lockNow();
+                UNPROTECTED_CARDS.forEach(k => { map[k] = false; });
+                saveVisibilityMap(map);
+                window.renderZikrStatCards();
+                return;
+            }
+
+            if (window.ZikrStatsSecurity && !window.ZikrStatsSecurity.isUnlocked) {
+                // Toggle only unprotected cards (Daily Target, Read Today, Backlog)
+                const anyUnprotectedHidden = UNPROTECTED_CARDS.some(k => !isCardVisible(map, k));
+                UNPROTECTED_CARDS.forEach(k => {
+                    map[k] = anyUnprotectedHidden;
+                });
+                saveVisibilityMap(map);
+                window.renderZikrStatCards();
+
+                // Open modal to prompt password for protected cards as well
+                if (anyUnprotectedHidden) {
+                    window.ZikrStatsSecurity.openUnlockModal();
+                }
+                return;
+            }
+
             const anyHidden = ALL_CARDS.some(k => !isCardVisible(map, k));
             ALL_CARDS.forEach(k => {
                 map[k] = anyHidden;
@@ -552,7 +691,7 @@
                 valEls.forEach(valEl => {
                     const rawVal = valEl.dataset.rawVal !== undefined ? valEl.dataset.rawVal : valEl.textContent;
                     valEl.dataset.rawVal = rawVal;
-                    if (isVisible) {
+                    if (isVisible && rawVal !== '') {
                         valEl.textContent = rawVal;
                         valEl.classList.remove('zikr-stat-masked-dots');
                     } else {
@@ -567,7 +706,7 @@
                     const rawSubtext = subEl.dataset.rawSubtext !== undefined ? subEl.dataset.rawSubtext : subEl.innerHTML;
                     const maskedSubtext = subEl.dataset.maskedSubtext || rawSubtext;
                     subEl.dataset.rawSubtext = rawSubtext;
-                    if (isVisible) {
+                    if (isVisible && rawSubtext !== '') {
                         subEl.innerHTML = rawSubtext;
                     } else {
                         subEl.innerHTML = maskedSubtext;
@@ -575,11 +714,24 @@
                 });
             });
 
-            // 4. Update Top Master Eye Icon
+            // 4. Update Tasbeeh Badges for Total Completed / Required
+            document.querySelectorAll('[data-tasbeeh-badge]').forEach(badge => {
+                const compEl = badge.querySelector('.zikr-badge-comp-val');
+                const reqEl = badge.querySelector('.zikr-badge-req-val');
+                if (window.ZikrStatsSecurity && window.ZikrStatsSecurity.isUnlocked) {
+                    if (compEl && badge.dataset.rawCompleted) compEl.textContent = badge.dataset.rawCompleted;
+                    if (reqEl && badge.dataset.rawRequired) reqEl.textContent = badge.dataset.rawRequired;
+                } else {
+                    if (compEl) compEl.textContent = '••••';
+                    if (reqEl) reqEl.textContent = '••••';
+                }
+            });
+
+            // 5. Update Top Master Eye Icon
             const masterIcon = document.getElementById('toggleAllStatsEyeIcon');
             const masterBtn = document.getElementById('toggleAllStatsEyeBtn');
             if (masterIcon) {
-                const anyHidden = ALL_CARDS.some(k => map[k] !== true);
+                const anyHidden = ALL_CARDS.some(k => !isCardVisible(map, k));
                 masterIcon.className = anyHidden ? 'bi bi-eye' : 'bi bi-eye-slash';
                 if (masterBtn) {
                     masterBtn.setAttribute('title', anyHidden ? 'Show All Stats' : 'Hide All Stats');
@@ -603,11 +755,25 @@
             // Click on Masked Value or Subtext directly to toggle
             document.querySelectorAll('.zikr-stat-maskable').forEach(el => {
                 el.addEventListener('click', function (e) {
-                    // Ignore clicks if text was selected or clicking inside links/buttons
                     if (window.getSelection && window.getSelection().toString().length > 0) return;
                     const cardKey = this.dataset.statCard;
                     if (cardKey) {
                         window.toggleZikrStatVisibility(cardKey);
+                    }
+                });
+            });
+
+            // Click on Tasbeeh Badges (Completed: X / Y) to toggle show/hide with password
+            document.querySelectorAll('[data-tasbeeh-badge]').forEach(badge => {
+                badge.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.ZikrStatsSecurity && window.ZikrStatsSecurity.isUnlocked) {
+                        // Currently showing -> click hides & locks it!
+                        window.ZikrStatsSecurity.lockNow();
+                    } else if (window.ZikrStatsSecurity) {
+                        // Currently hidden -> click asks for password!
+                        window.ZikrStatsSecurity.openUnlockModal();
                     }
                 });
             });
@@ -620,6 +786,169 @@
                     window.toggleAllZikrStatsVisibility();
                 });
             }
+
+            // Top Bar Unlock Button
+            const unlockTopBtn = document.getElementById('zikrUnlockStatsModalBtn');
+            if (unlockTopBtn) {
+                unlockTopBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    window.ZikrStatsSecurity.openUnlockModal();
+                });
+            }
+
+            // Top Bar Lock Now Button
+            const lockBtn = document.getElementById('zikrLockStatsBtn');
+            if (lockBtn) {
+                lockBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    window.ZikrStatsSecurity.lockNow();
+                });
+            }
+
+            // Unlock Modal Form Submission
+            const unlockForm = document.getElementById('unlockZikrStatsForm');
+            if (unlockForm) {
+                unlockForm.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    const input = document.getElementById('unlockStatsPasswordInput');
+                    const password = input ? input.value : '';
+                    const errEl = document.getElementById('unlockStatsPasswordError');
+                    const btn = document.getElementById('btnConfirmUnlockStats');
+                    const spinner = btn ? btn.querySelector('.spinner-border') : null;
+
+                    if (!password) {
+                        if (errEl) {
+                            errEl.textContent = 'Please enter your password.';
+                            errEl.classList.remove('d-none');
+                        }
+                        return;
+                    }
+
+                    if (btn) btn.disabled = true;
+                    if (spinner) spinner.classList.remove('d-none');
+                    if (errEl) { errEl.classList.add('d-none'); errEl.textContent = ''; }
+
+                    try {
+                        const res = await fetch(window.ZikrStatsSecurity.verifyUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': window.ZikrStatsSecurity.csrfToken,
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                password: password,
+                                user_id: window.ZikrStatsSecurity.targetUserId,
+                            }),
+                        });
+
+                        const data = await res.json();
+
+                        if (!res.ok || !data.success) {
+                            throw new Error(data.message || 'Incorrect password! Please try again.');
+                        }
+
+                        // Success: set unlocked
+                        window.ZikrStatsSecurity.isUnlocked = true;
+
+                        // Update top cards with stats returned from server
+                        if (data.stats) {
+                            const lifetimeEl = document.getElementById('top-stat-lifetime-total');
+                            if (lifetimeEl) {
+                                lifetimeEl.dataset.rawVal = data.stats.lifetime_total;
+                                lifetimeEl.dataset.baseLifetime = String(data.stats.raw_lifetime_total);
+                            }
+                            const lifetimeDurEl = document.getElementById('top-stat-lifetime-duration');
+                            if (lifetimeDurEl) {
+                                lifetimeDurEl.dataset.rawSubtext = `<i class='bi bi-clock-history me-1'></i>${data.stats.lifetime_duration}`;
+                            }
+                            const totalReqEl = document.getElementById('top-stat-total-required');
+                            if (totalReqEl) {
+                                totalReqEl.dataset.rawVal = data.stats.overall_total_required;
+                            }
+                            const totalCompEl = document.getElementById('top-stat-total-completed');
+                            if (totalCompEl) {
+                                totalCompEl.dataset.rawVal = data.stats.overall_total_completed;
+                            }
+                            const totalPctEl = document.getElementById('top-stat-overall-percentage');
+                            if (totalPctEl) {
+                                totalPctEl.dataset.rawSubtext = `${data.stats.overall_percentage}% Completed`;
+                            }
+
+                            // Update tasbeeh item badges
+                            if (data.stats.tasbeehs) {
+                                Object.keys(data.stats.tasbeehs).forEach(id => {
+                                    const item = data.stats.tasbeehs[id];
+                                    const badge = document.querySelector(`[data-tasbeeh-badge="${id}"]`);
+                                    if (badge) {
+                                        badge.dataset.rawCompleted = item.total_completed;
+                                        badge.dataset.rawRequired = item.total_required;
+                                        const compEl = badge.querySelector('.zikr-badge-comp-val');
+                                        const reqEl = badge.querySelector('.zikr-badge-req-val');
+                                        if (compEl) compEl.textContent = item.total_completed;
+                                        if (reqEl) reqEl.textContent = item.total_required;
+                                    }
+                                });
+                            }
+                        }
+
+                        // Unhide protected cards in visibility map
+                        const map = getVisibilityMap();
+                        PROTECTED_CARDS.forEach(k => { map[k] = true; });
+                        saveVisibilityMap(map);
+
+                        // Close modal
+                        const modalEl = document.getElementById('unlockZikrStatsModal');
+                        if (modalEl) {
+                            const modal = bootstrap.Modal.getInstance(modalEl);
+                            if (modal) modal.hide();
+                        }
+
+                        // Start countdown for 5 minutes (300s)
+                        window.ZikrStatsSecurity.startCountdown(data.expires_in_seconds || 300);
+                        window.ZikrStatsSecurity.updateUiState();
+                        window.renderZikrStatCards();
+
+                    } catch (err) {
+                        if (errEl) {
+                            errEl.textContent = err.message || 'Incorrect password! Please try again.';
+                            errEl.classList.remove('d-none');
+                        }
+                    } finally {
+                        if (btn) btn.disabled = false;
+                        if (spinner) spinner.classList.add('d-none');
+                    }
+                });
+            }
+
+            // Modal Password Toggle Visibility Eye
+            const togglePwdBtn = document.getElementById('toggleUnlockStatsPassword');
+            const pwdInput = document.getElementById('unlockStatsPasswordInput');
+            const pwdIcon = document.getElementById('toggleUnlockStatsPasswordIcon');
+            if (togglePwdBtn && pwdInput) {
+                togglePwdBtn.addEventListener('click', function () {
+                    const isPwd = pwdInput.type === 'password';
+                    pwdInput.type = isPwd ? 'text' : 'password';
+                    if (pwdIcon) {
+                        pwdIcon.className = isPwd ? 'bi bi-eye-slash' : 'bi bi-eye';
+                    }
+                });
+            }
+
+            // Auto-focus input when modal opens
+            const unlockModalEl = document.getElementById('unlockZikrStatsModal');
+            if (unlockModalEl) {
+                unlockModalEl.addEventListener('shown.bs.modal', function () {
+                    const input = document.getElementById('unlockStatsPasswordInput');
+                    if (input) input.focus();
+                });
+            }
+
+            // Initial countdown setup if already unlocked in active session
+            if (window.ZikrStatsSecurity.isUnlocked && window.ZikrStatsSecurity.remainingSeconds > 0) {
+                window.ZikrStatsSecurity.startCountdown(window.ZikrStatsSecurity.remainingSeconds);
+            }
+            window.ZikrStatsSecurity.updateUiState();
 
             // Initial render
             window.renderZikrStatCards();
@@ -735,8 +1064,11 @@
                 // "Completed: X / Y" badge
                 const completedBadge = card.querySelector('.badge-completed');
                 if (completedBadge) {
-                    const strong = completedBadge.querySelector('strong');
-                    if (strong) strong.textContent = newTotal.toLocaleString();
+                    completedBadge.dataset.rawCompleted = newTotal.toLocaleString();
+                    if (window.ZikrStatsSecurity && window.ZikrStatsSecurity.isUnlocked) {
+                        const strong = completedBadge.querySelector('strong');
+                        if (strong) strong.textContent = newTotal.toLocaleString();
+                    }
                 }
 
                 // Remaining / Extra badge
