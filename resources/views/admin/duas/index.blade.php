@@ -2,6 +2,27 @@
 @section('title', 'Manage Duas')
 @section('page_title', 'Duas (دعائیں)')
 
+@push('styles')
+<style>
+    .dua-card-title {
+        color: #38bdf8 !important;
+        text-shadow: 0 0 14px rgba(56, 189, 248, 0.3);
+        font-weight: 700;
+        letter-spacing: 0.2px;
+    }
+    .dua-card-title .title-icon {
+        color: #06b6d4 !important;
+    }
+    [data-theme="light"] .dua-card-title {
+        color: #0284c7 !important;
+        text-shadow: none !important;
+    }
+    [data-theme="light"] .dua-card-title .title-icon {
+        color: #0284c7 !important;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between gap-3 mb-4">
     {{-- Active Dua Journey / Duration Tracker (Days, Months, Years) --}}
@@ -143,8 +164,8 @@
 
                             {{-- Dua Title --}}
                             <div class="mb-2 text-start">
-                                <h5 class="dua-card-title fw-bold text-white mb-0" style="font-size: 0.95rem; line-height: 1.4;">
-                                    <span class="text-info me-1"><i class="bi bi-bookmark-star-fill"></i></span>{{ $d['title'] }}
+                                <h5 class="dua-card-title fw-bold mb-0" style="font-size: 0.95rem; line-height: 1.4;">
+                                    <span class="title-icon me-1"><i class="bi bi-bookmark-star-fill"></i></span>{{ $d['title'] }}
                                 </h5>
                             </div>
 
