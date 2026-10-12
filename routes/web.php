@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\ProgramExpenseController;
 use App\Http\Controllers\Admin\ProgramReportController;
 use App\Http\Controllers\Admin\ProgramTransactionController;
 use App\Http\Controllers\Admin\PwaSettingsController;
+use App\Http\Controllers\Admin\DuaAdminController;
 use App\Http\Controllers\Admin\TasbeehAdminController;
 use App\Http\Controllers\Admin\ZikrCounterController;
 use App\Http\Controllers\Admin\ZikrDashboardController;
@@ -163,6 +164,20 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): v
     Route::put('/tasbeehs/{tasbeeh}', [TasbeehAdminController::class, 'update'])->name('tasbeehs.update');
     Route::patch('/tasbeehs/{tasbeeh}/toggle', [TasbeehAdminController::class, 'toggle'])->name('tasbeehs.toggle');
     Route::delete('/tasbeehs/{tasbeeh}', [TasbeehAdminController::class, 'destroy'])->name('tasbeehs.destroy');
+
+    // Admin Dua Management & Tracking
+    Route::get('/duas', [DuaAdminController::class, 'index'])->name('duas.index');
+    Route::post('/duas', [DuaAdminController::class, 'store'])->name('duas.store');
+    Route::put('/duas/{dua}', [DuaAdminController::class, 'update'])->name('duas.update');
+    Route::patch('/duas/{dua}/toggle', [DuaAdminController::class, 'toggle'])->name('duas.toggle');
+    Route::delete('/duas/{dua}', [DuaAdminController::class, 'destroy'])->name('duas.destroy');
+    Route::post('/duas/{dua}/increment', [DuaAdminController::class, 'increment'])->name('duas.increment');
+    Route::post('/duas/{dua}/manual', [DuaAdminController::class, 'manual'])->name('duas.manual');
+    Route::post('/duas/{dua}/complete-today', [DuaAdminController::class, 'completeToday'])->name('duas.complete-today');
+    Route::post('/duas/{dua}/reset', [DuaAdminController::class, 'reset'])->name('duas.reset');
+    Route::post('/duas/{dua}/start-date', [DuaAdminController::class, 'updateStartDate'])->name('duas.start-date');
+    Route::post('/duas/complete-all-today', [DuaAdminController::class, 'completeAllToday'])->name('duas.complete-all-today');
+    Route::post('/duas/reset-all', [DuaAdminController::class, 'resetAll'])->name('duas.reset-all');
 
     Route::get('/investor-dashboard', InvestorDashboardController::class)->name('investor-dashboard');
     Route::get('/investors', [InvestorController::class, 'index'])->name('investors.index');

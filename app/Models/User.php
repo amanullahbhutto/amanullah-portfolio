@@ -52,6 +52,11 @@ class User extends Authenticatable
         return $this->hasMany(UserTasbeehProgress::class);
     }
 
+    public function duaProgress(): HasMany
+    {
+        return $this->hasMany(UserDuaProgress::class);
+    }
+
     public function scopeMuslim(Builder $query): Builder
     {
         return $query->whereHas('roles', fn ($q) => $q->where('name', 'Muslim'));

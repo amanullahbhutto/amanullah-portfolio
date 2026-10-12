@@ -62,9 +62,10 @@
                     $namazMenuOpen = request()->routeIs('admin.namaz.*');
                     $canSeeZikr = auth()->user()->isMuslim() || auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->canAny(['view zikr', 'zikr.view', 'manage tasbeeh', 'tasbeeh.manage']);
                     $zikrMenuOpen = request()->routeIs('admin.zikr.*') || request()->routeIs('admin.tasbeehs.*');
+                    $canSeeDua = auth()->user()->isMuslim() || auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->canAny(['manage tasbeeh', 'tasbeeh.manage']);
                 @endphp
 
-                @if($canSeeNamaz || $canSeeZikr)
+                @if($canSeeNamaz || $canSeeZikr || $canSeeDua)
                     <span class="sidebar-label mt-3">Islamic & Deen</span>
                 @endif
 
@@ -95,6 +96,12 @@
                             @endif
                         </div>
                     </details>
+                @endif
+
+                @if($canSeeDua)
+                    <a href="{{ route('admin.duas.index') }}" class="{{ request()->routeIs('admin.duas.*') ? 'active' : '' }}">
+                        <i class="bi bi-book-half"></i><span>Duas (دعائیں)</span>
+                    </a>
                 @endif
                 @can('view profile')<a href="{{ route('admin.profile.edit') }}" class="{{ request()->routeIs('admin.profile.*') ? 'active' : '' }}"><i class="bi bi-person-badge"></i><span>Profile</span></a>@endcan
                 @can('view project')<a href="{{ route('admin.content.index', 'projects') }}" class="{{ request()->is('admin/content/projects*') ? 'active' : '' }}"><i class="bi bi-kanban"></i><span>Projects</span></a>@endcan
