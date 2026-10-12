@@ -141,11 +141,11 @@
                                 @endif
                             </div>
 
-                            {{-- Target & Start Date Metadata --}}
-                            <div class="mb-2 text-start" style="font-size: 0.75rem; color: #94a3b8;">
-                                <span>Target: <strong class="text-info font-monospace">{{ number_format($d['daily_target']) }}</strong>/day</span>
-                                <span class="mx-1">•</span>
-                                <span>Started: <span class="text-white">{{ $d['formatted_start_date'] ?? '—' }}</span></span>
+                            {{-- Dua Title --}}
+                            <div class="mb-2 text-start">
+                                <h5 class="dua-card-title fw-bold text-white mb-0" style="font-size: 0.95rem; line-height: 1.4;">
+                                    <span class="text-info me-1"><i class="bi bi-bookmark-star-fill"></i></span>{{ $d['title'] }}
+                                </h5>
                             </div>
 
                             <!-- Arabic Text & Urdu Translation -->
