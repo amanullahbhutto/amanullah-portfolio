@@ -291,7 +291,7 @@ class ZikrService
     /**
      * Aggregated Zikr dashboard summary across all active Tasbeehs for a Muslim user.
      */
-    public function getDashboardSummary(User $user): array
+    public function getDashboardSummary(User $user, ?string $fromDate = null, ?string $toDate = null): array
     {
         $activeTasbeehs = Tasbeeh::query()->active()->ordered()->get();
         $progressMap = UserTasbeehProgress::where('user_id', $user->id)->get()->keyBy('tasbeeh_id');
@@ -312,6 +312,62 @@ class ZikrService
                 ->pluck('count', 'tasbeeh_id')
             : collect();
 
+        // Date Range filtering (kitne zikr kiye)
+        $isFiltered = !empty($fromDate) || !empty($toDate);
+        $dateRangeSummary = [
+            'is_filtered' => $isFiltered,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+            'from_date_formatted' => $fromDate ? Carbon::parse($fromDate, $this->getTimezone())->format('d M, Y') : null,
+            'to_date_formatted' => $toDate ? Carbon::parse($toDate, $this->getTimezone())->format('d M, Y') : null,
+            'range_days' => 0,
+            'total_count' => 0,
+            'active_days' => 0,
+            'avg_per_day' => 0,
+            'tasbeeh_counts' => [],
+        ];
+
+        if ($hasDailyTable && $isFiltered) {
+            $rangeQuery = UserDailyZikr::where('user_id', $user->id);
+            if ($fromDate) {
+                $rangeQuery->where('date', '>=', $fromDate);
+            }
+            if ($toDate) {
+                $rangeQuery->where('date', '<=', $toDate);
+            }
+
+            $rangeTotal = (int) (clone $rangeQuery)->sum('count');
+            $rangeActiveDays = (int) (clone $rangeQuery)->where('count', '>', 0)->distinct('date')->count('date');
+            $tasbeehCounts = (clone $rangeQuery)
+                ->groupBy('tasbeeh_id')
+                ->select('tasbeeh_id', DB::raw('SUM(count) as total_count'))
+                ->pluck('total_count', 'tasbeeh_id')
+                ->toArray();
+
+            if ($fromDate && $toDate) {
+                $cStart = Carbon::parse($fromDate, $this->getTimezone())->startOfDay();
+                $cEnd = Carbon::parse($toDate, $this->getTimezone())->startOfDay();
+                $rangeDays = $cStart->gt($cEnd) ? 1 : ((int) $cStart->diffInDays($cEnd) + 1);
+            } elseif ($fromDate) {
+                $cStart = Carbon::parse($fromDate, $this->getTimezone())->startOfDay();
+                $rangeDays = (int) $cStart->diffInDays($this->now()->startOfDay()) + 1;
+            } else {
+                $cEnd = Carbon::parse($toDate, $this->getTimezone())->startOfDay();
+                $minDate = UserDailyZikr::where('user_id', $user->id)->min('date');
+                $cStart = $minDate ? Carbon::parse($minDate, $this->getTimezone())->startOfDay() : $cEnd;
+                $rangeDays = (int) $cStart->diffInDays($cEnd) + 1;
+            }
+
+            $rangeDays = max(1, $rangeDays);
+            $avgPerDay = round($rangeTotal / $rangeDays, 1);
+
+            $dateRangeSummary['range_days'] = $rangeDays;
+            $dateRangeSummary['total_count'] = $rangeTotal;
+            $dateRangeSummary['active_days'] = $rangeActiveDays;
+            $dateRangeSummary['avg_per_day'] = $avgPerDay;
+            $dateRangeSummary['tasbeeh_counts'] = $tasbeehCounts;
+        }
+
         $tasbeehStats = [];
         $overallTodayRequired = 0;
         $overallTodayCompleted = 0;
@@ -324,6 +380,7 @@ class ZikrService
             $progress = $progressMap->get($tasbeeh->id);
             $todayCount = (int) ($todayDailyMap->get($tasbeeh->id) ?? 0);
             $stats = $this->calculateTasbeehStats($user, $tasbeeh, $progress, $todayCount);
+            $stats['range_completed'] = $isFiltered ? (int) ($dateRangeSummary['tasbeeh_counts'][$tasbeeh->id] ?? 0) : null;
             $tasbeehStats[] = $stats;
 
             $overallTodayRequired += $stats['daily_target'];
@@ -380,6 +437,7 @@ class ZikrService
             'overall_extra' => $overallExtra,
             'overall_percentage' => $overallPercentage,
             'tasbeehs' => $tasbeehStats,
+            'date_range' => $dateRangeSummary,
         ];
     }
 

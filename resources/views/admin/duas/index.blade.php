@@ -24,27 +24,49 @@
 @endpush
 
 @section('content')
-<div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between gap-3 mb-4">
+<div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 mb-4">
     {{-- Active Dua Journey / Duration Tracker (Days, Months, Years) --}}
-    <div class="d-flex align-items-center justify-content-center">
+    <div class="zikr-journey-wrapper d-flex align-items-center justify-content-center justify-content-sm-start">
         @if(isset($summary['journey_duration']))
-            <div class="zikr-journey-pill d-inline-flex align-items-center px-3 py-2 rounded-4 border mx-auto mx-md-0" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(8, 17, 30, 0.95) 100%); border-color: rgba(6, 182, 212, 0.35); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
-                <div class="d-flex align-items-center justify-content-center me-2 rounded-circle flex-shrink-0" style="width: 32px; height: 32px; background: rgba(6, 182, 212, 0.2); color: #06b6d4; font-size: 1rem;">
+            <div class="zikr-journey-pill d-flex d-sm-inline-flex align-items-center px-3 py-2 rounded-4 border" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(8, 17, 30, 0.95) 100%); border-color: rgba(6, 182, 212, 0.35); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+                <div class="d-flex align-items-center justify-content-center me-2 me-sm-3 rounded-circle flex-shrink-0" style="width: 34px; height: 34px; background: rgba(6, 182, 212, 0.2); color: #06b6d4; font-size: 1.05rem;">
                     <i class="bi bi-calendar2-range"></i>
                 </div>
-                <div class="d-flex flex-column justify-content-center" style="line-height: 1.25;">
-                    <div class="d-flex align-items-center gap-1 flex-wrap justify-content-center justify-content-sm-start">
+
+                {{-- Desktop View: Single horizontal line duration + badge (Matching original desktop design) --}}
+                <div class="d-none d-sm-flex flex-column justify-content-center" style="line-height: 1.25;">
+                    <div class="d-flex align-items-center gap-1 flex-wrap">
                         <span class="small fw-bold text-uppercase" style="color: #38bdf8; font-size: 0.68rem; letter-spacing: 0.5px;">
                             Dua Journey:
                         </span>
-                        <strong class="text-white font-monospace" style="font-size: 0.85rem;" id="top-journey-duration-text">
+                        <strong class="text-white font-monospace top-journey-duration-text" style="font-size: 0.85rem;" id="top-journey-duration-text">
                             {{ $summary['journey_duration']['formatted_full'] }}
                         </strong>
                         <span class="badge rounded-pill text-info font-monospace ms-1" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); font-size: 0.65rem; padding: 2px 7px;" id="top-journey-total-days-badge">
                             {{ $summary['journey_duration']['total_days'] }} {{ $summary['journey_duration']['total_days'] === 1 ? 'Day' : 'Days' }} Total
                         </span>
                     </div>
-                    <small class="text-muted-custom" style="font-size: 0.68rem;" id="top-journey-start-text">
+                    <small class="text-muted-custom top-journey-start-text" style="font-size: 0.68rem;" id="top-journey-start-text">
+                        Started: <span style="color: #cbd5e1;">{{ $summary['journey_duration']['start_date_formatted'] }}</span>
+                    </small>
+                </div>
+
+                {{-- Mobile View: Structured card with clean 3 rows (Optimized for mobile screens) --}}
+                <div class="d-flex d-sm-none flex-column justify-content-center flex-grow-1 min-w-0" style="line-height: 1.3;">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <span class="small fw-bold text-uppercase" style="color: #38bdf8; font-size: 0.68rem; letter-spacing: 0.6px;">
+                            Dua Journey
+                        </span>
+                        <span class="badge rounded-pill text-info font-monospace" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); font-size: 0.65rem; padding: 2px 7px;">
+                            {{ $summary['journey_duration']['total_days'] }} {{ $summary['journey_duration']['total_days'] === 1 ? 'Day' : 'Days' }} Total
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-baseline gap-1 my-0.5">
+                        <strong class="text-white font-monospace top-journey-duration-text" style="font-size: 0.92rem;">
+                            {{ $summary['journey_duration']['formatted_full'] }}
+                        </strong>
+                    </div>
+                    <small class="text-muted-custom top-journey-start-text" style="font-size: 0.68rem;">
                         Started: <span style="color: #cbd5e1;">{{ $summary['journey_duration']['start_date_formatted'] }}</span>
                     </small>
                 </div>
@@ -53,7 +75,7 @@
     </div>
 
     {{-- Top Action Buttons --}}
-    <div class="d-flex flex-wrap align-items-center justify-content-center gap-2">
+    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-end gap-2 ms-sm-auto">
         @if(isset($muslimUsers) && $muslimUsers->count() > 1 && (auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->can('manage tasbeeh')))
             <form method="GET" action="{{ route('admin.duas.index') }}" class="d-inline-block">
                 <select name="user_id" class="form-select form-select-sm" onchange="this.form.submit()" style="background: #08111e; border: 1px solid #142845; color: #38bdf8; border-radius: 12px; font-weight: 600; font-size: 0.8rem; padding: 6px 32px 6px 12px;">
@@ -374,7 +396,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label text-muted-custom small fw-semibold">Arabic Text (الْمَتْنُ الْعَرَبِيُّ) <span class="text-danger">*</span></label>
-                            <textarea name="arabic_text" class="form-control font-arabic" rows="3" dir="rtl" placeholder="رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً..." style="font-size: 1.3rem; line-height: 2;" required></textarea>
+                            <textarea name="arabic_text" class="form-control font-arabic" rows="3" dir="rtl" placeholder="رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً..." style="font-size: 1.35rem; line-height: 2.2;" required></textarea>
                         </div>
                         <div class="col-12">
                             <label class="form-label text-muted-custom small fw-semibold">Urdu Meaning / Translation (اردو ترجمہ)</label>
@@ -434,7 +456,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label text-muted-custom small fw-semibold">Arabic Text (الْمَتْنُ الْعَرَبِيُّ) <span class="text-danger">*</span></label>
-                            <textarea name="arabic_text" id="editDuaArabic" class="form-control font-arabic" rows="3" dir="rtl" style="font-size: 1.3rem; line-height: 2;" required></textarea>
+                            <textarea name="arabic_text" id="editDuaArabic" class="form-control font-arabic" rows="3" dir="rtl" style="font-size: 1.35rem; line-height: 2.2;" required></textarea>
                         </div>
                         <div class="col-12">
                             <label class="form-label text-muted-custom small fw-semibold">Urdu Meaning / Translation (اردو ترجمہ)</label>
@@ -607,7 +629,7 @@
             </div>
             <div class="modal-body p-4">
                 <div class="p-3 rounded-4 mb-3" style="background: rgba(12,22,38,0.7); border: 1px solid rgba(56,189,248,0.2);">
-                    <div class="text-end font-arabic mb-2" id="duaDescModalArabic" style="font-size: 1.5rem; line-height: 2; color: #f8fafc;"></div>
+                    <div class="text-end font-arabic mb-2" id="duaDescModalArabic" style="font-size: 1.6rem; line-height: 2.3; color: #f8fafc;"></div>
                     <div class="text-end font-urdu" id="duaDescModalUrdu" style="font-size: 1.15rem; line-height: 1.9; color: #cbd5e1;"></div>
                 </div>
                 <div class="row g-2 small text-muted-custom">

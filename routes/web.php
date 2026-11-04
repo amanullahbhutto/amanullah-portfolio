@@ -157,6 +157,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): v
     Route::post('/zikr/verify-stats-password', [ZikrDashboardController::class, 'verifyStatsPassword'])->name('zikr.verify-stats-password');
     Route::post('/zikr/lock-stats', [ZikrDashboardController::class, 'lockStats'])->name('zikr.lock-stats');
     Route::post('/zikr/settings', [ZikrDashboardController::class, 'updateSettings'])->name('zikr.settings.update');
+    Route::post('/zikr/toggle-panels', [ZikrDashboardController::class, 'togglePanels'])->name('zikr.toggle-panels');
 
     // Admin Tasbeeh Definitions CRUD
     Route::get('/tasbeehs', [TasbeehAdminController::class, 'index'])->name('tasbeehs.index');

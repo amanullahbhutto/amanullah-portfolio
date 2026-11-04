@@ -3,27 +3,53 @@
 @section('page_title', 'Tasbeeh')
 
 @section('content')
-<div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between gap-3 mb-4">
+
+<div id="zikr-date-filter-section" style="{{ !empty($showPanels) ? '' : 'display: none;' }}">
+    @include('admin.zikr.partials.date-filter')
+</div>
+<div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 mb-4">
     {{-- Active Zikr Journey / Duration Tracker (Days, Months, Years) --}}
-    <div class="d-flex align-items-center justify-content-center">
-        @if(isset($summary['journey_duration']))
-            <div class="zikr-journey-pill d-inline-flex align-items-center px-3 py-2 rounded-4 border mx-auto mx-md-0" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(8, 17, 30, 0.95) 100%); border-color: rgba(6, 182, 212, 0.35); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
-                <div class="d-flex align-items-center justify-content-center me-2 rounded-circle flex-shrink-0" style="width: 32px; height: 32px; background: rgba(6, 182, 212, 0.2); color: #06b6d4; font-size: 1rem;">
+    <div class="zikr-journey-wrapper d-flex align-items-center justify-content-center justify-content-sm-start">
+        @if($selectedUser && isset($summary['journey_duration']))
+            <div class="zikr-journey-pill d-flex d-sm-inline-flex align-items-center px-3 py-2 rounded-4 border" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(8, 17, 30, 0.95) 100%); border-color: rgba(6, 182, 212, 0.35); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+                <div class="d-flex align-items-center justify-content-center me-2 me-sm-3 rounded-circle flex-shrink-0" style="width: 34px; height: 34px; background: rgba(6, 182, 212, 0.2); color: #06b6d4; font-size: 1.05rem;">
                     <i class="bi bi-calendar2-range"></i>
                 </div>
-                <div class="d-flex flex-column justify-content-center" style="line-height: 1.25;">
-                    <div class="d-flex align-items-center gap-1 flex-wrap justify-content-center justify-content-sm-start">
+
+                {{-- Desktop View: Single horizontal line duration + badge (Matching original desktop design) --}}
+                <div class="d-none d-sm-flex flex-column justify-content-center" style="line-height: 1.25;">
+                    <div class="d-flex align-items-center gap-1 flex-wrap">
                         <span class="small fw-bold text-uppercase" style="color: #38bdf8; font-size: 0.68rem; letter-spacing: 0.5px;">
                             Zikr Journey:
                         </span>
-                        <strong class="text-white font-monospace" style="font-size: 0.85rem;" id="top-journey-duration-text">
+                        <strong class="text-white font-monospace top-journey-duration-text" style="font-size: 0.85rem;" id="top-journey-duration-text">
                             {{ $summary['journey_duration']['formatted_full'] }}
                         </strong>
                         <span class="badge rounded-pill text-info font-monospace ms-1" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); font-size: 0.65rem; padding: 2px 7px;" id="top-journey-total-days-badge">
                             {{ $summary['journey_duration']['total_days'] }} {{ $summary['journey_duration']['total_days'] === 1 ? 'Day' : 'Days' }} Total
                         </span>
                     </div>
-                    <small class="text-muted-custom" style="font-size: 0.68rem;" id="top-journey-start-text">
+                    <small class="text-muted-custom top-journey-start-text" style="font-size: 0.68rem;" id="top-journey-start-text">
+                        Started: <span style="color: #cbd5e1;">{{ $summary['journey_duration']['start_date_formatted'] }}</span>
+                    </small>
+                </div>
+
+                {{-- Mobile View: Structured card with clean 3 rows (Optimized for mobile screens) --}}
+                <div class="d-flex d-sm-none flex-column justify-content-center flex-grow-1 min-w-0" style="line-height: 1.3;">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <span class="small fw-bold text-uppercase" style="color: #38bdf8; font-size: 0.68rem; letter-spacing: 0.6px;">
+                            Zikr Journey
+                        </span>
+                        <span class="badge rounded-pill text-info font-monospace" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); font-size: 0.65rem; padding: 2px 7px;">
+                            {{ $summary['journey_duration']['total_days'] }} {{ $summary['journey_duration']['total_days'] === 1 ? 'Day' : 'Days' }} Total
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-baseline gap-1 my-0.5">
+                        <strong class="text-white font-monospace top-journey-duration-text" style="font-size: 0.92rem;">
+                            {{ $summary['journey_duration']['formatted_full'] }}
+                        </strong>
+                    </div>
+                    <small class="text-muted-custom top-journey-start-text" style="font-size: 0.68rem;">
                         Started: <span style="color: #cbd5e1;">{{ $summary['journey_duration']['start_date_formatted'] }}</span>
                     </small>
                 </div>
@@ -32,7 +58,7 @@
     </div>
 
     {{-- Top Action Buttons --}}
-    <div class="d-flex flex-wrap align-items-center justify-content-center gap-2">
+    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-end gap-2 ms-sm-auto">
         @if(isset($muslimUsers) && $muslimUsers->count() > 1 && (auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'admin']) || auth()->user()->can('manage tasbeeh')))
             <form method="GET" action="{{ route('admin.tasbeehs.index') }}" class="d-inline-block">
                 <select name="user_id" class="form-select form-select-sm" onchange="this.form.submit()" style="background: #08111e; border: 1px solid #142845; color: #38bdf8; border-radius: 12px; font-weight: 600; font-size: 0.8rem; padding: 6px 32px 6px 12px;">
@@ -44,6 +70,11 @@
                 </select>
             </form>
         @endif
+
+        {{-- Toggle Date Filter & Top Stats Panel --}}
+        <button class="action-btn-top {{ !empty($showPanels) ? 'cyan active' : '' }}" type="button" id="toggleStatsFilterPanelBtn" title="{{ !empty($showPanels) ? 'Hide Date Filter' : 'Show Date Filter' }}">
+            <i class="bi {{ !empty($showPanels) ? 'bi-funnel-fill text-info' : 'bi-funnel' }}" id="toggleStatsFilterPanelIcon"></i>
+        </button>
 
         {{-- Reset All Tasbeehs Trigger (Icon 1) --}}
         <button class="action-btn-top danger" type="button" data-bs-toggle="modal" data-bs-target="#resetAllTasbeehsModal" title="Reset All Tasbeehs to 0 (Start Date Today)">
@@ -103,6 +134,9 @@
                                         Today: <strong class="ms-1 font-monospace">0</strong>
                                     </span>
                                 @endif
+                                <span class="badge rounded-pill zikr-period-count-badge d-inline-flex align-items-center px-2 py-0.5 ms-1 {{ empty($summary['date_range']['is_filtered']) ? 'd-none' : '' }}" data-tasbeeh-id="{{ $t->id }}" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 0.72rem; font-weight: 600;" title="Zikr count in selected date range">
+                                        <i class="bi bi-funnel me-1"></i>Period: <strong class="ms-1 font-monospace zikr-period-val">{{ number_format($t->stats['range_completed'] ?? 0) }}</strong>
+                                    </span>
                             </div>
 
                             <!-- Right-Aligned Text Area with Custom Center Divider -->
@@ -322,7 +356,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label text-white fw-bold">Arabic Text (الْمَتْنُ الْعَرَبِيُّ) <span class="text-danger">*</span></label>
-                            <textarea class="form-control font-arabic" name="arabic_text" rows="3" dir="rtl" placeholder="سُبْحَانَ اللهِ..." required style="background: #0c1626; border-color: #1c2c44; color: #f97316; font-size: 1.3rem; line-height: 1.8;"></textarea>
+                            <textarea class="form-control font-arabic" name="arabic_text" rows="3" dir="rtl" placeholder="سُبْحَانَ اللهِ..." required style="background: #0c1626; border-color: #1c2c44; color: #f97316; font-size: 1.35rem; line-height: 2.2;"></textarea>
                             <div class="invalid-feedback" data-error-for="arabic_text"></div>
                         </div>
                         <div class="col-12">
@@ -387,7 +421,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label text-white fw-bold">Arabic Text (الْمَتْنُ الْعَرَبِيُّ) <span class="text-danger">*</span></label>
-                            <textarea class="form-control font-arabic" name="arabic_text" id="editTasbeehArabic" rows="3" dir="rtl" required style="background: #0c1626; border-color: #1c2c44; color: #f97316; font-size: 1.3rem; line-height: 1.8;"></textarea>
+                            <textarea class="form-control font-arabic" name="arabic_text" id="editTasbeehArabic" rows="3" dir="rtl" required style="background: #0c1626; border-color: #1c2c44; color: #f97316; font-size: 1.35rem; line-height: 2.2;"></textarea>
                             <div class="invalid-feedback" data-error-for="arabic_text"></div>
                         </div>
                         <div class="col-12">
@@ -430,6 +464,45 @@
 @include('admin.zikr.partials.desc-modal')
 @include('admin.zikr.partials.settings-modal')
 @include('admin.zikr.partials.bulk-actions-modals')
+
+<script id="toggleStatsFilterPanelScript">
+document.addEventListener("DOMContentLoaded", function () {
+    const toggleBtn = document.getElementById("toggleStatsFilterPanelBtn");
+    const toggleIcon = document.getElementById("toggleStatsFilterPanelIcon");
+    const filterSection = document.getElementById("zikr-date-filter-section");
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener("click", function () {
+            const isCurrentlyHidden = filterSection && filterSection.style.display === "none";
+            const willShow = isCurrentlyHidden;
+
+            if (willShow) {
+                if (filterSection) filterSection.style.display = "block";
+                toggleBtn.classList.add("cyan", "active");
+                toggleBtn.setAttribute("title", "Hide Date Filter");
+                if (toggleIcon) toggleIcon.className = "bi bi-funnel-fill text-info";
+            } else {
+                if (filterSection) filterSection.style.display = "none";
+                toggleBtn.classList.remove("cyan", "active");
+                toggleBtn.setAttribute("title", "Show Date Filter");
+                if (toggleIcon) toggleIcon.className = "bi bi-funnel";
+            }
+
+            fetch("{{ route('admin.zikr.toggle-panels') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({ show: willShow })
+            }).catch(err => console.log("Toggle panel AJAX error:", err));
+        });
+    }
+});
+</script>
+
 @endsection
 
 @push('scripts')

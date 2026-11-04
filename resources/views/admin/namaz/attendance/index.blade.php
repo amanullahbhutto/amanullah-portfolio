@@ -337,6 +337,48 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    {{-- Quick Apply to All 5 Prayers --}}
+                    <div class="p-3 mb-3 rounded-3 border" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(15, 23, 42, 0.7) 100%); border-color: rgba(6, 182, 212, 0.3) !important;">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label fw-bold mb-0 text-info small d-flex align-items-center gap-1" for="bulkDayPrayerStatusSelect">
+                                <i class="bi bi-check2-all fs-6"></i> Set All 5 Prayers At Once (ایک ساتھ سب پر لگائیں)
+                            </label>
+                            <span class="badge rounded-pill text-cyan font-monospace" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); font-size: 0.68rem; padding: 2px 8px;">
+                                Quick Set
+                            </span>
+                        </div>
+                        <div class="input-group mb-2">
+                            <select class="form-select" id="bulkDayPrayerStatusSelect" style="background: #08111e; border-color: rgba(6, 182, 212, 0.35); color: #e2e8f0; font-weight: 500;">
+                                <option value="">-- Choose Status for All Prayers --</option>
+                                <option value="jamat">🟢 Jamat (باجماعت)</option>
+                                <option value="without_jamat">🔵 Without Jamat (انفرادی)</option>
+                                <option value="kaza">🟡 Kaza (قضا)</option>
+                                <option value="absent">🔴 Absent (چھوٹ گئی)</option>
+                                <option value="auto">⚪ Auto (Pending / Kaza based on time)</option>
+                            </select>
+                            <button class="btn btn-info px-3 fw-bold text-dark d-flex align-items-center gap-1" type="button" id="applyStatusToAllPrayersBtn" title="Apply selected status to all 5 prayers">
+                                <i class="bi bi-check-lg"></i> Apply All
+                            </button>
+                        </div>
+                        <div class="d-flex flex-wrap gap-1">
+                            <button type="button" class="btn btn-sm py-1 px-2 rounded-pill quick-status-pill-btn d-inline-flex align-items-center" data-status="jamat" style="background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); color: #4ade80; font-size: 0.72rem; cursor: pointer;">
+                                🟢 All Jamat
+                            </button>
+                            <button type="button" class="btn btn-sm py-1 px-2 rounded-pill quick-status-pill-btn d-inline-flex align-items-center" data-status="without_jamat" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; font-size: 0.72rem; cursor: pointer;">
+                                🔵 All Without Jamat
+                            </button>
+                            <button type="button" class="btn btn-sm py-1 px-2 rounded-pill quick-status-pill-btn d-inline-flex align-items-center" data-status="kaza" style="background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.4); color: #facc15; font-size: 0.72rem; cursor: pointer;">
+                                🟡 All Kaza
+                            </button>
+                            <button type="button" class="btn btn-sm py-1 px-2 rounded-pill quick-status-pill-btn d-inline-flex align-items-center" data-status="absent" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; font-size: 0.72rem; cursor: pointer;">
+                                🔴 All Absent
+                            </button>
+                            <button type="button" class="btn btn-sm py-1 px-2 rounded-pill quick-status-pill-btn d-inline-flex align-items-center" data-status="auto" style="background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.4); color: #cbd5e1; font-size: 0.72rem; cursor: pointer;">
+                                ⚪ All Auto
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="row g-3">
                         @foreach($prayers as $pKey)
                             <div class="col-12">
@@ -367,3 +409,59 @@
 </div>
 @endif
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    function applyStatusToAllDayPrayers(targetStatus) {
+        if (!targetStatus) return;
+        const valToSet = targetStatus === "auto" ? "" : targetStatus;
+        ["fajr", "zuhr", "asr", "maghrib", "isha"].forEach(function (p) {
+            const select = document.getElementById("modalStatus_" + p);
+            if (select) {
+                select.value = valToSet;
+                select.style.transition = "border-color 0.2s ease, box-shadow 0.2s ease";
+                select.style.borderColor = "#06b6d4";
+                select.style.boxShadow = "0 0 10px rgba(6, 182, 212, 0.4)";
+                setTimeout(function () {
+                    select.style.borderColor = "";
+                    select.style.boxShadow = "";
+                }, 500);
+            }
+        });
+
+        const bulkSelect = document.getElementById("bulkDayPrayerStatusSelect");
+        if (bulkSelect) {
+            bulkSelect.value = targetStatus;
+        }
+    }
+
+    // Click handler for Apply All button & quick pills
+    document.addEventListener("click", function (event) {
+        const applyBtn = event.target.closest?.("#applyStatusToAllPrayersBtn");
+        if (applyBtn) {
+            const bulkSelect = document.getElementById("bulkDayPrayerStatusSelect");
+            if (bulkSelect && bulkSelect.value) {
+                applyStatusToAllDayPrayers(bulkSelect.value);
+            }
+            return;
+        }
+
+        const pillBtn = event.target.closest?.(".quick-status-pill-btn");
+        if (pillBtn && pillBtn.dataset.status) {
+            applyStatusToAllDayPrayers(pillBtn.dataset.status);
+            return;
+        }
+    });
+
+    // Change handler on bulk select
+    document.addEventListener("change", function (event) {
+        if (event.target && event.target.id === "bulkDayPrayerStatusSelect") {
+            if (event.target.value) {
+                applyStatusToAllDayPrayers(event.target.value);
+            }
+        }
+    });
+});
+</script>
+@endpush

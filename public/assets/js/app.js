@@ -2061,10 +2061,18 @@
             const dateFormatted = document.getElementById('modalDayFormatted');
             if (dateInput) dateInput.value = editDayBtn.dataset.date || '';
             if (dateFormatted) dateFormatted.textContent = editDayBtn.dataset.formattedDate || '';
+            const dayStatuses = [];
             ['fajr', 'zuhr', 'asr', 'maghrib', 'isha'].forEach((p) => {
                 const select = document.getElementById(`modalStatus_${p}`);
-                if (select) select.value = editDayBtn.dataset[p] || '';
+                const val = editDayBtn.dataset[p] || '';
+                if (select) select.value = val;
+                dayStatuses.push(val);
             });
+            const bulkSelect = document.getElementById('bulkDayPrayerStatusSelect');
+            if (bulkSelect) {
+                const allSame = dayStatuses.length === 5 && dayStatuses.every(s => s === dayStatuses[0]);
+                bulkSelect.value = allSame ? (dayStatuses[0] || 'auto') : '';
+            }
         }
     });
 

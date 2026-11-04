@@ -24,7 +24,7 @@ class TasbeehAdminController extends Controller
         });
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
         $currentUser = $request->user();
         $muslimUsers = User::query()->muslim()->orderBy('name')->get();
@@ -46,14 +46,33 @@ class TasbeehAdminController extends Controller
         $tasbeehs = Tasbeeh::query()->ordered()->get();
         $progressMap = $targetUser ? $targetUser->tasbeehProgress()->get()->keyBy('tasbeeh_id') : collect();
 
-        $tasbeehsWithStats = $tasbeehs->map(function ($tasbeeh) use ($targetUser, $progressMap) {
+        $showPanels = session('zikr_show_panels', false);
+        if ($request->filled('from_date') || $request->filled('to_date')) {
+            $showPanels = true;
+        }
+
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
+
+        $summary = $targetUser ? $this->zikrService->getDashboardSummary($targetUser, $fromDate, $toDate) : null;
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'date_range' => $summary['date_range'] ?? null,
+                'formatted_total' => isset($summary['date_range']['total_count']) ? number_format($summary['date_range']['total_count']) : '0',
+            ]);
+        }
+
+        $tasbeehsWithStats = $tasbeehs->map(function ($tasbeeh) use ($targetUser, $progressMap, $summary) {
             $progress = $progressMap->get($tasbeeh->id);
             $stats = $this->zikrService->calculateTasbeehStats($targetUser, $tasbeeh, $progress);
+            if (!empty($summary['date_range']['is_filtered'])) {
+                $stats['range_completed'] = (int) ($summary['date_range']['tasbeeh_counts'][$tasbeeh->id] ?? 0);
+            }
             $tasbeeh->stats = $stats;
             return $tasbeeh;
         });
-
-        $summary = $targetUser ? $this->zikrService->getDashboardSummary($targetUser) : null;
 
         return view('admin.zikr.tasbeehs.index', [
             'tasbeehs' => $tasbeehsWithStats,
@@ -61,6 +80,7 @@ class TasbeehAdminController extends Controller
             'selectedUser' => $targetUser,
             'muslimUsers' => $muslimUsers,
             'summary' => $summary,
+            'showPanels' => $showPanels,
         ]);
     }
 

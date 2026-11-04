@@ -16,7 +16,7 @@ class ZikrDashboardController extends Controller
         protected ZikrService $zikrService
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
         $currentUser = $request->user();
 
@@ -39,7 +39,23 @@ class ZikrDashboardController extends Controller
             $selectedUser = $currentUser->isMuslim() ? $currentUser : $muslimUsers->first();
         }
 
-        $summary = $selectedUser ? $this->zikrService->getDashboardSummary($selectedUser) : null;
+        $showPanels = session('zikr_show_panels', false);
+        if ($request->filled('from_date') || $request->filled('to_date')) {
+            $showPanels = true;
+        }
+
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
+
+        $summary = $selectedUser ? $this->zikrService->getDashboardSummary($selectedUser, $fromDate, $toDate) : null;
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'date_range' => $summary['date_range'] ?? null,
+                'formatted_total' => isset($summary['date_range']['total_count']) ? number_format($summary['date_range']['total_count']) : '0',
+            ]);
+        }
 
         // Session-based 5-minute password unlock check for Lifetime, Total Required, Total Complete
         $statsUnlockedAt = session('zikr_stats_unlocked_at');
@@ -58,7 +74,8 @@ class ZikrDashboardController extends Controller
             'selectedUser',
             'muslimUsers',
             'isStatsUnlocked',
-            'statsUnlockRemaining'
+            'statsUnlockRemaining',
+            'showPanels'
         ));
     }
 
@@ -160,5 +177,15 @@ class ZikrDashboardController extends Controller
             ],
         ]);
     }
-}
 
+    public function togglePanels(Request $request): JsonResponse
+    {
+        $show = $request->boolean('show', false);
+        session(['zikr_show_panels' => $show]);
+
+        return response()->json([
+            'success' => true,
+            'show' => $show,
+        ]);
+    }
+}

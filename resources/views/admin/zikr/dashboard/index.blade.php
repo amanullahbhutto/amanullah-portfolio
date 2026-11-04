@@ -3,27 +3,53 @@
 @section('page_title', 'Daily Zikr Tracking')
 
 @section('content')
-<div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between gap-3 mb-4">
+
+<div id="zikr-date-filter-section" style="{{ !empty($showPanels) ? '' : 'display: none;' }}">
+    @include('admin.zikr.partials.date-filter')
+</div>
+<div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 mb-4">
     {{-- Active Zikr Journey / Duration Tracker (Days, Months, Years) --}}
-    <div class="d-flex align-items-center justify-content-center">
+    <div class="zikr-journey-wrapper d-flex align-items-center justify-content-center justify-content-sm-start">
         @if($selectedUser && isset($summary['journey_duration']))
-            <div class="zikr-journey-pill d-inline-flex align-items-center px-3 py-2 rounded-4 border mx-auto mx-md-0" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(8, 17, 30, 0.95) 100%); border-color: rgba(6, 182, 212, 0.35); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
-                <div class="d-flex align-items-center justify-content-center me-2 rounded-circle flex-shrink-0" style="width: 32px; height: 32px; background: rgba(6, 182, 212, 0.2); color: #06b6d4; font-size: 1rem;">
+            <div class="zikr-journey-pill d-flex d-sm-inline-flex align-items-center px-3 py-2 rounded-4 border" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(8, 17, 30, 0.95) 100%); border-color: rgba(6, 182, 212, 0.35); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+                <div class="d-flex align-items-center justify-content-center me-2 me-sm-3 rounded-circle flex-shrink-0" style="width: 34px; height: 34px; background: rgba(6, 182, 212, 0.2); color: #06b6d4; font-size: 1.05rem;">
                     <i class="bi bi-calendar2-range"></i>
                 </div>
-                <div class="d-flex flex-column justify-content-center" style="line-height: 1.25;">
-                    <div class="d-flex align-items-center gap-1 flex-wrap justify-content-center justify-content-sm-start">
+
+                {{-- Desktop View: Single horizontal line duration + badge (Matching original desktop design) --}}
+                <div class="d-none d-sm-flex flex-column justify-content-center" style="line-height: 1.25;">
+                    <div class="d-flex align-items-center gap-1 flex-wrap">
                         <span class="small fw-bold text-uppercase" style="color: #38bdf8; font-size: 0.68rem; letter-spacing: 0.5px;">
                             Zikr Journey:
                         </span>
-                        <strong class="text-white font-monospace" style="font-size: 0.85rem;" id="top-journey-duration-text">
+                        <strong class="text-white font-monospace top-journey-duration-text" style="font-size: 0.85rem;" id="top-journey-duration-text">
                             {{ $summary['journey_duration']['formatted_full'] }}
                         </strong>
                         <span class="badge rounded-pill text-info font-monospace ms-1" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); font-size: 0.65rem; padding: 2px 7px;" id="top-journey-total-days-badge">
                             {{ $summary['journey_duration']['total_days'] }} {{ $summary['journey_duration']['total_days'] === 1 ? 'Day' : 'Days' }} Total
                         </span>
                     </div>
-                    <small class="text-muted-custom" style="font-size: 0.68rem;" id="top-journey-start-text">
+                    <small class="text-muted-custom top-journey-start-text" style="font-size: 0.68rem;" id="top-journey-start-text">
+                        Started: <span style="color: #cbd5e1;">{{ $summary['journey_duration']['start_date_formatted'] }}</span>
+                    </small>
+                </div>
+
+                {{-- Mobile View: Structured card with clean 3 rows (Optimized for mobile screens) --}}
+                <div class="d-flex d-sm-none flex-column justify-content-center flex-grow-1 min-w-0" style="line-height: 1.3;">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <span class="small fw-bold text-uppercase" style="color: #38bdf8; font-size: 0.68rem; letter-spacing: 0.6px;">
+                            Zikr Journey
+                        </span>
+                        <span class="badge rounded-pill text-info font-monospace" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); font-size: 0.65rem; padding: 2px 7px;">
+                            {{ $summary['journey_duration']['total_days'] }} {{ $summary['journey_duration']['total_days'] === 1 ? 'Day' : 'Days' }} Total
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-baseline gap-1 my-0.5">
+                        <strong class="text-white font-monospace top-journey-duration-text" style="font-size: 0.92rem;">
+                            {{ $summary['journey_duration']['formatted_full'] }}
+                        </strong>
+                    </div>
+                    <small class="text-muted-custom top-journey-start-text" style="font-size: 0.68rem;">
                         Started: <span style="color: #cbd5e1;">{{ $summary['journey_duration']['start_date_formatted'] }}</span>
                     </small>
                 </div>
@@ -32,7 +58,12 @@
     </div>
 
     {{-- Top Action Buttons --}}
-    <div class="d-flex flex-wrap align-items-center justify-content-center gap-2">
+    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-end gap-2 ms-sm-auto">
+        {{-- Toggle Date Filter & Top Stats Panel --}}
+        <button class="action-btn-top {{ !empty($showPanels) ? 'cyan active' : '' }}" type="button" id="toggleStatsFilterPanelBtn" title="{{ !empty($showPanels) ? 'Hide Date Filter & Statistics' : 'Show Date Filter & Statistics' }}">
+            <i class="bi {{ !empty($showPanels) ? 'bi-bar-chart-fill text-info' : 'bi-bar-chart-line' }}" id="toggleStatsFilterPanelIcon"></i>
+        </button>
+
         {{-- Reset All Tasbeehs Trigger (Icon 1) --}}
         <button class="action-btn-top danger" type="button" data-bs-toggle="modal" data-bs-target="#resetAllTasbeehsModal" title="Reset All Tasbeehs to 0 (Start Date Today)">
             <i class="bi bi-arrow-counterclockwise"></i>
@@ -71,7 +102,7 @@
 @else
 
     {{-- Top Overall Statistics Cards (2 cards per row on mobile, 3 on tablet, 6 on desktop) --}}
-    <div class="row g-2 g-md-3 mb-4" id="zikr-top-stat-cards">
+    <div class="row g-2 g-md-3 mb-4" id="zikr-top-stat-cards" style="{{ !empty($showPanels) ? '' : 'display: none;' }}">
         {{-- Lifetime All-Time Total Card --}}
         <div class="col-6 col-md-4 col-xl-2">
             <div class="zikr-stat-card p-2 p-sm-3 rounded-4 border h-100 position-relative d-flex flex-column justify-content-between" data-stat-card="lifetime" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.14) 0%, #08111e 100%); border-color: rgba(249, 115, 22, 0.4); min-height: 104px;">
@@ -255,6 +286,9 @@
                                     Today: <strong class="ms-1 font-monospace">0</strong>
                                 </span>
                             @endif
+                            <span class="badge rounded-pill zikr-period-count-badge d-inline-flex align-items-center px-2 py-0.5 ms-1 {{ empty($summary['date_range']['is_filtered']) ? 'd-none' : '' }}" data-tasbeeh-id="{{ $item['tasbeeh_id'] }}" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 0.72rem; font-weight: 600;" title="Zikr count in selected date range">
+                                    <i class="bi bi-funnel me-1"></i>Period: <strong class="ms-1 font-monospace zikr-period-val">{{ number_format($item['range_completed'] ?? 0) }}</strong>
+                                </span>
                         </div>
 
                         {{-- Target & Started Meta --}}
@@ -493,6 +527,50 @@
 @include('admin.zikr.partials.settings-modal')
 @include('admin.zikr.partials.bulk-actions-modals')
 @include('admin.zikr.partials.unlock-stats-modal')
+
+<script id="toggleStatsFilterPanelScript">
+document.addEventListener("DOMContentLoaded", function () {
+    const toggleBtn = document.getElementById("toggleStatsFilterPanelBtn");
+    const toggleIcon = document.getElementById("toggleStatsFilterPanelIcon");
+    const filterSection = document.getElementById("zikr-date-filter-section");
+    const statCardsSection = document.getElementById("zikr-top-stat-cards");
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener("click", function () {
+            const isCurrentlyHidden = (filterSection && filterSection.style.display === "none") ||
+                                      (statCardsSection && statCardsSection.style.display === "none");
+            const willShow = isCurrentlyHidden;
+
+            if (willShow) {
+                if (filterSection) filterSection.style.display = "block";
+                if (statCardsSection) statCardsSection.style.display = "flex";
+                toggleBtn.classList.add("cyan", "active");
+                toggleBtn.setAttribute("title", "Hide Date Filter & Statistics");
+                if (toggleIcon) toggleIcon.className = "bi bi-bar-chart-fill text-info";
+            } else {
+                if (filterSection) filterSection.style.display = "none";
+                if (statCardsSection) statCardsSection.style.display = "none";
+                toggleBtn.classList.remove("cyan", "active");
+                toggleBtn.setAttribute("title", "Show Date Filter & Statistics");
+                if (toggleIcon) toggleIcon.className = "bi bi-bar-chart-line";
+            }
+
+            // Save preference in session via AJAX without page reload
+            fetch("{{ route('admin.zikr.toggle-panels') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({ show: willShow })
+            }).catch(err => console.log("Toggle panel AJAX error:", err));
+        });
+    }
+});
+</script>
+
 @endsection
 
 @push('scripts')
