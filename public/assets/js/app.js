@@ -1604,7 +1604,7 @@
         if (!target) return Promise.resolve();
         target.classList.add('is-loading');
         target.setAttribute('aria-busy', 'true');
-        return fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        return fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' } })
             .then((response) => {
                 if (!response.ok) throw new Error('Refresh failed');
                 return response.text();
@@ -1628,6 +1628,16 @@
                 }
 
                 initTooltips(target);
+                if (typeof window.rebuildDeltasFromOutbox === 'function') {
+                    try { window.rebuildDeltasFromOutbox(); } catch (e) {}
+                }
+                if (typeof window.refreshDuaFilter === 'function') {
+                    try { window.refreshDuaFilter(); } catch (e) {}
+                }
+                if (typeof formatArabicAyahSymbols === 'function') {
+                    formatArabicAyahSymbols(target);
+                }
+                document.dispatchEvent(new CustomEvent('finance:refreshed', { detail: { target, selector } }));
             })
             .finally(() => {
                 target.classList.remove('is-loading');
@@ -1642,6 +1652,35 @@
         });
     };
     initTooltips();
+    const formatArabicAyahSymbols = (root = document) => {
+        if (!root) return;
+        const selector = '.arabic-text, .font-arabic, .arabic-script, .arabic-live-text, .arabic-cell-text, #counterArabicText, #descModalArabic, #duaDescModalArabic';
+        const elements = root.querySelectorAll ? root.querySelectorAll(selector) : [];
+        elements.forEach((el) => {
+            if (!el || el.dataset.ayahFormatted) return;
+            if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') return;
+            const html = el.innerHTML;
+            // Clean, small circular ayah badge
+            let updated = html;
+            updated = updated.replace(/<span class="ayah-symbol">\u06DD*([\u0660-\u06690-9]+)<\/span>/g, '<span class="ayah-symbol">$1</span>');
+            if (/[\u06DD]/.test(updated)) {
+                updated = updated.replace(/\u06DD([\u0660-\u06690-9]+)/g, '<span class="ayah-symbol">$1</span>');
+            } else if (/(?<=\s|^)([\u0660-\u0669]+)(?=\s|$)/.test(updated)) {
+                updated = updated.replace(/(?<=\s|^)([\u0660-\u0669]+)(?=\s|$)/g, '<span class="ayah-symbol">$1</span>');
+            }
+            updated = updated.replace(/<span class="ayah-symbol"><span class="ayah-symbol">/g, '<span class="ayah-symbol">').replace(/<\/span><\/span>/g, '</span>');
+            if (updated !== html) {
+                el.innerHTML = updated;
+                el.dataset.ayahFormatted = 'true';
+            }
+        });
+    };
+    window.formatArabicAyahSymbols = formatArabicAyahSymbols;
+    formatArabicAyahSymbols();
+
+    document.addEventListener('show.bs.modal', (e) => {
+        if (e.target) setTimeout(() => formatArabicAyahSymbols(e.target), 60);
+    });
 
     function updateNamazCellDom(userId, date, prayer, status) {
         const selector = `[data-bs-target="#quickPrayerModal"][data-user-id="${userId}"][data-date="${date}"][data-prayer="${prayer}"]`;

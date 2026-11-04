@@ -2343,6 +2343,35 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     width: 100%;
 }
 
+/* Clean, Simple & Compact Quranic Ayah Circle */
+.ayah-symbol {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 22px !important;
+    height: 22px !important;
+    min-width: 22px !important;
+    border-radius: 50% !important;
+    border: 1.5px solid rgba(249, 115, 22, 0.85) !important;
+    background: rgba(249, 115, 22, 0.08) !important;
+    font-size: 13px !important;
+    font-family: 'Amiri', 'Noto Naskh Arabic', sans-serif !important;
+    font-weight: 700 !important;
+    color: #f97316 !important;
+    line-height: 1 !important;
+    margin: 0 5px !important;
+    vertical-align: 3px !important;
+    unicode-bidi: isolate !important;
+    box-shadow: 0 0 5px rgba(249, 115, 22, 0.2) !important;
+}
+
+[data-theme="light"] .ayah-symbol {
+    border-color: rgba(234, 88, 12, 0.85) !important;
+    color: #ea580c !important;
+    background: rgba(234, 88, 12, 0.08) !important;
+    box-shadow: none !important;
+}
+
 .arabic-text {
     font-family: 'PDMS Saleem Quran', '_PDMS_Saleem_Quran', 'PDMS_Saleem_QuranFont', 'IndoPak Quran', 'Al Qalam Quran Majeed', 'Amiri Quran', 'Scheherazade New', serif !important;
     font-feature-settings: "liga" 1, "mkmk" 1, "mark" 1, "calt" 1 !important;

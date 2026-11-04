@@ -93,7 +93,7 @@ class DuaAdminController extends Controller
             'reference' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $validated['is_active'] = $request->boolean('is_active', true);
+        $validated['is_active'] = $request->boolean('is_active', false);
         $validated['sort_order'] = (int) ($validated['sort_order'] ?? 0);
 
         $dua->update($validated);

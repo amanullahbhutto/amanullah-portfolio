@@ -56,7 +56,7 @@ class TasbeehAdminController extends Controller
 
         $summary = $targetUser ? $this->zikrService->getDashboardSummary($targetUser, $fromDate, $toDate) : null;
 
-        if ($request->ajax() || $request->wantsJson()) {
+        if (($request->wantsJson() && ! $request->acceptsHtml()) || $request->query('json') || $request->header('Accept') === 'application/json') {
             return response()->json([
                 'success' => true,
                 'date_range' => $summary['date_range'] ?? null,

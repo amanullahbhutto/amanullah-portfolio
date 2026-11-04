@@ -152,7 +152,7 @@
 </div>
 
 {{-- Duas Grid --}}
-<section>
+<section data-ajax-crud data-refresh-target="#duas-grid-container">
     <div id="duas-grid-container" class="admin-list-results">
         <div class="row g-3 g-md-4" id="dua-list-container">
             @forelse($duas as $d)
@@ -195,7 +195,7 @@
                             <div class="text-container">
                                 <!-- Arabic Text -->
                                 <div class="arabic-text">
-                                    {{ $d['arabic_text'] }}
+                                    {!! preg_replace('/(?:\x{06DD}|(?<=\s|^))([\x{0660}-\x{0669}0-9]+)(?=\s|$)/u', '<span class="ayah-symbol">$1</span>', e($d['arabic_text'])) !!}
                                 </div>
 
                                 <!-- Islamic Center Divider -->
@@ -382,37 +382,44 @@
                 <h5 class="modal-title"><i class="bi bi-plus-circle me-2 text-accent"></i>Add New Dua</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="createDuaForm" action="{{ route('admin.duas.store') }}">
+            <form data-ajax-form id="createDuaForm" action="{{ route('admin.duas.store') }}" method="POST">
                 @csrf
                 <div class="modal-body p-4">
                     <div class="row g-3">
                         <div class="col-12 col-md-8">
                             <label class="form-label text-muted-custom small fw-semibold">Dua Title / Name <span class="text-danger">*</span></label>
                             <input type="text" name="title" class="form-control" placeholder="e.g. Rabbana Atina Fid Dunya" required>
+                            <div class="invalid-feedback" data-error-for="title"></div>
                         </div>
                         <div class="col-12 col-md-4">
                             <label class="form-label text-muted-custom small fw-semibold">Daily Target <span class="text-danger">*</span></label>
-                            <input type="number" name="daily_target" class="form-control" value="100" min="0" required>
+                            <input type="number" name="daily_target" class="form-control font-monospace" value="100" min="0" max="100000" required>
+                            <div class="invalid-feedback" data-error-for="daily_target"></div>
                         </div>
                         <div class="col-12">
                             <label class="form-label text-muted-custom small fw-semibold">Arabic Text (الْمَتْنُ الْعَرَبِيُّ) <span class="text-danger">*</span></label>
                             <textarea name="arabic_text" class="form-control font-arabic" rows="3" dir="rtl" placeholder="رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً..." style="font-size: 1.35rem; line-height: 2.2;" required></textarea>
+                            <div class="invalid-feedback" data-error-for="arabic_text"></div>
                         </div>
                         <div class="col-12">
                             <label class="form-label text-muted-custom small fw-semibold">Urdu Meaning / Translation (اردو ترجمہ)</label>
                             <textarea name="urdu_meaning" class="form-control font-urdu" rows="3" dir="rtl" placeholder="اے ہمارے رب! ہمیں دنیا میں بھی بھلائی عطا فرما..." style="font-size: 1.1rem; line-height: 1.9;"></textarea>
+                            <div class="invalid-feedback" data-error-for="urdu_meaning"></div>
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label text-muted-custom small fw-semibold">Reference / Source</label>
                             <input type="text" name="reference" class="form-control" placeholder="e.g. Surah Al-Baqarah (2:201)">
+                            <div class="invalid-feedback" data-error-for="reference"></div>
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label text-muted-custom small fw-semibold">Sort Order</label>
-                            <input type="number" name="sort_order" class="form-control" value="0">
+                            <input type="number" name="sort_order" class="form-control font-monospace" value="0">
+                            <div class="invalid-feedback" data-error-for="sort_order"></div>
                         </div>
                         <div class="col-12">
                             <label class="form-label text-muted-custom small fw-semibold">Description / Notes</label>
                             <textarea name="description" class="form-control" rows="2" placeholder="Brief description, virtues, or occasion for this Dua..."></textarea>
+                            <div class="invalid-feedback" data-error-for="description"></div>
                         </div>
                         <div class="col-12">
                             <div class="form-check form-switch mt-2">
@@ -424,8 +431,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-accent btn-sm px-4 fw-bold" id="createDuaSubmitBtn">
-                        <i class="bi bi-check2 me-1"></i>Save Dua
+                    <button type="submit" class="btn btn-accent btn-sm px-4 fw-bold" id="createDuaSubmitBtn" data-submit>
+                        <i class="bi bi-check2 me-1"></i><span data-submit-label>Save Dua</span>
                     </button>
                 </div>
             </form>
@@ -441,7 +448,7 @@
                 <h5 class="modal-title"><i class="bi bi-pencil-square me-2 text-info"></i>Edit Dua</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="editDuaForm">
+            <form data-ajax-form id="editDuaForm" action="" method="POST">
                 @csrf
                 @method('PUT')
                 <div class="modal-body p-4">
@@ -449,30 +456,37 @@
                         <div class="col-12 col-md-8">
                             <label class="form-label text-muted-custom small fw-semibold">Dua Title / Name <span class="text-danger">*</span></label>
                             <input type="text" name="title" id="editDuaTitle" class="form-control" required>
+                            <div class="invalid-feedback" data-error-for="title"></div>
                         </div>
                         <div class="col-12 col-md-4">
                             <label class="form-label text-muted-custom small fw-semibold">Daily Target <span class="text-danger">*</span></label>
-                            <input type="number" name="daily_target" id="editDuaTarget" class="form-control" min="0" required>
+                            <input type="number" name="daily_target" id="editDuaTarget" class="form-control font-monospace" min="0" max="100000" required>
+                            <div class="invalid-feedback" data-error-for="daily_target"></div>
                         </div>
                         <div class="col-12">
                             <label class="form-label text-muted-custom small fw-semibold">Arabic Text (الْمَتْنُ الْعَرَبِيُّ) <span class="text-danger">*</span></label>
                             <textarea name="arabic_text" id="editDuaArabic" class="form-control font-arabic" rows="3" dir="rtl" style="font-size: 1.35rem; line-height: 2.2;" required></textarea>
+                            <div class="invalid-feedback" data-error-for="arabic_text"></div>
                         </div>
                         <div class="col-12">
                             <label class="form-label text-muted-custom small fw-semibold">Urdu Meaning / Translation (اردو ترجمہ)</label>
                             <textarea name="urdu_meaning" id="editDuaUrdu" class="form-control font-urdu" rows="3" dir="rtl" style="font-size: 1.1rem; line-height: 1.9;"></textarea>
+                            <div class="invalid-feedback" data-error-for="urdu_meaning"></div>
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label text-muted-custom small fw-semibold">Reference / Source</label>
                             <input type="text" name="reference" id="editDuaRef" class="form-control">
+                            <div class="invalid-feedback" data-error-for="reference"></div>
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label text-muted-custom small fw-semibold">Sort Order</label>
-                            <input type="number" name="sort_order" id="editDuaOrder" class="form-control">
+                            <input type="number" name="sort_order" id="editDuaOrder" class="form-control font-monospace">
+                            <div class="invalid-feedback" data-error-for="sort_order"></div>
                         </div>
                         <div class="col-12">
                             <label class="form-label text-muted-custom small fw-semibold">Description / Notes</label>
                             <textarea name="description" id="editDuaDesc" class="form-control" rows="2"></textarea>
+                            <div class="invalid-feedback" data-error-for="description"></div>
                         </div>
                         <div class="col-12">
                             <div class="form-check form-switch mt-2">
@@ -484,8 +498,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-accent btn-sm px-4 fw-bold" id="editDuaSubmitBtn">
-                        <i class="bi bi-check2 me-1"></i>Update Dua
+                    <button type="submit" class="btn btn-accent btn-sm px-4 fw-bold" id="editDuaSubmitBtn" data-submit>
+                        <i class="bi bi-check2 me-1"></i><span data-submit-label>Update Dua</span>
                     </button>
                 </div>
             </form>
@@ -697,6 +711,16 @@
 <script>
 (function () {
     'use strict';
+
+    function hideModalSafely(modalEl) {
+        if (!modalEl) return;
+        if (window.bootstrap && window.bootstrap.Modal) {
+            const inst = window.bootstrap.Modal.getInstance(modalEl) || window.bootstrap.Modal.getOrCreateInstance(modalEl);
+            if (inst) inst.hide();
+        } else if (window.jQuery) {
+            window.jQuery(modalEl).modal('hide');
+        }
+    }
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
@@ -984,7 +1008,7 @@
                 if (data.success && data.stats) {
                     const card = document.getElementById(`dua-card-${data.stats.dua_id}`);
                     updateDuaCardDOM(card, data.stats);
-                    bootstrap.Modal.getInstance(quickAddModal)?.hide();
+                    hideModalSafely(quickAddModal);
                     showDuaToast(data.message || `+${countVal} count added!`, 'success');
                 } else {
                     showDuaToast(data.message || 'Failed to add count', 'danger');
@@ -1029,7 +1053,7 @@
                 if (data.success && data.stats) {
                     const card = document.getElementById(`dua-card-${data.stats.dua_id}`);
                     updateDuaCardDOM(card, data.stats);
-                    bootstrap.Modal.getInstance(resetModal)?.hide();
+                    hideModalSafely(resetModal);
                     showDuaToast(data.message || 'Dua count reset to 0.', 'success');
                 } else {
                     showDuaToast(data.message || 'Failed to reset', 'danger');
@@ -1062,7 +1086,7 @@
             });
             const data = await res.json();
             if (data.success) {
-                bootstrap.Modal.getInstance(document.getElementById('resetAllDuasModal'))?.hide();
+                hideModalSafely(document.getElementById('resetAllDuasModal'));
                 showDuaToast(data.message || 'All Duas reset to 0.', 'success');
                 setTimeout(() => window.location.reload(), 600);
             } else {
@@ -1095,7 +1119,7 @@
             });
             const data = await res.json();
             if (data.success) {
-                bootstrap.Modal.getInstance(document.getElementById('completeAllDuasModal'))?.hide();
+                hideModalSafely(document.getElementById('completeAllDuasModal'));
                 showDuaToast(data.message || 'All Duas completed for today!', 'success');
                 setTimeout(() => window.location.reload(), 600);
             } else {
@@ -1109,89 +1133,38 @@
         }
     });
 
-    // ─── Create Dua AJAX ──────────────────────────────────────────────────────
-    document.getElementById('createDuaForm')?.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        const btn = document.getElementById('createDuaSubmitBtn');
-        btn.disabled = true;
-
-        const formData = new FormData(this);
-        try {
-            const res = await fetch(this.action, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: formData
-            });
-            const data = await res.json();
-            if (data.success) {
-                bootstrap.Modal.getInstance(document.getElementById('createDuaModal'))?.hide();
-                showDuaToast(data.message || 'Dua created successfully!', 'success');
-                setTimeout(() => window.location.reload(), 600);
-            } else {
-                showDuaToast(data.message || 'Error saving Dua', 'danger');
-            }
-        } catch (err) {
-            console.error(err);
-            showDuaToast('Validation or network error', 'danger');
-        } finally {
-            btn.disabled = false;
+    // ─── Edit Dua Trigger Population (Delegated & show.bs.modal) ────────────
+    function populateEditDuaForm(trigger) {
+        if (!trigger) return;
+        const form = document.getElementById('editDuaForm');
+        if (form && trigger.dataset.updateUrl) {
+            form.action = trigger.dataset.updateUrl;
         }
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val;
+        };
+        setVal('editDuaTitle', trigger.dataset.title || '');
+        setVal('editDuaTarget', trigger.dataset.target || '100');
+        setVal('editDuaArabic', trigger.dataset.arabic || '');
+        setVal('editDuaUrdu', trigger.dataset.urdu || '');
+        setVal('editDuaRef', trigger.dataset.ref || '');
+        setVal('editDuaOrder', trigger.dataset.order || '0');
+        setVal('editDuaDesc', trigger.dataset.desc || '');
+        const activeCheck = document.getElementById('editDuaActive');
+        if (activeCheck) activeCheck.checked = (trigger.dataset.active === '1');
+    }
+
+    document.addEventListener('click', function (e) {
+        const trigger = e.target.closest?.('[data-bs-target="#editDuaModal"]');
+        if (trigger) populateEditDuaForm(trigger);
     });
 
-    // ─── Edit Dua Handler ─────────────────────────────────────────────────────
-    const editModal = document.getElementById('editDuaModal');
-    if (editModal) {
-        editModal.addEventListener('show.bs.modal', function (e) {
-            const trigger = e.relatedTarget;
-            if (!trigger) return;
-
-            const form = document.getElementById('editDuaForm');
-            form.action = trigger.dataset.updateUrl || '';
-
-            document.getElementById('editDuaTitle').value  = trigger.dataset.title || '';
-            document.getElementById('editDuaTarget').value = trigger.dataset.target || '100';
-            document.getElementById('editDuaArabic').value = trigger.dataset.arabic || '';
-            document.getElementById('editDuaUrdu').value   = trigger.dataset.urdu || '';
-            document.getElementById('editDuaRef').value    = trigger.dataset.ref || '';
-            document.getElementById('editDuaOrder').value  = trigger.dataset.order || '0';
-            document.getElementById('editDuaDesc').value   = trigger.dataset.desc || '';
-            document.getElementById('editDuaActive').checked = (trigger.dataset.active === '1');
-        });
-
-        document.getElementById('editDuaForm')?.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const btn = document.getElementById('editDuaSubmitBtn');
-            btn.disabled = true;
-
-            const formData = new FormData(this);
-            try {
-                const res = await fetch(this.action, {
-                    method: 'POST', // with _method=PUT inside form
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: formData
-                });
-                const data = await res.json();
-                if (data.success) {
-                    bootstrap.Modal.getInstance(editModal)?.hide();
-                    showDuaToast(data.message || 'Dua updated successfully!', 'success');
-                    setTimeout(() => window.location.reload(), 600);
-                } else {
-                    showDuaToast(data.message || 'Error updating Dua', 'danger');
-                }
-            } catch (err) {
-                console.error(err);
-                showDuaToast('Validation or network error', 'danger');
-            } finally {
-                btn.disabled = false;
-            }
+    const editModalEl = document.getElementById('editDuaModal');
+    if (editModalEl) {
+        editModalEl.addEventListener('show.bs.modal', function (e) {
+            const trigger = e.relatedTarget ? (e.relatedTarget.closest?.('[data-update-url]') || e.relatedTarget) : null;
+            if (trigger) populateEditDuaForm(trigger);
         });
     }
 
