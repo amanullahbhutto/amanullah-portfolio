@@ -59,5 +59,10 @@ class Dua extends Model
     {
         return $query->orderBy('sort_order', 'asc')->orderBy('id', 'asc');
     }
+
+    public function getFormattedArabicAttribute(): string
+    {
+        return \App\Services\ZikrService::formatAyahText($this->arabic_text);
+    }
 }
 

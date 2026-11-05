@@ -15,6 +15,34 @@ use Illuminate\Support\Facades\Schema;
 
 class ZikrService
 {
+    /**
+     * Formats Arabic Ayah text with clean, elegant inline circular Ayah markers.
+     */
+    public static function formatAyahText(?string $text): string
+    {
+        if (empty($text)) {
+            return '';
+        }
+
+        $clean = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+
+        $pattern = '/(?:(?:[\x{06DD}\x{FD3E}\x{FD3F}\(\[\{]\s*)+([\x{0660}-\x{0669}\x{06F0}-\x{06F9}0-9]+)(?:\s*[\x{06DD}\x{FD3E}\x{FD3F}\)\]\}]+)*|(?<=\s|^)([\x{0660}-\x{0669}\x{06F0}-\x{06F9}0-9]+)(?=\s|$)|(?:\x{06DD}))/u';
+
+        $formatted = preg_replace_callback(
+            $pattern,
+            function ($matches) {
+                $num = !empty($matches[1]) ? $matches[1] : (!empty($matches[2]) ? $matches[2] : '');
+                if ($num !== '') {
+                    return ' <span class="ayah-symbol">' . $num . '</span> ';
+                }
+                return ' ';
+            },
+            $clean
+        );
+
+        return (string) preg_replace('/\s+/u', ' ', trim((string) $formatted));
+    }
+
     public function getTimezone(): string
     {
         return config('app.timezone', 'Asia/Karachi');

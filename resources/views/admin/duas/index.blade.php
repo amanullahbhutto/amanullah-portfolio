@@ -195,7 +195,7 @@
                             <div class="text-container">
                                 <!-- Arabic Text -->
                                 <div class="arabic-text">
-                                    {!! preg_replace('/(?:\x{06DD}|(?<=\s|^))([\x{0660}-\x{0669}0-9]+)(?=\s|$)/u', '<span class="ayah-symbol">$1</span>', e($d['arabic_text'])) !!}
+                                    {!! \App\Services\ZikrService::formatAyahText($d['arabic_text']) !!}
                                 </div>
 
                                 <!-- Islamic Center Divider -->
@@ -1220,7 +1220,7 @@
             if (!trigger) return;
 
             document.getElementById('duaDescModalTitle').textContent = trigger.dataset.title || 'Dua Details';
-            document.getElementById('duaDescModalArabic').textContent = trigger.dataset.arabic || '';
+            document.getElementById('duaDescModalArabic').innerHTML = (window.formatArabicAyahText ? window.formatArabicAyahText(trigger.dataset.arabic || '') : (trigger.dataset.arabic || ''));
             document.getElementById('duaDescModalUrdu').textContent = trigger.dataset.urdu || '';
             document.getElementById('duaDescModalTarget').textContent = (parseInt(trigger.dataset.target, 10) || 0).toLocaleString() + '/day';
             document.getElementById('duaDescModalStarted').textContent = trigger.dataset.started || '—';

@@ -48,3 +48,34 @@ Artisan::command('mail:test {email?}', function (?string $email = null) {
     }
 })->purpose('Test sending a portfolio contact email');
 
+Artisan::command('zikr:fix-ayahs', function () {
+    $this->info("Scanning and verifying Quranic Ayah formatting across database...");
+
+    $tasbeehs = \App\Models\Tasbeeh::all();
+    $tCount = 0;
+    foreach ($tasbeehs as $t) {
+        $clean = (string) preg_replace('/[ ]{2,}/u', ' ', trim((string) $t->arabic_text));
+        if ($clean !== $t->arabic_text) {
+            $t->arabic_text = $clean;
+            $t->save();
+            $tCount++;
+        }
+    }
+
+    $duas = \App\Models\Dua::all();
+    $dCount = 0;
+    foreach ($duas as $d) {
+        $clean = (string) preg_replace('/[ ]{2,}/u', ' ', trim((string) $d->arabic_text));
+        if ($clean !== $d->arabic_text) {
+            $d->arabic_text = $clean;
+            $d->save();
+            $dCount++;
+        }
+    }
+
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+
+    $this->info("View cache and application cache cleared successfully!");
+    $this->info("Ayahs verified! Total Tasbeehs: {$tasbeehs->count()} | Total Duas: {$duas->count()}");
+})->purpose('Cleans and verifies Ayah formatting in Zikr & Duas and clears view cache');

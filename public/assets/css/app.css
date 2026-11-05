@@ -2344,13 +2344,17 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
 }
 
 /* Clean, Simple & Compact Quranic Ayah Circle */
-.ayah-symbol {
+.ayah-symbol,
+.arabic-text .ayah-symbol,
+.font-arabic .ayah-symbol,
+.desc-arabic-text .ayah-symbol {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     width: 22px !important;
     height: 22px !important;
     min-width: 22px !important;
+    max-width: 22px !important;
     border-radius: 50% !important;
     border: 1.5px solid rgba(249, 115, 22, 0.85) !important;
     background: rgba(249, 115, 22, 0.08) !important;
@@ -2363,6 +2367,7 @@ body.hide-arabic-text.hide-urdu-text .islamic-divider {
     vertical-align: 3px !important;
     unicode-bidi: isolate !important;
     box-shadow: 0 0 5px rgba(249, 115, 22, 0.2) !important;
+    box-sizing: border-box !important;
 }
 
 [data-theme="light"] .ayah-symbol {

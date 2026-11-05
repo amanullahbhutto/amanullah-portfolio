@@ -143,7 +143,7 @@
                             <div class="text-container">
                                 <!-- Arabic Text -->
                                 <div class="arabic-text">
-                                    {!! preg_replace('/(?:\x{06DD}|(?<=\s|^))([\x{0660}-\x{0669}0-9]+)(?=\s|$)/u', '<span class="ayah-symbol">$1</span>', e($t->arabic_text)) !!}
+                                    {!! \App\Services\ZikrService::formatAyahText($t->arabic_text) !!}
                                 </div>
 
                                 <!-- Sleek Glowing Islamic Center Divider -->

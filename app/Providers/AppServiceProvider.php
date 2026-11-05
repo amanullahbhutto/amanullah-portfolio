@@ -28,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
 
         Paginator::useBootstrapFive();
 
+        \Illuminate\Support\Facades\Blade::directive('ayah', function ($expression) {
+            return "<?php echo \App\Services\ZikrService::formatAyahText($expression); ?>";
+        });
+
         View::composer('*', function ($view): void {
             $profile = null;
             $unreadMessageCount = 0;

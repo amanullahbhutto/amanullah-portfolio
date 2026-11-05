@@ -37,7 +37,8 @@ class PwaManifestController extends Controller
     {
         $settings = $this->pwaService->getSettings();
         $appVersion = preg_replace('/[^0-9a-zA-Z\.\-]/', '', $settings->app_version ?? '1.0.0');
-        $cacheVersion = 'portfolio-pwa-v' . ($appVersion ?: '1.0.0');
+        $cssMtime = file_exists(public_path('assets/css/app.css')) ? filemtime(public_path('assets/css/app.css')) : time();
+        $cacheVersion = 'portfolio-pwa-v' . ($appVersion ?: '1.0.0') . '-' . $cssMtime;
         
         // Dynamic Tasbeeh Counter URLs
         $tasbeehUrls = [];

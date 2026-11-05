@@ -1652,23 +1652,32 @@
         });
     };
     initTooltips();
+    const formatArabicAyahText = (html) => {
+        if (!html || typeof html !== 'string') return '';
+        const pattern = /(?:(?:[\u06DD\uFD3E\uFD3F\(\[\{]\s*)+([\u0660-\u0669\u06F0-\u06F90-9]+)(?:\s*[\u06DD\uFD3E\uFD3F\)\]\}]+)*|(?<=\s|^)([\u0660-\u0669\u06F0-\u06F90-9]+)(?=\s|$)|(?:\u06DD))/g;
+        let updated = html.replace(/<span class="ayah-symbol">\s*([\u0660-\u0669\u06F0-\u06F90-9]+)\s*<\/span>/g, '$1');
+        updated = updated.replace(pattern, (match, p1, p2) => {
+            const num = p1 || p2 || '';
+            if (num) {
+                return ` <span class="ayah-symbol">${num}</span> `;
+            }
+            return ' ';
+        });
+        updated = updated.replace(/<span class="ayah-symbol">\s*<span class="ayah-symbol">([\s\S]*?)<\/span>\s*<\/span>/g, '<span class="ayah-symbol">$1</span>');
+        return updated.replace(/\s{2,}/g, ' ').trim();
+    };
+    window.formatArabicAyahText = formatArabicAyahText;
+
     const formatArabicAyahSymbols = (root = document) => {
         if (!root) return;
         const selector = '.arabic-text, .font-arabic, .arabic-script, .arabic-live-text, .arabic-cell-text, #counterArabicText, #descModalArabic, #duaDescModalArabic';
         const elements = root.querySelectorAll ? root.querySelectorAll(selector) : [];
         elements.forEach((el) => {
-            if (!el || el.dataset.ayahFormatted) return;
+            if (!el) return;
             if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') return;
             const html = el.innerHTML;
-            // Clean, small circular ayah badge
-            let updated = html;
-            updated = updated.replace(/<span class="ayah-symbol">\u06DD*([\u0660-\u06690-9]+)<\/span>/g, '<span class="ayah-symbol">$1</span>');
-            if (/[\u06DD]/.test(updated)) {
-                updated = updated.replace(/\u06DD([\u0660-\u06690-9]+)/g, '<span class="ayah-symbol">$1</span>');
-            } else if (/(?<=\s|^)([\u0660-\u0669]+)(?=\s|$)/.test(updated)) {
-                updated = updated.replace(/(?<=\s|^)([\u0660-\u0669]+)(?=\s|$)/g, '<span class="ayah-symbol">$1</span>');
-            }
-            updated = updated.replace(/<span class="ayah-symbol"><span class="ayah-symbol">/g, '<span class="ayah-symbol">').replace(/<\/span><\/span>/g, '</span>');
+            if (!html || !html.trim()) return;
+            const updated = formatArabicAyahText(html);
             if (updated !== html) {
                 el.innerHTML = updated;
                 el.dataset.ayahFormatted = 'true';
@@ -2588,7 +2597,7 @@
                 if (refRowEl) refRowEl.classList.add('d-none');
             }
 
-            if (arabicEl) arabicEl.textContent = arabic || '';
+            if (arabicEl) arabicEl.innerHTML = formatArabicAyahText(arabic || '');
             if (urduEl) urduEl.textContent = urdu || '—';
 
             if (desc && desc.trim()) {
