@@ -54,7 +54,16 @@ Artisan::command('zikr:fix-ayahs', function () {
     $tasbeehs = \App\Models\Tasbeeh::all();
     $tCount = 0;
     foreach ($tasbeehs as $t) {
-        $clean = (string) preg_replace('/[ ]{2,}/u', ' ', trim((string) $t->arabic_text));
+        $raw = (string) $t->arabic_text;
+        if (str_contains($raw, 'قُلْ هُوَ اللّٰهُ أَحَدٌ') || str_contains($raw, 'قل هو الله') || stripos($t->title, 'ikhlas') !== false) {
+            $t->arabic_text = 'قُلْ هُوَ اللّٰهُ أَحَدٌ ۝١ اللّٰهُ الصَّمَدُ ۝٢ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝٣ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ ۝٤';
+            $t->urdu_meaning = 'کہہ دیجئے: وہ اللہ ایک ہے۔ اللہ بے نیاز ہے۔ نہ اس نے کسی کو جنا اور نہ وہ جنا گیا۔ اور کوئی اس کا ہمسر نہیں ہے۔';
+            $t->save();
+            $tCount++;
+            $this->info("Updated Surah Al-Ikhlas (Tasbeeh ID: {$t->id}) with verified Quranic ayah symbols.");
+            continue;
+        }
+        $clean = (string) preg_replace('/[ ]{2,}/u', ' ', trim($raw));
         if ($clean !== $t->arabic_text) {
             $t->arabic_text = $clean;
             $t->save();

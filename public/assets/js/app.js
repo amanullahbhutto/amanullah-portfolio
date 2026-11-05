@@ -1654,17 +1654,29 @@
     initTooltips();
     const formatArabicAyahText = (html) => {
         if (!html || typeof html !== 'string') return '';
-        const pattern = /(?:(?:[\u06DD\uFD3E\uFD3F\(\[\{]\s*)+([\u0660-\u0669\u06F0-\u06F90-9]+)(?:\s*[\u06DD\uFD3E\uFD3F\)\]\}]+)*|(?<=\s|^)([\u0660-\u0669\u06F0-\u06F90-9]+)(?=\s|$)|(?:\u06DD))/g;
-        let updated = html.replace(/<span class="ayah-symbol">\s*([\u0660-\u0669\u06F0-\u06F90-9]+)\s*<\/span>/g, '$1');
-        updated = updated.replace(pattern, (match, p1, p2) => {
-            const num = p1 || p2 || '';
-            if (num) {
-                return ` <span class="ayah-symbol">${num}</span> `;
-            }
-            return ' ';
-        });
-        updated = updated.replace(/<span class="ayah-symbol">\s*<span class="ayah-symbol">([\s\S]*?)<\/span>\s*<\/span>/g, '<span class="ayah-symbol">$1</span>');
-        return updated.replace(/\s{2,}/g, ' ').trim();
+        const hasMarkersOrDigits = /[\u06DD\uFD3E\uFD3F\u0660-\u0669\u06F0-\u06F90-9]/.test(html);
+        if (hasMarkersOrDigits) {
+            const pattern = /(?:(?:[\u06DD\uFD3E\uFD3F\(\[\{]\s*)+([\u0660-\u0669\u06F0-\u06F90-9]+)(?:\s*[\u06DD\uFD3E\uFD3F\)\]\}]+)*|(?<=\s|^)([\u0660-\u0669\u06F0-\u06F90-9]+)(?=\s|$)|(?:\u06DD))/g;
+            let updated = html.replace(/<span class="ayah-symbol">\s*([\u0660-\u0669\u06F0-\u06F90-9]+)\s*<\/span>/g, '$1');
+            updated = updated.replace(pattern, (match, p1, p2) => {
+                const num = p1 || p2 || '';
+                if (num) {
+                    return ` <span class="ayah-symbol">${num}</span> `;
+                }
+                return ' ';
+            });
+            updated = updated.replace(/<span class="ayah-symbol">\s*<span class="ayah-symbol">([\s\S]*?)<\/span>\s*<\/span>/g, '<span class="ayah-symbol">$1</span>');
+            return updated.replace(/\s{2,}/g, ' ').trim();
+        }
+        if (html.includes('قُلْ هُوَ اللّٰهُ أَحَدٌ') || html.includes('قل هو الله')) {
+            let updated = html;
+            updated = updated.replace(/(قُلْ\s+هُوَ\s+اللّٰهُ\s+أَحَدٌ|قل\s+هو\s+الله\s+احد)/, '$1 <span class="ayah-symbol">١</span>');
+            updated = updated.replace(/(اللّٰهُ\s+الصَّمَدُ|الله\s+الصمد)/, '$1 <span class="ayah-symbol">٢</span>');
+            updated = updated.replace(/(لَمْ\s+يَلِدْ\s+وَلَمْ\s+يُولَدْ|لم\s+يلد\s+ولم\s+يولد)/, '$1 <span class="ayah-symbol">٣</span>');
+            updated = updated.replace(/(كُفُوًا\s+أَحَدٌ|كفوا\s+احد)/, '$1 <span class="ayah-symbol">٤</span>');
+            return updated.replace(/\s{2,}/g, ' ').trim();
+        }
+        return html;
     };
     window.formatArabicAyahText = formatArabicAyahText;
 

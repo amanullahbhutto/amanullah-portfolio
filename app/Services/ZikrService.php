@@ -26,21 +26,37 @@ class ZikrService
 
         $clean = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
 
-        $pattern = '/(?:(?:[\x{06DD}\x{FD3E}\x{FD3F}\(\[\{]\s*)+([\x{0660}-\x{0669}\x{06F0}-\x{06F9}0-9]+)(?:\s*[\x{06DD}\x{FD3E}\x{FD3F}\)\]\}]+)*|(?<=\s|^)([\x{0660}-\x{0669}\x{06F0}-\x{06F9}0-9]+)(?=\s|$)|(?:\x{06DD}))/u';
+        // Check if text contains any markers or numbers
+        $hasMarkersOrDigits = preg_match('/[\x{06DD}\x{FD3E}\x{FD3F}\x{0660}-\x{0669}\x{06F0}-\x{06F9}0-9]/u', $clean);
 
-        $formatted = preg_replace_callback(
-            $pattern,
-            function ($matches) {
-                $num = !empty($matches[1]) ? $matches[1] : (!empty($matches[2]) ? $matches[2] : '');
-                if ($num !== '') {
-                    return ' <span class="ayah-symbol">' . $num . '</span> ';
-                }
-                return ' ';
-            },
-            $clean
-        );
+        if ($hasMarkersOrDigits) {
+            $pattern = '/(?:(?:[\x{06DD}\x{FD3E}\x{FD3F}\(\[\{]\s*)+([\x{0660}-\x{0669}\x{06F0}-\x{06F9}0-9]+)(?:\s*[\x{06DD}\x{FD3E}\x{FD3F}\)\]\}]+)*|(?<=\s|^)([\x{0660}-\x{0669}\x{06F0}-\x{06F9}0-9]+)(?=\s|$)|(?:\x{06DD}))/u';
 
-        return (string) preg_replace('/\s+/u', ' ', trim((string) $formatted));
+            $formatted = preg_replace_callback(
+                $pattern,
+                function ($matches) {
+                    $num = !empty($matches[1]) ? $matches[1] : (!empty($matches[2]) ? $matches[2] : '');
+                    if ($num !== '') {
+                        return ' <span class="ayah-symbol">' . $num . '</span> ';
+                    }
+                    return ' ';
+                },
+                $clean
+            );
+
+            return (string) preg_replace('/\s+/u', ' ', trim((string) $formatted));
+        }
+
+        // Smart Ayah End detection for Surah Al-Ikhlas when pasted without numbers
+        if (str_contains($clean, 'قُلْ هُوَ اللّٰهُ أَحَدٌ') || str_contains($clean, 'قل هو الله')) {
+            $clean = preg_replace('/(قُلْ\s+هُوَ\s+اللّٰهُ\s+أَحَدٌ|قل\s+هو\s+الله\s+احد)/u', '$1 <span class="ayah-symbol">١</span>', $clean, 1);
+            $clean = preg_replace('/(اللّٰهُ\s+الصَّمَدُ|الله\s+الصمد)/u', '$1 <span class="ayah-symbol">٢</span>', $clean, 1);
+            $clean = preg_replace('/(لَمْ\s+يَلِدْ\s+وَلَمْ\s+يُولَدْ|لم\s+يلد\s+ولم\s+يولد)/u', '$1 <span class="ayah-symbol">٣</span>', $clean, 1);
+            $clean = preg_replace('/(كُفُوًا\s+أَحَدٌ|كفوا\s+احد)/u', '$1 <span class="ayah-symbol">٤</span>', $clean, 1);
+            return (string) preg_replace('/\s+/u', ' ', trim((string) $clean));
+        }
+
+        return $clean;
     }
 
     public function getTimezone(): string

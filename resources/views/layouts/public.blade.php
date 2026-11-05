@@ -20,12 +20,28 @@
     <link href="{{ asset('vendor/aos/aos.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/css/app.css') }}?v={{ file_exists(public_path('assets/css/app.css')) ? filemtime(public_path('assets/css/app.css')) : time() }}" rel="stylesheet">
     
-    <!-- High-priority inline Ayah Symbol styles to prevent any cache delay on live server -->
+    <!-- High-priority inline Quranic Font & Ayah Symbol styles to guarantee exact rendering on live server -->
     <style>
+        @font-face {
+            font-family: 'PDMS Saleem Quran';
+            src: url('{{ asset("assets/fonts/pdms-saleem-quranfont.ttf") }}') format('truetype'),
+                 url('{{ asset("assets/fonts/indopak-quran.woff2") }}') format('woff2');
+            font-weight: 400 700;
+            font-style: normal;
+            font-display: swap;
+        }
+        .arabic-text,
+        .font-arabic,
+        .desc-arabic-text,
+        .dua-content-box .arabic-text {
+            font-family: 'PDMS Saleem Quran', '_PDMS_Saleem_Quran', 'PDMS_Saleem_QuranFont', 'IndoPak Quran', 'Al Qalam Quran Majeed', 'Amiri Quran', 'Scheherazade New', serif !important;
+            color: #f97316 !important;
+        }
         .ayah-symbol,
         .arabic-text .ayah-symbol,
         .font-arabic .ayah-symbol,
-        .desc-arabic-text .ayah-symbol {
+        .desc-arabic-text .ayah-symbol,
+        .dua-content-box .ayah-symbol {
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
@@ -50,7 +66,8 @@
         [data-theme="light"] .ayah-symbol,
         [data-theme="light"] .arabic-text .ayah-symbol,
         [data-theme="light"] .font-arabic .ayah-symbol,
-        [data-theme="light"] .desc-arabic-text .ayah-symbol {
+        [data-theme="light"] .desc-arabic-text .ayah-symbol,
+        [data-theme="light"] .dua-content-box .ayah-symbol {
             border-color: rgba(234, 88, 12, 0.85) !important;
             color: #ea580c !important;
             background: rgba(234, 88, 12, 0.08) !important;
