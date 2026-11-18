@@ -5127,3 +5127,109 @@ body.tasbeeh-locked-mode .tasbeeh-card {
     to { opacity: 1; transform: scale(1); }
 }
 
+/* ==========================================================================
+   Admin Topbar Premium Teal Styling (Matches Exact Layout and Visuals)
+   ========================================================================== */
+.admin-topbar,
+header.admin-topbar {
+    background: #064843 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18) !important;
+    min-height: 76px !important;
+    padding: 12px 28px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+}
+
+.admin-topbar .topbar-title {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-size: clamp(1.1rem, 2.5vw, 1.45rem) !important;
+    letter-spacing: -0.02em;
+    margin: 0 !important;
+}
+
+.admin-topbar .topbar-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
+}
+
+.admin-topbar .topbar-icon,
+.admin-topbar .theme-toggle {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    color: #ffffff !important;
+    display: inline-grid !important;
+    place-items: center !important;
+    transition: all 0.2s ease !important;
+    font-size: 1.05rem !important;
+}
+
+.admin-topbar .topbar-icon:hover,
+.admin-topbar .theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: #5eead4 !important;
+    border-color: rgba(94, 234, 212, 0.5) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 0 12px rgba(94, 234, 212, 0.25) !important;
+}
+
+.admin-topbar .notification-link {
+    position: relative !important;
+}
+
+.admin-topbar .notification-link .notification-badge {
+    position: absolute !important;
+    top: -4px !important;
+    right: -4px !important;
+    background: #5eead4 !important;
+    color: #064843 !important;
+    font-weight: 800 !important;
+    border: 2px solid #064843 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+.admin-topbar .topbar-profile {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 2px !important;
+    cursor: pointer !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+.admin-topbar .topbar-profile > span {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
+    display: grid !important;
+    place-items: center !important;
+    background: #ffffff !important;
+    color: #064843 !important;
+    font-weight: 800 !important;
+    font-size: 1rem !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.admin-topbar .topbar-profile:hover > span {
+    transform: scale(1.05);
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.4) !important;
+}
+
+.admin-topbar .topbar-profile::after {
+    color: rgba(255, 255, 255, 0.75) !important;
+    border-top-color: rgba(255, 255, 255, 0.85) !important;
+    margin-left: 2px !important;
+    vertical-align: middle !important;
+}
+
+

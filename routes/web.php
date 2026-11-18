@@ -45,14 +45,14 @@ use App\Http\Middleware\TrackVisitor;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(TrackVisitor::class)->group(function (): void {
-    Route::get('/', [HomeController::class, 'index'])->name('home');
-    Route::get('/about', [PortfolioController::class, 'about'])->name('about');
-    Route::get('/projects', [PortfolioController::class, 'projects'])->name('projects.index');
-    Route::get('/projects/{project}', [PortfolioController::class, 'project'])->name('projects.show');
-    Route::get('/blog', [PortfolioController::class, 'posts'])->name('posts.index');
-    Route::get('/blog/{post}', [PortfolioController::class, 'post'])->name('posts.show');
-    Route::get('/services', [PortfolioController::class, 'services'])->name('services.index');
-    Route::get('/contact', [ContactController::class, 'create'])->name('contact.create');
+    Route::get('/', fn () => view('app'))->name('home');
+    Route::get('/about', fn () => view('app'))->name('about');
+    Route::get('/projects', fn () => view('app'))->name('projects.index');
+    Route::get('/projects/{project}', fn () => view('app'))->name('projects.show');
+    Route::get('/blog', fn () => view('app'))->name('posts.index');
+    Route::get('/blog/{post}', fn () => view('app'))->name('posts.show');
+    Route::get('/services', fn () => view('app'))->name('services.index');
+    Route::get('/contact', fn () => view('app'))->name('contact.create');
 });
 Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:6,1')->name('contact.store');
 
@@ -76,24 +76,36 @@ Route::middleware('guest')->group(function (): void {
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): void {
-    Route::get('/', DashboardController::class)->name('dashboard');
-    Route::get('/dashboard', fn() => redirect()->route('admin.dashboard'));
+    // React Admin SPA Direct & Clean Routes
+    Route::get('/', fn () => view('admin.react-app'))->name('dashboard');
+    Route::get('/dashboard', fn () => view('admin.react-app'));
+    Route::get('/projects', fn () => view('admin.react-app'))->name('projects');
+    Route::get('/posts', fn () => view('admin.react-app'))->name('posts');
+    Route::get('/services', fn () => view('admin.react-app'))->name('services');
+    Route::get('/skills', fn () => view('admin.react-app'))->name('skills');
+    Route::get('/experiences', fn () => view('admin.react-app'))->name('experiences');
+    Route::get('/educations', fn () => view('admin.react-app'))->name('educations');
 
     Route::put('date-of-births/{dateOfBirth}/photos', [DateOfBirthController::class, 'updatePhotos'])
         ->name('date-of-births.photos.update');
     Route::resource('date-of-births', DateOfBirthController::class);
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/profile', fn () => view('admin.react-app'))->name('profile.edit');
+    Route::get('/profile/legacy-edit', [ProfileController::class, 'edit'])->name('profile.legacy-edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/experience-source', [ProfileController::class, 'updateExperienceSource'])->name('profile.experience-source');
 
-    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::get('/messages', fn () => view('admin.react-app'))->name('messages.index');
+    Route::get('/messages/legacy', [MessageController::class, 'index'])->name('messages.legacy-index');
     Route::patch('/messages/read-all', [MessageController::class, 'markAllRead'])->name('messages.read-all');
     Route::get('/messages/{contactMessage}', [MessageController::class, 'show'])->name('messages.show');
     Route::delete('/messages/{contactMessage}', [MessageController::class, 'destroy'])->name('messages.destroy');
-    Route::get('/visitors', [VisitorLogController::class, 'index'])->name('visitors.index');
+    
+    Route::get('/visitors', fn () => view('admin.react-app'))->name('visitors.index');
+    Route::get('/visitors/legacy', [VisitorLogController::class, 'index'])->name('visitors.legacy-index');
 
-    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users', fn () => view('admin.react-app'))->name('users.index');
+    Route::get('/users/legacy', [UserController::class, 'index'])->name('users.legacy-index');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
@@ -227,7 +239,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function (): v
     Route::get('/program-transactions', [ProgramTransactionController::class, 'index'])->name('program-transactions.index');
     Route::get('/program-reports', [ProgramReportController::class, 'index'])->name('program-reports.index');
 
-    Route::get('/content/{type}', [PortfolioContentController::class, 'index'])->name('content.index');
+    Route::get('/content/{type}', function ($type) {
+        return redirect('/admin/' . $type);
+    })->name('content.index');
+    Route::get('/content/{type}/legacy', [PortfolioContentController::class, 'index'])->name('content.legacy-index');
     Route::get('/content/{type}/create', [PortfolioContentController::class, 'create'])->name('content.create');
     Route::post('/content/{type}', [PortfolioContentController::class, 'store'])->name('content.store');
     Route::get('/content/{type}/{id}/edit', [PortfolioContentController::class, 'edit'])->name('content.edit');

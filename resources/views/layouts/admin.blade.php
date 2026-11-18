@@ -354,12 +354,10 @@
                 <span>DOB</span>
             </a>
         @endif
-        @if(auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->can('view khata'))
-            <a href="{{ route('admin.khata.index') }}" class="pwa-nav-item {{ request()->routeIs('admin.khata.*') ? 'active' : '' }}">
-                <i class="bi bi-journal-bookmark"></i>
-                <span>Khata</span>
-            </a>
-        @endif
+        <a href="{{ route('admin.duas.index') }}" class="pwa-nav-item {{ request()->routeIs('admin.duas.*') ? 'active' : '' }}">
+            <i class="bi bi-book-half"></i>
+            <span>Duas</span>
+        </a>
         @if(auth()->user()->hasAnyRole(['Super Admin', 'admin']) || auth()->user()->can('view programs'))
             <a href="{{ route('admin.programs.index') }}" class="pwa-nav-item {{ request()->routeIs('admin.programs.*') ? 'active' : '' }}">
                 <i class="bi bi-calendar2-event"></i>

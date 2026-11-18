@@ -2,13 +2,13 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "amanullah/portfolio",
     "type": "project",
-    "description": "Dynamic Laravel 11 portfolio with a Bootstrap 5 admin panel.",
-    "keywords": ["laravel", "portfolio", "bootstrap", "spatie-permission"],
+    "description": "Dynamic Laravel 12 portfolio with React.js and Bootstrap 5 admin panel.",
+    "keywords": ["laravel", "portfolio", "react", "bootstrap", "spatie-permission"],
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "laravel/framework": "^11.0",
-        "laravel/tinker": "^2.9",
+        "laravel/framework": "^12.0",
+        "laravel/tinker": "^2.10.1",
         "spatie/laravel-permission": "^6.0"
     },
     "require-dev": {
