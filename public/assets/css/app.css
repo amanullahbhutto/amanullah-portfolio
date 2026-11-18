@@ -1254,10 +1254,12 @@ details.sidebar-group[open] > summary { color: var(--accent); background: var(--
         transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         z-index: 1060 !important;
         box-shadow: none;
+        visibility: hidden;
     }
     .admin-sidebar.open {
         transform: translateX(0) !important;
         box-shadow: 0 0 45px rgba(0, 0, 0, 0.75) !important;
+        visibility: visible !important;
     }
     .sidebar-overlay {
         display: none !important;
@@ -1268,20 +1270,26 @@ details.sidebar-group[open] > summary { color: var(--accent); background: var(--
         left: 0 !important;
         right: 0 !important;
         bottom: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        background: rgba(0, 0, 0, 0.65) !important;
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        z-index: 1055 !important;
-        opacity: 0;
-        transition: opacity .25s ease, visibility .25s ease;
+        width: 0 !important;
+        height: 0 !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        opacity: 0 !important;
+        z-index: -1 !important;
     }
     .sidebar-overlay.show {
         display: block !important;
         visibility: visible !important;
-        opacity: 1 !important;
         pointer-events: auto !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: rgba(0, 0, 0, 0.65) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+        opacity: 1 !important;
+        z-index: 1055 !important;
+        transition: opacity .25s ease;
     }
     .admin-main {
         margin-left: 0 !important;
