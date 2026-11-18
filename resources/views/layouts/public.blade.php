@@ -9,7 +9,24 @@
 
     <meta name="theme-color" content="{{ $pwaSettings?->theme_color ?? '#070d18' }}">
     <meta name="description" content="@yield('meta_description', 'Amanullah is a PHP and Laravel developer in Karachi building responsive, secure, and maintainable web applications.')">
-    <script>document.documentElement.dataset.theme=localStorage.getItem('portfolio-theme')||'dark';</script>
+    <script>
+        document.documentElement.dataset.theme=localStorage.getItem('portfolio-theme')||'dark';
+        window.toggleMainNav = function(e) {
+            var nav = document.getElementById('mainNav');
+            var toggler = document.querySelector('.navbar-toggler');
+            if (!nav) return;
+            if (typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
+                try {
+                    var inst = bootstrap.Collapse.getOrCreateInstance(nav);
+                    inst.toggle();
+                    return;
+                } catch (_) {}
+            }
+            if (e && e.preventDefault) e.preventDefault();
+            nav.classList.toggle('show');
+            if (toggler) toggler.setAttribute('aria-expanded', nav.classList.contains('show') ? 'true' : 'false');
+        };
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -91,7 +108,7 @@
                         <i class="bi bi-moon-stars-fill theme-icon-dark"></i>
                     </button>
                     <a href="{{ route('contact.create', ['hire' => 1]) }}" class="btn btn-accent d-none d-sm-inline-flex">Hire me <i class="bi bi-arrow-up-right ms-2"></i></a>
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation" onclick="window.toggleMainNav ? window.toggleMainNav(event) : null">
                         <span class="navbar-toggler-icon"></span>
                     </button>
                 </div>
@@ -156,7 +173,7 @@
     
     <script src="{{ asset('vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('vendor/aos/aos.js') }}"></script>
-    <script src="{{ asset('assets/js/app.js') }}"></script>
+    <script src="{{ asset('assets/js/app.js') }}?v={{ file_exists(public_path('assets/js/app.js')) ? filemtime(public_path('assets/js/app.js')) : time() }}"></script>
     
     {{-- Ensure public visitors have no active PWA install prompt in browser URL bar --}}
     <script>

@@ -31,6 +31,44 @@
         if (window.innerWidth >= 992 && localStorage.getItem('admin-sidebar-collapsed') === 'true') {
             document.documentElement.classList.add('admin-sidebar-collapsed-preload');
         }
+        window.openAdminSidebar = function (e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var sidebar = document.getElementById('adminSidebar');
+            var overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar) sidebar.classList.add('open');
+            if (overlay) overlay.classList.add('show');
+            document.body.classList.add('sidebar-open-scroll-lock');
+        };
+        window.closeAdminSidebar = function (e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var sidebar = document.getElementById('adminSidebar');
+            var overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('show');
+            document.body.classList.remove('sidebar-open-scroll-lock');
+        };
+        window.toggleAdminSidebar = function (e) {
+            if (e) {
+                if (e.preventDefault) e.preventDefault();
+                if (e.stopPropagation) e.stopPropagation();
+            }
+            if (window.innerWidth < 992) {
+                var sidebar = document.getElementById('adminSidebar');
+                if (sidebar && sidebar.classList.contains('open')) {
+                    window.closeAdminSidebar(e);
+                } else {
+                    window.openAdminSidebar(e);
+                }
+            } else {
+                var shell = document.querySelector('.admin-shell');
+                if (shell) {
+                    var isCollapsed = shell.classList.toggle('sidebar-collapsed');
+                    try {
+                        localStorage.setItem('admin-sidebar-collapsed', isCollapsed ? 'true' : 'false');
+                    } catch (_) {}
+                }
+            }
+        };
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -112,7 +150,7 @@
                         <span class="brand-subtext">Personal Workspace</span>
                     </div>
                 </a>
-                <button class="sidebar-close d-lg-none" type="button" data-sidebar-close aria-label="Close sidebar"><i class="bi bi-x-lg"></i></button>
+                <button class="sidebar-close d-lg-none" type="button" onclick="closeAdminSidebar(event)" data-sidebar-close aria-label="Close sidebar"><i class="bi bi-x-lg"></i></button>
             </div>
             <nav class="sidebar-nav" aria-label="Admin navigation">
                 <span class="sidebar-label">Workspace</span>
@@ -252,12 +290,12 @@
                 <div class="min-w-0"><strong>{{ auth()->user()->name }}</strong><small>{{ auth()->user()->roles->pluck('name')->join(', ') }}</small></div>
             </div>
         </aside>
-        <div class="sidebar-overlay" data-sidebar-close></div>
+        <div class="sidebar-overlay" onclick="closeAdminSidebar(event)" data-sidebar-close></div>
 
         <div class="admin-main">
             <header class="admin-topbar">
                 <div class="d-flex align-items-center gap-2 gap-sm-3 min-w-0">
-                    <button class="topbar-icon flex-shrink-0" type="button" data-sidebar-toggle data-sidebar-open aria-label="Toggle sidebar" title="Toggle sidebar"><i class="bi bi-list"></i></button>
+                    <button class="topbar-icon flex-shrink-0" type="button" onclick="toggleAdminSidebar(event)" data-sidebar-toggle data-sidebar-open aria-label="Toggle sidebar" title="Toggle sidebar"><i class="bi bi-list"></i></button>
                     <div class="min-w-0">
                         <h1 class="topbar-title text-nowrap text-truncate mb-0">@yield('page_title', 'Dashboard')</h1>
                     </div>

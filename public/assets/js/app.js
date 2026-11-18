@@ -87,7 +87,7 @@
 
     document.addEventListener('click', (event) => {
         if (!mainNav?.classList.contains('show')) return;
-        if (mainNav.contains(event.target) || navbarToggler?.contains(event.target)) return;
+        if (mainNav.contains(event.target) || navbarToggler?.contains(event.target) || event.target.closest?.('.navbar-toggler')) return;
 
         hideMainNav();
     });
