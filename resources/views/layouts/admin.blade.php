@@ -28,6 +28,9 @@
         if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || document.referrer.includes('android-app://')) {
             document.documentElement.classList.add('is-pwa-app');
         }
+        if (window.innerWidth >= 992 && localStorage.getItem('admin-sidebar-collapsed') === 'true') {
+            document.documentElement.classList.add('admin-sidebar-collapsed-preload');
+        }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -254,7 +257,7 @@
         <div class="admin-main">
             <header class="admin-topbar">
                 <div class="d-flex align-items-center gap-2 gap-sm-3 min-w-0">
-                    <button class="topbar-icon d-lg-none flex-shrink-0" type="button" data-sidebar-open aria-label="Open sidebar"><i class="bi bi-list"></i></button>
+                    <button class="topbar-icon flex-shrink-0" type="button" data-sidebar-toggle data-sidebar-open aria-label="Toggle sidebar" title="Toggle sidebar"><i class="bi bi-list"></i></button>
                     <div class="min-w-0">
                         <h1 class="topbar-title text-nowrap text-truncate mb-0">@yield('page_title', 'Dashboard')</h1>
                     </div>

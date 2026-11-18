@@ -104,18 +104,103 @@
         window.AOS.init({ duration: 750, once: true, offset: 60, easing: 'ease-out-cubic' });
     }
 
-    const sidebar = document.getElementById('adminSidebar');
-    const overlay = document.querySelector('.sidebar-overlay');
-    document.querySelector('[data-sidebar-open]')?.addEventListener('click', () => {
-        sidebar?.classList.add('open');
-        overlay?.classList.add('show');
-    });
-    document.querySelectorAll('[data-sidebar-close]').forEach((button) => {
-        button.addEventListener('click', () => {
+    // Admin Sidebar Controller (Seamless support for Mobile Drawer & Desktop Collapse)
+    const initAdminSidebar = () => {
+        const getSidebar = () => document.getElementById('adminSidebar');
+        const getOverlay = () => document.querySelector('.sidebar-overlay');
+        const getShell = () => document.querySelector('.admin-shell');
+
+        const isDesktop = () => window.innerWidth >= 992;
+
+        // Restore desktop collapsed state
+        if (isDesktop() && (localStorage.getItem('admin-sidebar-collapsed') === 'true' || document.documentElement.classList.contains('admin-sidebar-collapsed-preload'))) {
+            getShell()?.classList.add('sidebar-collapsed');
+        }
+
+        const openMobileSidebar = () => {
+            const sidebar = getSidebar();
+            const overlay = getOverlay();
+            sidebar?.classList.add('open');
+            overlay?.classList.add('show');
+            document.body.classList.add('sidebar-open-scroll-lock');
+        };
+
+        const closeMobileSidebar = () => {
+            const sidebar = getSidebar();
+            const overlay = getOverlay();
             sidebar?.classList.remove('open');
             overlay?.classList.remove('show');
+            document.body.classList.remove('sidebar-open-scroll-lock');
+        };
+
+        const toggleSidebar = () => {
+            if (isDesktop()) {
+                const shell = getShell();
+                if (!shell) return;
+                const isCollapsed = shell.classList.toggle('sidebar-collapsed');
+                localStorage.setItem('admin-sidebar-collapsed', isCollapsed ? 'true' : 'false');
+                if (isCollapsed) {
+                    document.documentElement.classList.add('admin-sidebar-collapsed-preload');
+                } else {
+                    document.documentElement.classList.remove('admin-sidebar-collapsed-preload');
+                }
+            } else {
+                const sidebar = getSidebar();
+                if (sidebar?.classList.contains('open')) {
+                    closeMobileSidebar();
+                } else {
+                    openMobileSidebar();
+                }
+            }
+        };
+
+        // Event delegation for all sidebar triggers (Mobile & Desktop)
+        document.addEventListener('click', (event) => {
+            const toggleBtn = event.target.closest?.('[data-sidebar-toggle], [data-sidebar-open]');
+            if (toggleBtn) {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleSidebar();
+                return;
+            }
+
+            const closeBtn = event.target.closest?.('[data-sidebar-close]');
+            if (closeBtn) {
+                event.preventDefault();
+                event.stopPropagation();
+                closeMobileSidebar();
+                return;
+            }
+
+            // Close mobile sidebar when clicking a nav link
+            if (!isDesktop()) {
+                const navLink = event.target.closest?.('.sidebar-nav a:not([data-sidebar-stay-open])');
+                if (navLink) {
+                    closeMobileSidebar();
+                }
+            }
         });
-    });
+
+        // Close on Escape key
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !isDesktop()) {
+                closeMobileSidebar();
+            }
+        });
+
+        // Handle window resize smoothly
+        window.addEventListener('resize', () => {
+            if (isDesktop()) {
+                closeMobileSidebar();
+                if (localStorage.getItem('admin-sidebar-collapsed') === 'true') {
+                    getShell()?.classList.add('sidebar-collapsed');
+                } else {
+                    getShell()?.classList.remove('sidebar-collapsed');
+                }
+            }
+        }, { passive: true });
+    };
+    initAdminSidebar();
 
     const ensureActiveSidebarVisible = () => {
         const sidebarNav = document.querySelector('.sidebar-nav');
