@@ -1248,18 +1248,32 @@ details.sidebar-group[open] > summary { color: var(--accent); background: var(--
         bottom: 0 !important;
         height: 100vh !important;
         height: 100dvh !important;
-        width: 280px !important;
+        width: 285px !important;
         max-width: 86vw !important;
+        background: var(--bg-alt, #111318) !important;
+        display: flex !important;
+        flex-direction: column !important;
         transform: translateX(-100%) !important;
-        transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        z-index: 1060 !important;
-        box-shadow: none;
-        visibility: hidden;
+        -webkit-transform: translateX(-100%) !important;
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        z-index: 99999 !important;
+        box-shadow: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-y !important;
     }
     .admin-sidebar.open {
-        transform: translateX(0) !important;
-        box-shadow: 0 0 45px rgba(0, 0, 0, 0.75) !important;
+        display: flex !important;
         visibility: visible !important;
+        opacity: 1 !important;
+        transform: translateX(0) !important;
+        -webkit-transform: translateX(0) !important;
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.85) !important;
+        z-index: 99999 !important;
+        pointer-events: auto !important;
     }
     .sidebar-overlay {
         display: none !important;
@@ -1270,26 +1284,22 @@ details.sidebar-group[open] > summary { color: var(--accent); background: var(--
         left: 0 !important;
         right: 0 !important;
         bottom: 0 !important;
-        width: 0 !important;
-        height: 0 !important;
-        background: transparent !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        background: rgba(0, 0, 0, 0.65) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
         opacity: 0 !important;
-        z-index: -1 !important;
+        z-index: 99990 !important;
+        transition: opacity 0.25s ease !important;
     }
     .sidebar-overlay.show {
         display: block !important;
         visibility: visible !important;
         pointer-events: auto !important;
-        width: 100% !important;
-        height: 100% !important;
-        background: rgba(0, 0, 0, 0.65) !important;
-        backdrop-filter: blur(4px) !important;
-        -webkit-backdrop-filter: blur(4px) !important;
         opacity: 1 !important;
-        z-index: 1055 !important;
-        transition: opacity .25s ease;
+        z-index: 99990 !important;
     }
     .admin-main {
         margin-left: 0 !important;

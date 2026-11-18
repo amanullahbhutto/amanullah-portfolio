@@ -120,16 +120,38 @@
         const openMobileSidebar = () => {
             const sidebar = getSidebar();
             const overlay = getOverlay();
-            sidebar?.classList.add('open');
-            overlay?.classList.add('show');
+            if (sidebar) {
+                sidebar.classList.add('open');
+                sidebar.style.setProperty('transform', 'translateX(0)', 'important');
+                sidebar.style.setProperty('visibility', 'visible', 'important');
+                sidebar.style.setProperty('z-index', '99999', 'important');
+            }
+            if (overlay) {
+                overlay.classList.add('show');
+                overlay.style.setProperty('display', 'block', 'important');
+                overlay.style.setProperty('visibility', 'visible', 'important');
+                overlay.style.setProperty('opacity', '1', 'important');
+                overlay.style.setProperty('z-index', '99990', 'important');
+            }
             document.body.classList.add('sidebar-open-scroll-lock');
         };
 
         const closeMobileSidebar = () => {
             const sidebar = getSidebar();
             const overlay = getOverlay();
-            sidebar?.classList.remove('open');
-            overlay?.classList.remove('show');
+            if (sidebar) {
+                sidebar.classList.remove('open');
+                sidebar.style.removeProperty('transform');
+                sidebar.style.removeProperty('visibility');
+                sidebar.style.removeProperty('z-index');
+            }
+            if (overlay) {
+                overlay.classList.remove('show');
+                overlay.style.removeProperty('display');
+                overlay.style.removeProperty('visibility');
+                overlay.style.removeProperty('opacity');
+                overlay.style.removeProperty('z-index');
+            }
             document.body.classList.remove('sidebar-open-scroll-lock');
         };
 

@@ -35,16 +35,38 @@
             if (e && e.preventDefault) e.preventDefault();
             var sidebar = document.getElementById('adminSidebar');
             var overlay = document.querySelector('.sidebar-overlay');
-            if (sidebar) sidebar.classList.add('open');
-            if (overlay) overlay.classList.add('show');
+            if (sidebar) {
+                sidebar.classList.add('open');
+                sidebar.style.setProperty('transform', 'translateX(0)', 'important');
+                sidebar.style.setProperty('visibility', 'visible', 'important');
+                sidebar.style.setProperty('z-index', '99999', 'important');
+            }
+            if (overlay) {
+                overlay.classList.add('show');
+                overlay.style.setProperty('display', 'block', 'important');
+                overlay.style.setProperty('visibility', 'visible', 'important');
+                overlay.style.setProperty('opacity', '1', 'important');
+                overlay.style.setProperty('z-index', '99990', 'important');
+            }
             document.body.classList.add('sidebar-open-scroll-lock');
         };
         window.closeAdminSidebar = function (e) {
             if (e && e.preventDefault) e.preventDefault();
             var sidebar = document.getElementById('adminSidebar');
             var overlay = document.querySelector('.sidebar-overlay');
-            if (sidebar) sidebar.classList.remove('open');
-            if (overlay) overlay.classList.remove('show');
+            if (sidebar) {
+                sidebar.classList.remove('open');
+                sidebar.style.removeProperty('transform');
+                sidebar.style.removeProperty('visibility');
+                sidebar.style.removeProperty('z-index');
+            }
+            if (overlay) {
+                overlay.classList.remove('show');
+                overlay.style.removeProperty('display');
+                overlay.style.removeProperty('visibility');
+                overlay.style.removeProperty('opacity');
+                overlay.style.removeProperty('z-index');
+            }
             document.body.classList.remove('sidebar-open-scroll-lock');
         };
         window.toggleAdminSidebar = function (e) {
@@ -137,10 +159,84 @@
         }
     </style>
 
+        <!-- High-priority Mobile Sidebar & Drawer styles -->
+    <style>
+        @media (max-width: 991.98px) {
+            .admin-sidebar {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                height: 100vh !important;
+                height: 100dvh !important;
+                width: 285px !important;
+                max-width: 86vw !important;
+                background: #111318 !important;
+                background: var(--bg-alt, #111318) !important;
+                display: flex !important;
+                flex-direction: column !important;
+                transform: translateX(-100%) !important;
+                -webkit-transform: translateX(-100%) !important;
+                transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                z-index: 99999 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+                box-shadow: none !important;
+                overflow-x: hidden !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                touch-action: pan-y !important;
+            }
+            [data-theme="light"] .admin-sidebar {
+                background: #064843 !important;
+                border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+            }
+            .admin-sidebar.open {
+                display: flex !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                transform: translateX(0) !important;
+                -webkit-transform: translateX(0) !important;
+                z-index: 99999 !important;
+                pointer-events: auto !important;
+                box-shadow: 0 0 50px rgba(0, 0, 0, 0.85) !important;
+            }
+            .sidebar-overlay {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                height: 100dvh !important;
+                background: rgba(0, 0, 0, 0.65) !important;
+                backdrop-filter: blur(4px) !important;
+                -webkit-backdrop-filter: blur(4px) !important;
+                z-index: 99990 !important;
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+                transition: opacity 0.25s ease !important;
+            }
+            .sidebar-overlay.show {
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+            }
+            .admin-main {
+                margin-left: 0 !important;
+            }
+        }
+    </style>
+
     @stack('styles')
 </head>
 <body class="admin-body">
     <div class="admin-shell">
+        <div class="sidebar-overlay" onclick="closeAdminSidebar(event)" data-sidebar-close></div>
         <aside class="admin-sidebar" id="adminSidebar">
             <div class="sidebar-head">
                 <a class="brand-mark" href="{{ route('admin.dashboard') }}">
@@ -290,7 +386,6 @@
                 <div class="min-w-0"><strong>{{ auth()->user()->name }}</strong><small>{{ auth()->user()->roles->pluck('name')->join(', ') }}</small></div>
             </div>
         </aside>
-        <div class="sidebar-overlay" onclick="closeAdminSidebar(event)" data-sidebar-close></div>
 
         <div class="admin-main">
             <header class="admin-topbar">
