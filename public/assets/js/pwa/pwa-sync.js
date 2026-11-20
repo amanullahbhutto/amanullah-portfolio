@@ -161,11 +161,28 @@ class PwaSync {
                 '/admin',
                 '/admin/zikr',
                 '/admin/tasbeehs',
+                '/admin/duas',
                 '/admin/namaz-attendance',
                 '/admin/namaz-attendance/dashboard',
                 '/admin/namaz-settings',
                 '/admin/date-of-births',
-                '/pwa/offline'
+                '/admin/programs',
+                '/pwa/offline',
+                '/assets/css/app.css',
+                '/assets/js/app.js',
+                '/assets/js/pwa/pwa-db.js',
+                '/assets/js/pwa/pwa-sync.js',
+                '/assets/js/pwa/pwa-installer.js',
+                '/vendor/bootstrap/bootstrap.min.css',
+                '/vendor/bootstrap/bootstrap.bundle.min.js',
+                '/vendor/bootstrap-icons/bootstrap-icons.min.css',
+                '/vendor/bootstrap-icons/fonts/bootstrap-icons.woff2',
+                '/vendor/bootstrap-icons/fonts/bootstrap-icons.woff',
+                '/assets/fonts/pdms-saleem-quranfont.ttf',
+                '/assets/fonts/indopak-quran.woff2',
+                '/assets/images/amanullah.png',
+                '/assets/pwa-icons/icon-192x192.png',
+                '/assets/pwa-icons/icon-512x512.png',
             ];
 
             if (selectedUserId) {
@@ -187,7 +204,7 @@ class PwaSync {
             }
 
             // 3. Scan DOM for all active Tasbeeh counter URLs and navigation links on page
-            document.querySelectorAll('a[href*="/admin/zikr"], a[href*="/admin/tasbeehs"]').forEach(a => {
+            document.querySelectorAll('a[href*="/admin/zikr"], a[href*="/admin/tasbeehs"], a[href*="/admin/duas"], a[href*="/admin/namaz"], a[href*="/admin/programs"]').forEach(a => {
                 const href = a.getAttribute('href');
                 if (href && !routesToWarm.includes(href)) {
                     routesToWarm.push(href);

@@ -77,9 +77,9 @@
         </button>
 
         {{-- Reset All Tasbeehs Trigger (Icon 1) --}}
-        <button class="action-btn-top danger" type="button" data-bs-toggle="modal" data-bs-target="#resetAllTasbeehsModal" title="Reset All Tasbeehs to 0 (Start Date Today)">
+        <!-- <button class="action-btn-top danger" type="button" data-bs-toggle="modal" data-bs-target="#resetAllTasbeehsModal" title="Reset All Tasbeehs to 0 (Start Date Today)">
             <i class="bi bi-arrow-counterclockwise"></i>
-        </button>
+        </button> -->
 
         {{-- Mark All Complete for Today Trigger (Icon 2) --}}
         <button class="action-btn-top green" type="button" data-bs-toggle="modal" data-bs-target="#completeAllTasbeehsModal" title="Mark All Tasbeehs Complete for Today">
