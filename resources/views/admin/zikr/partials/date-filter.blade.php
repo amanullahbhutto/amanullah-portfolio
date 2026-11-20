@@ -15,9 +15,6 @@
                     <span class="small fw-bold text-uppercase d-block" style="color: #38bdf8; font-size: 0.72rem; letter-spacing: 0.6px;">
                         Date Range Filter
                     </span>
-                    <small class="text-muted-custom" style="font-size: 0.7rem;">
-                        Kitne Zikr kiye (Instant AJAX)
-                    </small>
                 </div>
             </div>
 
@@ -68,10 +65,11 @@
             <span class="small text-muted-custom me-1" style="font-size: 0.7rem;"><i class="bi bi-lightning-charge text-warning me-0.5"></i>Quick:</span>
             <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="today" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Today</button>
             <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="yesterday" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Yesterday</button>
+            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="thisWeek" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">This Week</button>
+            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="lastWeek" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Last Week</button>
             <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="last7" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Last 7 Days</button>
             <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="thisMonth" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">This Month</button>
             <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="lastMonth" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Last Month</button>
-            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="thisWeek" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">This Week</button>
             <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="thisYear" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">This Year</button>
             <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="lastYear" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Last Year</button>
         </div>
@@ -237,6 +235,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 const diffToMonday = (day === 0 ? -6 : 1) - day;
                 start = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday);
                 end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            } else if (preset === 'lastWeek') {
+                const day = now.getDay();
+                const diffToCurrentMonday = (day === 0 ? -6 : 1) - day;
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToCurrentMonday - 7);
+                end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToCurrentMonday - 1);
             } else if (preset === 'lastMonth') {
                 start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
                 end = new Date(now.getFullYear(), now.getMonth(), 0);
