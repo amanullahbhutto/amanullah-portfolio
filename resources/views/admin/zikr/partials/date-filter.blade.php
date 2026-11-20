@@ -71,6 +71,9 @@
             <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="last7" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Last 7 Days</button>
             <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="thisMonth" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">This Month</button>
             <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="lastMonth" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Last Month</button>
+            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="thisWeek" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">This Week</button>
+            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="thisYear" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">This Year</button>
+            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="lastYear" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Last Year</button>
         </div>
     </form>
 </div>
@@ -195,9 +198,18 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Clear button event -> Clear inputs & trigger AJAX reset
+    function resetPresetHighlights() {
+        document.querySelectorAll('.zikr-preset-btn').forEach(function (b) {
+            b.style.background = 'rgba(255, 255, 255, 0.05)';
+            b.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            b.style.color = '#cbd5e1';
+        });
+    }
+
     clearBtn.addEventListener('click', function () {
         fromInput.value = '';
         toInput.value = '';
+        resetPresetHighlights();
         performFilter('', '');
     });
 
@@ -220,15 +232,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 start.setDate(now.getDate() - 29);
             } else if (preset === 'thisMonth') {
                 start = new Date(now.getFullYear(), now.getMonth(), 1);
+            } else if (preset === 'thisWeek') {
+                const day = now.getDay();
+                const diffToMonday = (day === 0 ? -6 : 1) - day;
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday);
+                end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             } else if (preset === 'lastMonth') {
                 start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
                 end = new Date(now.getFullYear(), now.getMonth(), 0);
+            } else if (preset === 'thisYear') {
+                start = new Date(now.getFullYear(), 0, 1);
+                end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            } else if (preset === 'lastYear') {
+                start = new Date(now.getFullYear() - 1, 0, 1);
+                end = new Date(now.getFullYear() - 1, 11, 31);
             }
 
             const fromVal = formatYMD(start);
             const toVal = formatYMD(end);
             fromInput.value = fromVal;
             toInput.value = toVal;
+
+            resetPresetHighlights();
+            this.style.background = 'rgba(6, 182, 212, 0.25)';
+            this.style.borderColor = 'rgba(6, 182, 212, 0.6)';
+            this.style.color = '#38bdf8';
 
             performFilter(fromVal, toVal);
         });
