@@ -5,51 +5,71 @@
             <input type="hidden" name="user_id" value="{{ request('user_id') }}" id="filter_user_id">
         @endif
 
-        <div class="row g-2 align-items-center">
-            {{-- Left: Title & Icon --}}
-            <div class="col-12 col-md-auto d-flex align-items-center gap-2">
-                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 36px; height: 36px; background: rgba(6, 182, 212, 0.18); color: #06b6d4; font-size: 1.1rem; box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);">
+        {{-- Top Header: Title & Clear Action --}}
+        <div class="d-flex align-items-center justify-content-between mb-2.5 pb-2 border-bottom border-secondary border-opacity-10">
+            <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 32px; height: 32px; background: rgba(6, 182, 212, 0.18); color: #06b6d4; font-size: 1rem; box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);">
                     <i class="bi bi-calendar-range"></i>
                 </div>
                 <div>
-                    <span class="small fw-bold text-uppercase d-block" style="color: #38bdf8; font-size: 0.72rem; letter-spacing: 0.6px;">
+                    <span class="fw-bold text-uppercase d-block" style="color: #38bdf8; font-size: 0.75rem; letter-spacing: 0.6px;">
                         Date Range Filter
                     </span>
                 </div>
             </div>
 
+            <button type="button" id="zikr-filter-clear-btn" class="btn btn-sm btn-outline-danger px-2.5 py-1 d-inline-flex align-items-center gap-1 {{ empty($summary['date_range']['is_filtered']) ? 'd-none' : '' }}" style="border-radius: 8px; font-size: 0.72rem; border-color: rgba(239, 68, 68, 0.35); color: #f87171; background: rgba(239, 68, 68, 0.08);" title="Reset Filter">
+                <i class="bi bi-x-circle"></i> Clear
+            </button>
+        </div>
 
+        {{-- Quick Presets: Sleek touch-scroll chips on mobile, wrapping pills on desktop --}}
+        <div class="zikr-presets-wrapper mb-2.5 position-relative">
+            <div class="zikr-presets-scroll d-flex align-items-center gap-1.5 overflow-x-auto py-1">
+                <span class="small text-muted-custom flex-shrink-0 me-1" style="font-size: 0.7rem;">
+                    <i class="bi bi-lightning-charge-fill text-warning me-0.5"></i>Quick:
+                </span>
+                <button type="button" class="btn btn-sm font-monospace zikr-preset-btn" data-preset="today">Today</button>
+                <button type="button" class="btn btn-sm font-monospace zikr-preset-btn" data-preset="yesterday">Yesterday</button>
+                <button type="button" class="btn btn-sm font-monospace zikr-preset-btn" data-preset="thisWeek">This Week</button>
+                <button type="button" class="btn btn-sm font-monospace zikr-preset-btn" data-preset="lastWeek">Last Week</button>
+                <button type="button" class="btn btn-sm font-monospace zikr-preset-btn" data-preset="last7">Last 7 Days</button>
+                <button type="button" class="btn btn-sm font-monospace zikr-preset-btn" data-preset="thisMonth">This Month</button>
+                <button type="button" class="btn btn-sm font-monospace zikr-preset-btn" data-preset="lastMonth">Last Month</button>
+                <button type="button" class="btn btn-sm font-monospace zikr-preset-btn" data-preset="thisYear">This Year</button>
+                <button type="button" class="btn btn-sm font-monospace zikr-preset-btn" data-preset="lastYear">Last Year</button>
+            </div>
+        </div>
 
-
-            
-
-            {{-- Middle: From & To Date Inputs + Buttons --}}
-            <div class="col-12 col-md d-flex flex-wrap align-items-center gap-2">
-                <div class="d-flex align-items-center gap-1.5 flex-grow-1 flex-sm-grow-0">
-                    <label for="filter_from_date" class="form-label mb-0 small text-muted-custom fw-semibold" style="font-size: 0.75rem;">From:</label>
-                    <input type="date" name="from_date" id="filter_from_date" class="form-control form-control-sm font-monospace text-white flex-grow-1" value="{{ request('from_date') }}" style="background: #08111e; border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 10px; font-size: 0.82rem; padding: 5px 10px; min-width: 135px; color-scheme: dark;">
-                </div>
-
-                <div class="d-flex align-items-center gap-1.5 flex-grow-1 flex-sm-grow-0">
-                    <label for="filter_to_date" class="form-label mb-0 small text-muted-custom fw-semibold" style="font-size: 0.75rem;">To:</label>
-                    <input type="date" name="to_date" id="filter_to_date" class="form-control form-control-sm font-monospace text-white flex-grow-1" value="{{ request('to_date') }}" style="background: #08111e; border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 10px; font-size: 0.82rem; padding: 5px 10px; min-width: 135px; color-scheme: dark;">
-                </div>
-
-                <div class="d-flex align-items-center gap-1.5">
-                    <button type="submit" id="zikr-filter-submit-btn" class="btn btn-sm btn-info text-dark fw-bold px-3 d-inline-flex align-items-center gap-1" style="border-radius: 10px; font-size: 0.8rem; padding: 6px 14px;">
-                        <span class="spinner-border spinner-border-sm d-none" id="zikr-filter-spinner" role="status" aria-hidden="true" style="width: 0.75rem; height: 0.75rem;"></span>
-                        <i class="bi bi-funnel-fill" id="zikr-filter-btn-icon"></i>
-                        <span id="zikr-filter-btn-text">Filter</span>
-                    </button>
-                    <button type="button" id="zikr-filter-clear-btn" class="btn btn-sm btn-outline-secondary px-2.5 d-inline-flex align-items-center gap-1 {{ empty($summary['date_range']['is_filtered']) ? 'd-none' : '' }}" style="border-radius: 10px; font-size: 0.8rem; padding: 6px 10px;" title="Reset Filter">
-                        <i class="bi bi-x-lg"></i> Clear
-                    </button>
+        {{-- Custom Date Inputs & Action Buttons Row --}}
+        <div class="row g-2 align-items-center">
+            <div class="col-6 col-md-auto">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text border-end-0 text-muted-custom fw-semibold" style="background: rgba(8, 17, 30, 0.85); border-color: rgba(6, 182, 212, 0.35); font-size: 0.72rem; border-top-left-radius: 10px; border-bottom-left-radius: 10px;">From</span>
+                    <input type="date" name="from_date" id="filter_from_date" class="form-control form-control-sm font-monospace text-white border-start-0" value="{{ request('from_date') }}" style="background: #08111e; border-color: rgba(6, 182, 212, 0.35); border-top-right-radius: 10px; border-bottom-right-radius: 10px; font-size: 0.78rem; padding: 6px 8px; color-scheme: dark;">
                 </div>
             </div>
 
-            {{-- Right: Filter Result Pill (If Filtered or updated via AJAX) --}}
-            <div class="col-12 col-xl-auto ms-xl-auto {{ empty($summary['date_range']['is_filtered']) ? 'd-none' : '' }}" id="zikr-filter-result-container">
-                <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 border w-100" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(16, 185, 129, 0.15) 100%); border-color: rgba(6, 182, 212, 0.5); box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);">
+            <div class="col-6 col-md-auto">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text border-end-0 text-muted-custom fw-semibold" style="background: rgba(8, 17, 30, 0.85); border-color: rgba(6, 182, 212, 0.35); font-size: 0.72rem; border-top-left-radius: 10px; border-bottom-left-radius: 10px;">To</span>
+                    <input type="date" name="to_date" id="filter_to_date" class="form-control form-control-sm font-monospace text-white border-start-0" value="{{ request('to_date') }}" style="background: #08111e; border-color: rgba(6, 182, 212, 0.35); border-top-right-radius: 10px; border-bottom-right-radius: 10px; font-size: 0.78rem; padding: 6px 8px; color-scheme: dark;">
+                </div>
+            </div>
+
+            <div class="col-12 col-md-auto">
+                <button type="submit" id="zikr-filter-submit-btn" class="btn btn-sm btn-info text-dark fw-bold w-100 d-inline-flex align-items-center justify-content-center gap-1.5 px-3" style="border-radius: 10px; font-size: 0.8rem; height: 33px; box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);">
+                    <span class="spinner-border spinner-border-sm d-none" id="zikr-filter-spinner" role="status" aria-hidden="true" style="width: 0.75rem; height: 0.75rem;"></span>
+                    <i class="bi bi-funnel-fill" id="zikr-filter-btn-icon"></i>
+                    <span id="zikr-filter-btn-text">Apply Filter</span>
+                </button>
+            </div>
+        </div>
+
+        {{-- Filter Result Pill (When Filtered) --}}
+        <div class="mt-2.5 pt-2 border-top border-secondary border-opacity-10 {{ empty($summary['date_range']['is_filtered']) ? 'd-none' : '' }}" id="zikr-filter-result-container">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 px-3 py-2 rounded-3 border" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.18) 0%, rgba(16, 185, 129, 0.12) 100%); border-color: rgba(6, 182, 212, 0.45); box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);">
+                <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-check2-circle text-info fs-5"></i>
                     <div>
                         <div class="small fw-semibold text-white" style="line-height: 1.2;">
@@ -64,22 +84,53 @@
                 </div>
             </div>
         </div>
-
-        {{-- Quick Presets Row --}}
-        <div class="d-flex flex-wrap align-items-center gap-1.5 pt-2 mt-2 border-top border-secondary border-opacity-10">
-            <span class="small text-muted-custom me-1" style="font-size: 0.7rem;"><i class="bi bi-lightning-charge text-warning me-0.5"></i>Quick:</span>
-            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="today" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Today</button>
-            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="yesterday" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Yesterday</button>
-            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="thisWeek" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">This Week</button>
-            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="lastWeek" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Last Week</button>
-            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="last7" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Last 7 Days</button>
-            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="thisMonth" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">This Month</button>
-            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="lastMonth" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Last Month</button>
-            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="thisYear" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">This Year</button>
-            <button type="button" class="btn btn-sm py-0 px-2 rounded-pill font-monospace zikr-preset-btn" data-preset="lastYear" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; font-size: 0.7rem;">Last Year</button>
-        </div>
     </form>
 </div>
+
+<style>
+.zikr-presets-scroll {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.zikr-presets-scroll::-webkit-scrollbar {
+    display: none;
+}
+.zikr-preset-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 0.72rem;
+    padding: 4px 11px;
+    border-radius: 50rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+.zikr-preset-btn:hover {
+    background: rgba(6, 182, 212, 0.15);
+    border-color: rgba(6, 182, 212, 0.4);
+    color: #e0f2fe;
+}
+.zikr-preset-btn.active {
+    background: rgba(6, 182, 212, 0.25) !important;
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.35);
+    font-weight: 600;
+}
+@media (min-width: 992px) {
+    .zikr-presets-scroll {
+        flex-wrap: wrap;
+        overflow-x: visible;
+    }
+}
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -115,8 +166,14 @@ document.addEventListener('DOMContentLoaded', function () {
             submitBtn.disabled = false;
             spinner.classList.add('d-none');
             btnIcon.classList.remove('d-none');
-            btnText.textContent = 'Filter';
+            btnText.textContent = 'Apply Filter';
         }
+    }
+
+    function resetPresetHighlights() {
+        document.querySelectorAll('.zikr-preset-btn').forEach(function (b) {
+            b.classList.remove('active');
+        });
     }
 
     // Perform AJAX request to fetch filtered stats without page reload
@@ -169,7 +226,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 totalCountEl.textContent = Number(dr.total_count).toLocaleString();
                 const daysLabel = dr.range_days === 1 ? '1 Day' : `${dr.range_days} Days`;
                 const activeLabel = dr.active_days === 1 ? '1 Day' : `${dr.active_days} Days`;
-                detailsEl.textContent = `${daysLabel} (Avg: ${Number(dr.avg_per_day).toLocaleString()}/day) • Active on ${activeLabel}`;
+                if (detailsEl) {
+                    detailsEl.textContent = `${daysLabel} (Avg: ${Number(dr.avg_per_day).toLocaleString()}/day) • Active on ${activeLabel}`;
+                }
 
                 // Update individual tasbeeh card badges
                 document.querySelectorAll('.zikr-period-count-badge').forEach(badge => {
@@ -197,18 +256,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // Form submit event -> Prevent reload and trigger AJAX
     form.addEventListener('submit', function (e) {
         e.preventDefault();
+        resetPresetHighlights();
         performFilter(fromInput.value, toInput.value);
     });
 
     // Clear button event -> Clear inputs & trigger AJAX reset
-    function resetPresetHighlights() {
-        document.querySelectorAll('.zikr-preset-btn').forEach(function (b) {
-            b.style.background = 'rgba(255, 255, 255, 0.05)';
-            b.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-            b.style.color = '#cbd5e1';
-        });
-    }
-
     clearBtn.addEventListener('click', function () {
         fromInput.value = '';
         toInput.value = '';
@@ -231,8 +283,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 end.setDate(now.getDate() - 1);
             } else if (preset === 'last7') {
                 start.setDate(now.getDate() - 6);
-            } else if (preset === 'last30') {
-                start.setDate(now.getDate() - 29);
             } else if (preset === 'thisMonth') {
                 start = new Date(now.getFullYear(), now.getMonth(), 1);
             } else if (preset === 'thisWeek') {
@@ -262,9 +312,7 @@ document.addEventListener('DOMContentLoaded', function () {
             toInput.value = toVal;
 
             resetPresetHighlights();
-            this.style.background = 'rgba(6, 182, 212, 0.25)';
-            this.style.borderColor = 'rgba(6, 182, 212, 0.6)';
-            this.style.color = '#38bdf8';
+            this.classList.add('active');
 
             performFilter(fromVal, toVal);
         });
