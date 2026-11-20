@@ -188,6 +188,193 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
+    // Direct instant DOM updater across all tasbeeh cards and top stats (0ms, no page reload)
+    function updateAllCardsAsCompletedToday(summary) {
+        const tasbeehsMap = {};
+        if (summary && Array.isArray(summary.tasbeehs)) {
+            summary.tasbeehs.forEach(t => {
+                tasbeehsMap[String(t.tasbeeh_id || t.id)] = t;
+            });
+        }
+
+        const cards = document.querySelectorAll('[id^="tasbeeh-card-"]');
+        cards.forEach(card => {
+            const tId = card.id.replace('tasbeeh-card-', '');
+            const sItem = tasbeehsMap[tId];
+
+            let dailyTarget = parseInt(card.dataset.dailyTarget || '100', 10);
+            if (sItem && sItem.daily_target) dailyTarget = parseInt(sItem.daily_target, 10);
+
+            let newToday = dailyTarget;
+            let newTotal = parseInt(card.dataset.totalCompleted || card.dataset.baseTotalCompleted || '0', 10);
+
+            if (sItem) {
+                newToday = parseInt(sItem.today_completed, 10);
+                newTotal = parseInt(sItem.total_completed, 10);
+            } else {
+                const oldToday = parseInt(card.dataset.todayCompleted || '0', 10);
+                const addAmount = Math.max(0, dailyTarget - oldToday);
+                newTotal += addAmount;
+            }
+
+            let totalReq = parseInt(card.dataset.totalRequired || '0', 10);
+            if (sItem && sItem.total_required) totalReq = parseInt(sItem.total_required, 10);
+
+            // Update card dataset attributes
+            card.dataset.todayCompleted = String(newToday);
+            card.dataset.totalCompleted = String(newTotal);
+            card.dataset.baseTodayCompleted = String(newToday);
+            card.dataset.baseTotalCompleted = String(newTotal);
+            card.dataset.baseToday = String(newToday);
+            card.dataset.baseTotal = String(newTotal);
+            card.dataset.complete = 'true';
+
+            // 1. Today status badge (Green with checkmark)
+            const todayBadge = card.querySelector('.today-status-badge');
+            if (todayBadge) {
+                todayBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+                todayBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                todayBadge.style.color = '#34d399';
+                todayBadge.innerHTML = `<i class="bi bi-check2 me-1"></i>Today: <strong class="ms-1 font-monospace">${newToday.toLocaleString()}</strong>`;
+            }
+
+            // 2. Complete check button
+            const completeBtn = card.querySelector('.btn-complete-icon');
+            if (completeBtn) {
+                completeBtn.classList.add('is-completed', 'active');
+            }
+
+            // 3. Completed total badge
+            const completedBadge = card.querySelector('.badge-completed');
+            if (completedBadge) {
+                completedBadge.dataset.rawCompleted = newTotal.toLocaleString();
+                const strong = completedBadge.querySelector('strong');
+                if (strong) strong.textContent = newTotal.toLocaleString();
+            }
+
+            // 4. Remaining / Extra badge
+            const remainingBadge = card.querySelector('.badge-remaining');
+            if (remainingBadge) {
+                const diff = newTotal - totalReq;
+                if (diff > 0) {
+                    remainingBadge.textContent = '+' + diff.toLocaleString() + ' Extra';
+                    remainingBadge.className = 'badge-remaining extra';
+                } else if (diff === 0) {
+                    remainingBadge.textContent = 'Completed';
+                    remainingBadge.className = 'badge-remaining completed-badge';
+                } else {
+                    remainingBadge.textContent = 'Remaining ' + Math.abs(diff).toLocaleString();
+                    remainingBadge.className = 'badge-remaining';
+                }
+            }
+
+            // 5. Progress bar & percentage
+            const progressBar = card.querySelector('.progress-bar-custom');
+            const percentTextEl = card.querySelector('.progress-percent-text') || card.querySelector('.progress-container .font-monospace');
+            if (progressBar && totalReq > 0) {
+                const pct = Math.min(100, Math.round((newTotal / totalReq) * 100));
+                progressBar.style.width = pct + '%';
+                if (percentTextEl) percentTextEl.textContent = pct + '%';
+
+                const diff = newTotal - totalReq;
+                let barClass = 'amber';
+                if (diff > 0) barClass = 'cyan';
+                else if (diff === 0) barClass = 'emerald';
+                progressBar.className = `progress-bar-custom ${barClass}`;
+            }
+
+            // 6. Period badge if filtered
+            if (sItem && sItem.range_completed !== undefined) {
+                const periodBadge = card.querySelector('.zikr-period-count-badge');
+                if (periodBadge) {
+                    const valEl = periodBadge.querySelector('.zikr-period-val');
+                    if (valEl) valEl.textContent = Number(sItem.range_completed).toLocaleString();
+                }
+            }
+        });
+
+        // Update Top Overall Statistics Cards if summary provided
+        if (summary) {
+            const lifetimeEl = document.getElementById('top-stat-lifetime-total');
+            if (lifetimeEl && summary.lifetime_total !== undefined) {
+                lifetimeEl.dataset.baseLifetime = String(summary.lifetime_total);
+                lifetimeEl.dataset.rawVal = Number(summary.lifetime_total).toLocaleString();
+                if (lifetimeEl.textContent !== '••••') {
+                    lifetimeEl.textContent = Number(summary.lifetime_total).toLocaleString();
+                }
+            }
+
+            const todayCompletedEl = document.getElementById('top-stat-today-completed');
+            if (todayCompletedEl && summary.overall_today_completed !== undefined) {
+                todayCompletedEl.dataset.baseVal = String(summary.overall_today_completed);
+                todayCompletedEl.dataset.rawVal = Number(summary.overall_today_completed).toLocaleString();
+                todayCompletedEl.textContent = Number(summary.overall_today_completed).toLocaleString();
+            }
+
+            const todayPctEl = document.getElementById('top-stat-today-percentage');
+            if (todayPctEl && summary.overall_today_percentage !== undefined) {
+                todayPctEl.dataset.rawSubtext = `${summary.overall_today_percentage}% of daily target`;
+                todayPctEl.textContent = `${summary.overall_today_percentage}% of daily target`;
+            }
+
+            const totalCompEl = document.getElementById('top-stat-total-completed');
+            if (totalCompEl && summary.overall_total_completed !== undefined) {
+                totalCompEl.dataset.rawVal = Number(summary.overall_total_completed).toLocaleString();
+                if (totalCompEl.textContent !== '••••') {
+                    totalCompEl.textContent = Number(summary.overall_total_completed).toLocaleString();
+                }
+            }
+
+            const overallPctEl = document.getElementById('top-stat-overall-percentage');
+            if (overallPctEl && summary.overall_percentage !== undefined) {
+                overallPctEl.dataset.rawSubtext = `${summary.overall_percentage}% Completed`;
+                if (overallPctEl.textContent !== '•••% Completed') {
+                    overallPctEl.textContent = `${summary.overall_percentage}% Completed`;
+                }
+            }
+
+            // Backlog / Extra
+            const backlogValEl = document.getElementById('top-stat-backlog-value');
+            const backlogSubEl = document.getElementById('top-stat-backlog-subtext');
+            const backlogTitleEl = document.getElementById('top-stat-backlog-title');
+            if (backlogValEl && summary.overall_extra !== undefined && summary.overall_backlog !== undefined) {
+                const isExtra = summary.overall_extra > 0;
+                const isBehind = summary.overall_backlog > 0;
+                const colorClass = isExtra ? 'text-info' : (isBehind ? 'text-warning' : 'text-success');
+                const valText = isExtra ? ('+' + Number(summary.overall_extra).toLocaleString()) : Number(summary.overall_backlog).toLocaleString();
+                const subText = isExtra ? 'Ahead of schedule' : (isBehind ? 'Behind schedule' : 'On track');
+
+                if (backlogTitleEl) {
+                    backlogTitleEl.textContent = isExtra ? 'Extra Zikr' : 'Remaining Backlog';
+                }
+                backlogValEl.className = `fs-3 fs-md-2 ${colorClass} d-block font-monospace my-0 zikr-stat-maskable`;
+                backlogValEl.dataset.rawVal = valText;
+                backlogValEl.textContent = valText;
+
+                if (backlogSubEl) {
+                    backlogSubEl.className = `${colorClass} d-block fw-semibold text-truncate zikr-stat-maskable`;
+                    backlogSubEl.dataset.rawSubtext = subText;
+                    backlogSubEl.textContent = subText;
+                }
+            }
+        }
+
+        // Re-calculate / sync top stats
+        if (typeof window.recalculateZikrTopStats === 'function') {
+            window.recalculateZikrTopStats();
+        }
+
+        // Re-run filter buttons count & visibility
+        if (typeof window.refreshZikrFilter === 'function') {
+            window.refreshZikrFilter();
+        }
+
+        // Re-apply stat card mask if needed
+        if (typeof window.renderZikrStatCards === 'function') {
+            window.renderZikrStatCards();
+        }
+    }
+
     if (completeAllBtn) {
         completeAllBtn.addEventListener('click', async function () {
             const spinner = completeAllBtn.querySelector('.spinner-border');
@@ -198,6 +385,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (window.PwaSync && typeof window.PwaSync.completeAllTasbeehsToday === 'function') {
                     await window.PwaSync.completeAllTasbeehsToday();
                 }
+                updateAllCardsAsCompletedToday(null);
                 if (typeof window.reconcileZikrOfflineCounts === 'function') {
                     window.reconcileZikrOfflineCounts();
                 }
@@ -213,6 +401,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             try {
+                const fromDate = document.getElementById('filter_from_date')?.value || '';
+                const toDate = document.getElementById('filter_to_date')?.value || '';
+
                 const response = await fetch('{{ route("admin.zikr.complete-all-today") }}', {
                     method: 'POST',
                     headers: {
@@ -220,7 +411,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': csrfToken
                     },
-                    body: JSON.stringify({ user_id: defaultUserId })
+                    body: JSON.stringify({
+                        user_id: defaultUserId,
+                        from_date: fromDate,
+                        to_date: toDate
+                    })
                 });
 
                 const data = await response.json();
@@ -228,9 +423,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (window.PwaSync && typeof window.PwaSync.broadcastEvent === 'function') {
                         window.PwaSync.broadcastEvent('ZIKR_COMPLETE_ALL', {});
                     }
-                    if (typeof window.reconcileZikrOfflineCounts === 'function') {
-                        window.reconcileZikrOfflineCounts();
+
+                    // 1. Reconcile with fresh server summary data
+                    if (data.summary && typeof window.reconcileZikrOfflineCounts === 'function') {
+                        await window.reconcileZikrOfflineCounts({
+                            zikr_summary: data.summary,
+                            server_time: data.server_time || new Date().toISOString()
+                        });
                     }
+
+                    // 2. Direct Instant DOM Update across all cards & top stats (0ms, no page reload)
+                    updateAllCardsAsCompletedToday(data.summary);
 
                     const modalEl = document.getElementById('completeAllTasbeehsModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalEl);
@@ -246,6 +449,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error(err);
                 if (!navigator.onLine && window.PwaSync && typeof window.PwaSync.completeAllTasbeehsToday === 'function') {
                     await window.PwaSync.completeAllTasbeehsToday();
+                    updateAllCardsAsCompletedToday(null);
                     if (typeof window.reconcileZikrOfflineCounts === 'function') {
                         window.reconcileZikrOfflineCounts();
                     }

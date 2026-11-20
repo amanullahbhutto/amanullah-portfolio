@@ -172,6 +172,13 @@ class ZikrCounterController extends Controller
         $user = $this->authorizeAccess($request, $targetUser);
         $result = $this->zikrService->completeAllForToday($user);
 
+        if ($result['success'] ?? false) {
+            $fromDate = $request->input('from_date');
+            $toDate = $request->input('to_date');
+            $result['summary'] = $this->zikrService->getDashboardSummary($user, $fromDate, $toDate);
+            $result['server_time'] = now()->toISOString();
+        }
+
         return response()->json($result);
     }
 
